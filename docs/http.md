@@ -41,14 +41,14 @@ scope for v1 (`to_bytes` would invalidate live header name slots).
 
 | File | Role |
 |------|------|
-| `src/http/url.hy` | URL parse, `HttpError`, `Headers`, request build, response parse |
-| `src/http/request.hy` | Re-exports `http::url` |
-| `src/http/response.hy` | Re-exports `http::url` |
+| `src/http/url.hy` | URL parse, `HttpError`, `Url`, `Headers` |
+| `src/http/request.hy` | Request builders (`build_request_head`, extras) |
+| `src/http/response.hy` | `Response` and `parse_response` |
 | `src/http/client.hy` | `get` / `post` / `request` (+ `status_code` / `body_len`) |
 
-Impl detail: request/response helpers live in `url.hy` so `client` depends on a
-**single** sibling module. Importing overlapping facades that each pull from
-`http::url` can hide `url` symbols — prefer one explicit import path.
+Import types from the module that defines them (`http::url::{Url, Headers}`,
+`http::response::{Response}`, `http::request::{build_request_head}`). `use`
+does not re-export.
 
 ## Example
 
