@@ -22,7 +22,8 @@ auto-imported from virtual `prelude::math` in the compiler — not this package.
 | `path` | `use path::{join, dirname, …};` | `join` / `dirname` / `basename` / `extension` |
 | `io::sync` | `use io::sync::{write_all, …};` | Blocking adapters — [IO adapters](io.md) |
 | `io::file` | `use io::file::{read_text, …};` | Whole-file read/write — [IO adapters](io.md) |
-| `http` | `use http::client::{get, …};` | HTTP/1.1 client — [HTTP](http.md) |
+
+HTTP client/server moved to **[coil-http](https://github.com/ardax-corp/coil-http)** — see [migration](http.md).
 
 ## Notes
 

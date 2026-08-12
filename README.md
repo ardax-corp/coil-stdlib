@@ -7,7 +7,9 @@ this package layers `.hy` helpers on top.
 Managed with [spool](https://github.com/ardax-corp/spool), same organization as
 the language and package manager.
 
-**Docs:** [docs/](docs/README.md) — consume, module catalog, HTTP client, IO adapters.
+**Docs:** [docs/](docs/README.md) — consume, module catalog, IO adapters.
+
+HTTP moved to [coil-http](https://github.com/ardax-corp/coil-http).
 
 Import **explicitly** — `use path::*` is banned (`E0124`). Prelude is auto-injected.
 
@@ -19,7 +21,7 @@ Virtual-module host primitives (`io::read`) stay as free fns.
 ```text
 coil.toml
 src/ascii.hy          # use ascii::…
-src/http/client.hy    # use http::client::…
+src/collections/      # map, set, list, tree
 tests/                # coil test
 docs/                 # package documentation
 ```

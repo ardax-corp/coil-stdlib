@@ -1,6 +1,6 @@
 # Consume coil-stdlib
 
-Unprefixed imports (`use ascii`, `use http::client`) need this package's **`src/`**
+Unprefixed imports (`use ascii`, `use collections::map::{HashMap}`) need this package's **`src/`**
 as a module root — not the parent `.spool/deps` folder. `spool` links
 `.spool/deps/stdlib` at `src/`.
 
@@ -27,11 +27,11 @@ If roots only list `"./.spool/deps"`, imports are prefixed: `use stdlib::ascii`.
 roots = ["./src", "../coil-stdlib/src"]
 ```
 
-## Language repo submodule
+## Language repo checkout
 
-[coil-lang](https://github.com/ardax-corp/coil-lang) vendors this package at
-`stdlib/` (`git clone --recurse-submodules`). Its workspace `coil.toml` already
-includes `./stdlib/src`.
+[coil-lang](https://github.com/ardax-corp/coil-lang) does not vendor this tree.
+Clone it as a sibling (`../coil-stdlib`) or under `coil-lang/.deps/coil-stdlib`.
+Workspace `coil.toml` already lists those roots.
 
 Manifest schema: [coil.toml project config](https://github.com/ardax-corp/coil-lang/blob/main/docs/references/project-config.md).
 `spool` vs `coil package`: [spool README](https://github.com/ardax-corp/spool).
