@@ -23,8 +23,6 @@ auto-imported from virtual `prelude::math` in the compiler — not this package.
 | `io::sync` | `use io::sync::{write_all, …};` | Blocking adapters — [IO adapters](io.md) |
 | `io::file` | `use io::file::{read_text, …};` | Whole-file read/write — [IO adapters](io.md) |
 
-HTTP client/server moved to **[coil-http](https://github.com/ardax-corp/coil-http)** — see [migration](http.md).
-
 ## Notes
 
 - Prefer **byte offsets** for `text::slice` / `find` (mid-codepoint slices error on decode).

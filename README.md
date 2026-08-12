@@ -9,8 +9,6 @@ the language and package manager.
 
 **Docs:** [docs/](docs/README.md) — consume, module catalog, IO adapters.
 
-HTTP moved to [coil-http](https://github.com/ardax-corp/coil-http).
-
 Import **explicitly** — `use path::*` is banned (`E0124`). Prelude is auto-injected.
 
 **API style:** prefer **method-based APIs** (`m.insert(k, v)`), not free functions.
