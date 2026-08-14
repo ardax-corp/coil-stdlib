@@ -67,4 +67,76 @@ test("dirname basename extension edges") {
         Result::Err(_) => panic "dirname root",
     };
     assert(root.as_str() == "/")?;
+    let trailing = match Path::from("/tmp/x/").basename() {
+        Result::Ok(s) => s,
+        Result::Err(_) => panic "basename trailing",
+    };
+    assert(trailing == "x")?;
+    let dot = match Path::from("file.").extension() {
+        Result::Ok(s) => s,
+        Result::Err(_) => panic "extension empty",
+    };
+    assert(dot == "")?;
+}
+
+test("normalize and components") {
+    let n = match Path::from("/a/./b/../c").normalize() {
+        Result::Ok(p) => p,
+        Result::Err(_) => panic "normalize",
+    };
+    assert(n.as_str() == "/a/c")?;
+    let rel = match Path::from("a/b/../..").normalize() {
+        Result::Ok(p) => p,
+        Result::Err(_) => panic "normalize rel",
+    };
+    assert(rel.as_str() == ".")?;
+    let empty = match Path::from("").normalize() {
+        Result::Ok(p) => p,
+        Result::Err(_) => panic "normalize empty",
+    };
+    assert(empty.as_str() == ".")?;
+    let mixed = match Path::from("a\\b/../c").normalize() {
+        Result::Ok(p) => p,
+        Result::Err(_) => panic "normalize slash",
+    };
+    assert(mixed.as_str() == "a/c")?;
+    let parts = match Path::from("/a/b").components() {
+        Result::Ok(v) => v,
+        Result::Err(_) => panic "components",
+    };
+    assert(len(parts) == 2)?;
+    assert(parts[0] == "a")?;
+    assert(parts[1] == "b")?;
+}
+
+test("join both seps and windows absolute") {
+    let j = match Path::from("a/").join(Path::from("/b")) {
+        Result::Ok(p) => p,
+        Result::Err(_) => panic "join seps",
+    };
+    assert(j.as_str() == "a/b")?;
+    assert(Path::from("C:/x").is_absolute())?;
+    assert(Path::from("c:\\x").is_absolute())?;
+    assert(Path::from("1:/x").is_absolute() == false)?;
+}
+
+test("path append text roundtrip") {
+    let p = Path::from("/tmp/coil_stdlib_path_append.txt");
+    match p.write_text("ab") {
+        Result::Ok(_) => 0,
+        Result::Err(_) => panic "write_text",
+    };
+    match p.append_text("cd") {
+        Result::Ok(_) => 0,
+        Result::Err(_) => panic "append_text",
+    };
+    let t = match p.read_text() {
+        Result::Ok(s) => s,
+        Result::Err(_) => panic "read_text",
+    };
+    assert(t == "abcd")?;
+    match p.remove_file() {
+        Result::Ok(_) => 0,
+        Result::Err(_) => panic "remove",
+    };
 }
