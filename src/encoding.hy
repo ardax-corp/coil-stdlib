@@ -117,16 +117,28 @@ fn decode(string s) -> Result<Vec<byte>, string> {
             let n = q0 * 262144 + q1 * 4096 + q2 * 64 + q3;
             let b0 = n / 65536;
             out.push(b0 as byte);
-            if q2 != 0 || q3 != 0 {
-                let b1 = (n / 256) % 256;
-                out.push(b1 as byte);
-            }
-            if q3 != 0 {
-                let b2 = n % 256;
-                out.push(b2 as byte);
-            }
+            let b1 = (n / 256) % 256;
+            out.push(b1 as byte);
+            let b2 = n % 256;
+            out.push(b2 as byte);
             qi = 0;
         }
+    }
+    // Padding (`=`) or trailing partial quartet still yields the remaining bytes.
+    if qi == 2 {
+        let n = q0 * 262144 + q1 * 4096;
+        let b0 = n / 65536;
+        out.push(b0 as byte);
+    }
+    if qi == 3 {
+        let n = q0 * 262144 + q1 * 4096 + q2 * 64;
+        let b0 = n / 65536;
+        out.push(b0 as byte);
+        let b1 = (n / 256) % 256;
+        out.push(b1 as byte);
+    }
+    if qi == 1 {
+        raise "invalid base64";
     }
     return out;
 }
