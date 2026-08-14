@@ -1,6 +1,6 @@
 # Consume coil-stdlib
 
-Unprefixed imports (`use ascii`, `use collections::map::{HashMap}`) need this package's **`src/`**
+Unprefixed imports (`use ascii`, `use path::{Path}`) need this package's **`src/`**
 as a module root — not the parent `.spool/deps` folder. `spool` links
 `.spool/deps/stdlib` at `src/`.
 

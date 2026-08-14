@@ -9,6 +9,8 @@ the language and package manager.
 
 **Docs:** [docs/](docs/README.md) — consume, module catalog, IO adapters.
 
+HTTP lives in [coil-http](https://github.com/ardax-corp/coil-http) (separate package).
+
 Import **explicitly** — `use path::*` is banned (`E0124`). Prelude is auto-injected.
 
 **API style:** prefer **method-based APIs** (`m.insert(k, v)`), not free functions.
@@ -19,7 +21,8 @@ Virtual-module host primitives (`io::read`) stay as free fns.
 ```text
 coil.toml
 src/ascii.hy          # use ascii::…
-src/collections/      # map, set, list, tree
+src/collections/      # map, set, list, tree, vec
+src/path.hy           # use path::{Path, …}
 tests/                # coil test
 docs/                 # package documentation
 ```
