@@ -137,11 +137,13 @@ impl TreeMap<K: Ord + Eq, V> {
     fn find_parent(int idx) -> int {
         let p = 0 - 1;
         let cur = self.root;
+        let target_key = self.keys[idx];
         while cur >= 0 {
             if cur == idx {
                 return p;
             }
-            if idx < self.keys[cur] {
+            // Walk by key order — node indices are allocation slots, not BST keys.
+            if target_key < self.keys[cur] {
                 p = cur;
                 cur = self.left[cur];
             } else {

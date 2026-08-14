@@ -1,6 +1,6 @@
 use text::{
-    trim, starts_with, ends_with, contains, split, to_lower, to_upper,
-    replace, split_once, join, repeat, pad_left, pad_right, lines,
+    trim, trim_start, trim_end, starts_with, ends_with, contains, split, to_lower, to_upper,
+    replace, split_once, join, repeat, pad_left, pad_right, lines, rfind, split_at, byte_len,
 };
 
 test("trim and affixes") {
@@ -77,4 +77,17 @@ test("lines preserves trailing empty line") {
     assert(rows[0] == "a")?;
     assert(rows[1] == "b")?;
     assert(rows[2] == "")?;
+}
+
+test("trim start end rfind split_at") {
+    assert(trim_start("  x ")? == "x ")?;
+    assert(trim_end(" x  ")? == " x")?;
+    assert(rfind("ababa", "ba") == 3)?;
+    let pair = split_at("abcd", 2)?;
+    assert(pair[0] == "ab")?;
+    assert(pair[1] == "cd")?;
+    let clamped = split_at("ab", 0 - 1)?;
+    assert(clamped[0] == "")?;
+    assert(clamped[1] == "ab")?;
+    assert(byte_len("hi") == 2)?;
 }
