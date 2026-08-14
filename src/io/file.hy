@@ -51,3 +51,25 @@ fn write_text(string path, string text) -> Result<int, IoError> {
     let b = to_bytes(text);
     return write_bytes(path, b)?;
 }
+
+/// Append bytes to `path` (`"a"` mode).
+fn append_bytes(string path, Vec<byte> buf) -> Result<int, IoError> {
+    let s = open(path, "a")?;
+    match write_all(s, buf) {
+        Result::Ok(_) => 0,
+        Result::Err(e) => {
+            match close(s) {
+                Result::Ok(_) => 0,
+                Result::Err(_) => 0,
+            };
+            raise e;
+        },
+    };
+    close(s)?;
+    return 0;
+}
+
+/// Append a UTF-8 string to `path`.
+fn append_text(string path, string text) -> Result<int, IoError> {
+    return append_bytes(path, to_bytes(text))?;
+}

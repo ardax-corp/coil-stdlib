@@ -9,7 +9,8 @@ use io::{
     from_bytes as io_from_bytes,
 };
 use io::net::tcp::accept;
-use io::net::udp::recv_from;
+use io::net::udp::{recv_from, send_to};
+use io::fs::{copy as fs_copy};
 use string::{to_bytes as str_to_bytes};
 
 /// Write every byte of `buf` to `s`, parking on `WouldBlock` until done.
@@ -152,6 +153,33 @@ fn recv_from_wait(Stream s, Vec<byte> buf) -> Result<(int, string, int), IoError
         };
     }
     return (out_n, out_host, out_port);
+}
+
+/// Blocking UDP `send_to`, parking on `WouldBlock`.
+fn send_to_wait(Stream s, Vec<byte> buf, string host, int port) -> Result<int, IoError> {
+    let done = false;
+    let out_n = 0;
+    while !done {
+        match send_to(s, buf, host, port) {
+            Result::Ok(n) => {
+                out_n = n;
+                done = true;
+            },
+            Result::Err(IoError::WouldBlock) => {
+                wait_writable(s)?;
+            },
+            Result::Err(e) => {
+                raise e;
+            },
+        };
+    }
+    return out_n;
+}
+
+/// Copy file contents from `src` to `dst` via virtual `io::fs::copy`.
+fn copy(string dst, string src) -> Result<int, IoError> {
+    fs_copy(src, dst)?;
+    return 0;
 }
 
 fn newline_bytes() -> Vec<byte> {

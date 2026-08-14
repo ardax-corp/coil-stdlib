@@ -1,20 +1,52 @@
 // Shared decimal parsing and formatting helpers (pure userland).
-use string::{to_bytes};
-use ascii::{is_digit, digit_val, digit_char};
+use string::{to_bytes, from_bytes};
+use ascii::{is_digit, digit_val, digit_char, is_space, hex_digit, hex_val};
+use bytes::{slice as bytes_slice};
+
+fn trim_ascii(string s) -> string {
+    let b = to_bytes(s);
+    let lo = 0;
+    let hi = len(b);
+    while lo < hi {
+        if is_space(b[lo]) {
+            lo = lo + 1;
+        } else {
+            break;
+        }
+    }
+    while hi > lo {
+        if is_space(b[hi - 1]) {
+            hi = hi - 1;
+        } else {
+            break;
+        }
+    }
+    return match from_bytes(bytes_slice(b, lo, hi)) {
+        Result::Ok(x) => x,
+        Result::Err(_) => "",
+    };
+}
+
+fn hex_nibble_char(int n) -> string {
+    let b = hex_digit(n);
+    let v: Vec<byte> = Vec::new();
+    v.push(b);
+    return match from_bytes(v) {
+        Result::Ok(s) => s,
+        Result::Err(_) => "",
+    };
+}
 
 /// Format an integer in base 10.
 fn int_to_dec(int n) -> string {
     if n == 0 {
         return "0";
     }
-
-    // Keep the working value negative so the minimum integer remains representable.
     let negative = n < 0;
     let x = n;
     if x > 0 {
         x = 0 - x;
     }
-
     let out = "";
     while x < 0 {
         let digit = 0 - (x % 10);
@@ -27,13 +59,57 @@ fn int_to_dec(int n) -> string {
     return out;
 }
 
-/// Parse an optionally signed base-10 integer.
-fn parse_int(string s) -> Result<int, string> {
-    let b = to_bytes(s);
+/// Format an integer in base 16 (lowercase, no prefix).
+fn int_to_hex(int n) -> string {
+    if n == 0 {
+        return "0";
+    }
+    let negative = n < 0;
+    let x = n;
+    if x > 0 {
+        x = 0 - x;
+    }
+    let out = "";
+    while x < 0 {
+        let digit = 0 - (x % 16);
+        out = hex_nibble_char(digit) + out;
+        x = x / 16;
+    }
+    if negative {
+        return "-" + out;
+    }
+    return out;
+}
+
+/// Format an integer in base 2 (no prefix).
+fn int_to_bin(int n) -> string {
+    if n == 0 {
+        return "0";
+    }
+    let negative = n < 0;
+    let x = n;
+    if x > 0 {
+        x = 0 - x;
+    }
+    let out = "";
+    while x < 0 {
+        let bit = 0 - (x % 2);
+        out = digit_char(bit) + out;
+        x = x / 2;
+    }
+    if negative {
+        return "-" + out;
+    }
+    return out;
+}
+
+/// Parse an optionally signed integer in base `radix` (10 or 16).
+fn parse_int_radix(string s, int radix) -> Result<int, string> {
+    let trimmed = trim_ascii(s);
+    let b = to_bytes(trimmed);
     if len(b) == 0 {
         raise "invalid integer";
     }
-
     let i = 0;
     let negative = false;
     if b[i] == "-" || b[i] == "+" {
@@ -43,14 +119,26 @@ fn parse_int(string s) -> Result<int, string> {
     if i >= len(b) {
         raise "invalid integer";
     }
-
     let value = 0;
     while i < len(b) {
-        let digit = digit_val(b[i]);
+        let digit = -1;
+        if radix == 10 {
+            digit = digit_val(b[i]);
+        } else {
+            if radix == 16 {
+                digit = hex_val(b[i]);
+            } else {
+                raise "invalid radix";
+            }
+        }
         if digit < 0 {
             raise "invalid integer";
         }
-        value = value * 10 + digit;
+        let next = value * radix + digit;
+        if next < value {
+            raise "overflow";
+        }
+        value = next;
         i = i + 1;
     }
     if negative {
@@ -59,9 +147,14 @@ fn parse_int(string s) -> Result<int, string> {
     return value;
 }
 
+/// Parse an optionally signed base-10 integer (surrounding ASCII space skipped).
+fn parse_int(string s) -> Result<int, string> {
+    return parse_int_radix(s, 10)?;
+}
+
 /// Parse an optionally signed decimal float with an optional exponent.
 fn parse_float(string s) -> Result<float, string> {
-    let b = to_bytes(s);
+    let b = to_bytes(trim_ascii(s));
     if len(b) == 0 {
         raise "invalid float";
     }
@@ -94,8 +187,6 @@ fn parse_float(string s) -> Result<float, string> {
     if i < len(b) {
         if b[i] == "." {
             i = i + 1;
-            // Fold fraction digits into the mantissa, then divide by 10^places once
-            // so values like 12.5 stay exact (repeated *0.1 is not).
             while i < len(b) {
                 if is_digit(b[i]) == false {
                     break;

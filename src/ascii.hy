@@ -29,6 +29,42 @@ fn is_alpha(byte c) -> bool {
     return c >= "a" && c <= "z";
 }
 
+/// True for an ASCII alphanumeric byte.
+fn is_alnum(byte c) -> bool {
+    return is_alpha(c) || is_digit(c);
+}
+
+/// True for an ASCII printable byte (space through tilde).
+fn is_print(byte c) -> bool {
+    return c >= " " && c <= "~";
+}
+
+/// True for an ASCII control byte (below space, excluding DEL).
+fn is_ctrl(byte c) -> bool {
+    if c < " " {
+        return true;
+    }
+    return c == "\x7f";
+}
+
+/// ASCII lower-case for `A`..=`Z`; other bytes unchanged.
+fn to_lower(byte c) -> byte {
+    if c >= "A" && c <= "Z" {
+        let n = (c as int) + 32;
+        return n as byte;
+    }
+    return c;
+}
+
+/// ASCII upper-case for `a`..=`z`; other bytes unchanged.
+fn to_upper(byte c) -> byte {
+    if c >= "a" && c <= "z" {
+        let n = (c as int) - 32;
+        return n as byte;
+    }
+    return c;
+}
+
 /// Numeric value of an ASCII decimal digit, or `-1` for another byte.
 fn digit_val(byte c) -> int {
     if !is_digit(c) {

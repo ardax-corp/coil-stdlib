@@ -10,5 +10,7 @@ Language builtins and virtual modules stay in the
 | [Modules](modules.md) | Catalog of `use` paths |
 | [IO adapters](io.md) | `io::sync` and `io::file` |
 
+HTTP is [coil-http](https://github.com/ardax-corp/coil-http) — install via spool.
+
 Language tutorials that *use* these modules (virtual `io` + adapters):
 [IO streams](https://github.com/ardax-corp/coil-lang/blob/main/docs/manual/tutorial/10-io-streams.md).
