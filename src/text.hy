@@ -6,6 +6,7 @@ use bytes::{
     slice as bytes_slice,
     find as bytes_find,
     find_from as bytes_find_from,
+    rfind as bytes_rfind,
     replace as bytes_replace,
     pad_left as bytes_pad_left,
     pad_right as bytes_pad_right,
@@ -31,6 +32,36 @@ fn byte_len(string s) -> int {
 /// Slice by byte offsets; returns `Err` if the slice is not valid UTF-8.
 fn slice(string s, int start, int end) -> Result<string, string> {
     return utf8_ok(bytes_slice(to_bytes(s), start, end))?;
+}
+
+/// Trim ASCII whitespace from the start.
+fn trim_start(string s) -> Result<string, string> {
+    let b = to_bytes(s);
+    let lo = 0;
+    let hi = len(b);
+    while lo < hi {
+        if is_space(b[lo]) {
+            lo = lo + 1;
+        } else {
+            break;
+        }
+    }
+    return utf8_ok(bytes_slice(b, lo, hi))?;
+}
+
+/// Trim ASCII whitespace from the end.
+fn trim_end(string s) -> Result<string, string> {
+    let b = to_bytes(s);
+    let lo = 0;
+    let hi = len(b);
+    while hi > lo {
+        if is_space(b[hi - 1]) {
+            hi = hi - 1;
+        } else {
+            break;
+        }
+    }
+    return utf8_ok(bytes_slice(b, lo, hi))?;
 }
 
 /// Trim ASCII whitespace (space/tab/CR/LF) from both ends.
@@ -83,6 +114,25 @@ fn ends_with(string s, string suffix) -> bool {
 /// First byte offset of `needle` in `hay`, or `-1`. Empty needle → `0`.
 fn find(string hay, string needle) -> int {
     return bytes_find(to_bytes(hay), to_bytes(needle));
+}
+
+/// Last byte offset of `needle` in `hay`, or `-1`.
+fn rfind(string hay, string needle) -> int {
+    return bytes_rfind(to_bytes(hay), to_bytes(needle));
+}
+
+/// Split at byte offset `at` into `(left, right)`.
+fn split_at(string s, int at) -> Result<(string, string), string> {
+    let b = to_bytes(s);
+    if at < 0 {
+        at = 0;
+    }
+    if at > len(b) {
+        at = len(b);
+    }
+    let left = utf8_ok(bytes_slice(b, 0, at))?;
+    let right = utf8_ok(bytes_slice(b, at, len(b)))?;
+    return (left, right);
 }
 
 /// Split `s` on every occurrence of `sep` (byte-exact). Empty sep → `[s]`.

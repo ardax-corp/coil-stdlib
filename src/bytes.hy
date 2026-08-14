@@ -1,5 +1,20 @@
 // Byte-buffer helpers (userland). Indices are byte offsets; no UTF-8 awareness.
 use string::{to_bytes, from_bytes};
+use ascii::{hex_digit, hex_val};
+
+class Bytes {
+    buf: Vec<byte>,
+}
+
+impl Bytes {
+    static fn from_vec(Vec<byte> buf) -> Bytes {
+        return new Bytes(buf);
+    }
+
+    static fn to_vec(Bytes b) -> Vec<byte> {
+        return b.buf;
+    }
+}
 
 /// True when `a[ao..ao+n)` equals `b[bo..bo+n)` (caller guarantees bounds).
 fn region_eq(Vec<byte> a, int ao, Vec<byte> b, int bo, int n) -> bool {
@@ -14,6 +29,56 @@ fn region_eq(Vec<byte> a, int ao, Vec<byte> b, int bo, int n) -> bool {
         }
     }
     return ok;
+}
+
+fn hex_nibble(int n) -> string {
+    let b = hex_digit(n);
+    let v: Vec<byte> = Vec::new();
+    v.push(b);
+    return match from_bytes(v) {
+        Result::Ok(s) => s,
+        Result::Err(_) => "",
+    };
+}
+
+/// Hex-encode a byte buffer (lowercase).
+fn to_hex(Vec<byte> buf) -> string {
+    let out = "";
+    let i = 0;
+    while i < len(buf) {
+        let v = buf[i] as int;
+        out = out + hex_nibble(v / 16);
+        out = out + hex_nibble(v % 16);
+        i = i + 1;
+    }
+    return out;
+}
+
+/// Decode a lowercase/uppercase hex string into bytes.
+fn from_hex(string s) -> Result<Vec<byte>, string> {
+    let b = to_bytes(s);
+    let n = len(b);
+    if n % 2 != 0 {
+        raise "invalid hex";
+    }
+    let out: Vec<byte> = Vec::new();
+    let i = 0;
+    while i < n {
+        let hi = hex_val(b[i]);
+        let lo = hex_val(b[i + 1]);
+        if hi < 0 {
+            raise "invalid hex";
+        }
+        if lo < 0 {
+            raise "invalid hex";
+        }
+        let hi_i = hi as int;
+        let lo_i = lo as int;
+        let v = hi_i * 16 + lo_i;
+        out.push(v as byte);
+        i = i + 2;
+    }
+    return out;
 }
 
 /// Copy `src[start..end)` into a new buffer (clamped to `src` bounds).
@@ -57,7 +122,6 @@ fn eq(Vec<byte> a, Vec<byte> b) -> bool {
 }
 
 /// First index of `needle` in `hay` at or after `start`, or `-1`.
-/// Empty needle → `start` clamped into `[0, len(hay)]`.
 fn find_from(Vec<byte> hay, Vec<byte> needle, int start) -> int {
     let hn = len(hay);
     let nn = len(needle);
@@ -83,12 +147,10 @@ fn find_from(Vec<byte> hay, Vec<byte> needle, int start) -> int {
     return -1;
 }
 
-/// First index of `needle` in `hay`, or `-1` if missing. Empty needle → `0`.
 fn find(Vec<byte> hay, Vec<byte> needle) -> int {
     return find_from(hay, needle, 0);
 }
 
-/// Last index of `needle` in `hay`, or `-1` if missing. Empty needle → `len(hay)`.
 fn rfind(Vec<byte> hay, Vec<byte> needle) -> int {
     let hn = len(hay);
     let nn = len(needle);
@@ -108,12 +170,10 @@ fn rfind(Vec<byte> hay, Vec<byte> needle) -> int {
     return -1;
 }
 
-/// True when `hay` contains `needle` as a contiguous sub-buffer.
 fn contains(Vec<byte> hay, Vec<byte> needle) -> bool {
     return find(hay, needle) >= 0;
 }
 
-/// True when `buf` begins with `prefix`.
 fn starts_with(Vec<byte> buf, Vec<byte> prefix) -> bool {
     let n = len(prefix);
     if n > len(buf) {
@@ -122,7 +182,6 @@ fn starts_with(Vec<byte> buf, Vec<byte> prefix) -> bool {
     return region_eq(buf, 0, prefix, 0, n);
 }
 
-/// True when `buf` ends with `suffix`.
 fn ends_with(Vec<byte> buf, Vec<byte> suffix) -> bool {
     let n = len(suffix);
     let m = len(buf);
@@ -132,7 +191,6 @@ fn ends_with(Vec<byte> buf, Vec<byte> suffix) -> bool {
     return region_eq(buf, m - n, suffix, 0, n);
 }
 
-/// Copy every byte of `src` into a new buffer.
 fn copy(Vec<byte> src) -> Vec<byte> {
     let out: Vec<byte> = Vec::new();
     let i = 0;
@@ -143,8 +201,6 @@ fn copy(Vec<byte> src) -> Vec<byte> {
     return out;
 }
 
-/// Replace all non-overlapping occurrences of `old` with `new`.
-/// An empty `old` leaves `hay` unchanged.
 fn replace(Vec<byte> hay, Vec<byte> old, Vec<byte> new) -> Vec<byte> {
     if len(old) == 0 {
         return copy(hay);
@@ -172,7 +228,6 @@ fn replace(Vec<byte> hay, Vec<byte> old, Vec<byte> new) -> Vec<byte> {
     return out;
 }
 
-/// Repeat `src` `n` times. Non-positive counts produce an empty buffer.
 fn repeat(Vec<byte> src, int n) -> Vec<byte> {
     let out: Vec<byte> = Vec::new();
     let count = 0;
@@ -187,7 +242,6 @@ fn repeat(Vec<byte> src, int n) -> Vec<byte> {
     return out;
 }
 
-/// Pad on the left with `fill` until the buffer reaches `width`.
 fn pad_left(Vec<byte> src, int width, byte fill) -> Vec<byte> {
     let out: Vec<byte> = Vec::new();
     let padding = width - len(src);
@@ -204,7 +258,6 @@ fn pad_left(Vec<byte> src, int width, byte fill) -> Vec<byte> {
     return out;
 }
 
-/// Pad on the right with `fill` until the buffer reaches `width`.
 fn pad_right(Vec<byte> src, int width, byte fill) -> Vec<byte> {
     let out: Vec<byte> = Vec::new();
     let j = 0;
@@ -222,7 +275,6 @@ fn pad_right(Vec<byte> src, int width, byte fill) -> Vec<byte> {
     return out;
 }
 
-/// Decode UTF-8 bytes (maps `string::from_bytes` errors to a bare string Err).
 fn to_string(Vec<byte> b) -> Result<string, string> {
     return match from_bytes(b) {
         Result::Ok(s) => s,
@@ -230,7 +282,6 @@ fn to_string(Vec<byte> b) -> Result<string, string> {
     };
 }
 
-/// Encode a string as UTF-8 bytes (alias of `string::to_bytes`).
 fn from_string(string s) -> Vec<byte> {
     return to_bytes(s);
 }
