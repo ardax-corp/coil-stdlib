@@ -6,9 +6,9 @@ test("hashmap insert get update remove") {
     assert(m.insert(2, "b"))?;
     assert(m.insert(1, "A") == false)?;
     assert(m.size() == 2)?;
-    assert(m.get_or(1, "?") == "A")?;
-    assert(m.get_or(2, "?") == "b")?;
-    assert(m.get_or(3, "?") == "?")?;
+    assert(m.get(1, "?") == "A")?;
+    assert(m.get(2, "?") == "b")?;
+    assert(m.get(3, "?") == "?")?;
     assert(m.contains(2))?;
     assert(m.contains(9) == false)?;
     assert(m.remove(2))?;
@@ -29,7 +29,7 @@ test("hashmap reinsert after remove") {
     assert(m.insert(1, 10))?;
     assert(m.remove(1))?;
     assert(m.insert(1, 20))?;
-    assert(m.get_or(1, -1) == 20)?;
+    assert(m.get(1, -1) == 20)?;
     assert(m.size() == 1)?;
 }
 
@@ -40,7 +40,7 @@ test("hashmap clear then insert") {
     assert(m.is_empty())?;
     assert(m.insert(2, 30))?;
     assert(m.size() == 1)?;
-    assert(m.get_or(2, -1) == 30)?;
+    assert(m.get(2, -1) == 30)?;
     assert(m.contains(1) == false)?;
 }
 
@@ -51,8 +51,6 @@ test("hashmap capacity power of two") {
     assert(n.capacity() == 16)?;
 }
 
-// One grow from default cap 8 (load trips when 2*len >= cap). Keep N small —
-// bulk rehash still blows the harness operand stack.
 test("hashmap single grow preserves entries") {
     let m = HashMap::new();
     assert(m.capacity() == 8)?;
@@ -63,8 +61,18 @@ test("hashmap single grow preserves entries") {
     }
     assert(m.capacity() == 16)?;
     assert(m.size() == 5)?;
-    assert(m.get_or(0, -1) == 100)?;
-    assert(m.get_or(4, -1) == 104)?;
+    assert(m.get(0, -1) == 100)?;
+    assert(m.get(4, -1) == 104)?;
     assert(m.contains(3))?;
     assert(m.contains(9) == false)?;
+}
+
+test("hashmap keys values") {
+    let m = HashMap::new();
+    assert(m.insert(1, 10))?;
+    assert(m.insert(2, 20))?;
+    let ks = m.keys();
+    let vs = m.values();
+    assert(len(ks) == 2)?;
+    assert(len(vs) == 2)?;
 }

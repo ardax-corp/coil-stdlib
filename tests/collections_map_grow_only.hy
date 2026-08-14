@@ -10,7 +10,7 @@ test("hashmap many inserts") {
         i = i + 1;
     }
     assert(m.size() == 40)?;
-    assert(m.get_or(0, -1) == 0)?;
-    assert(m.get_or(39, -1) == 390)?;
-    assert(m.get_or(100, -1) == -1)?;
+    assert(m.get(0, -1) == 0)?;
+    assert(m.get(39, -1) == 390)?;
+    assert(m.get(100, -1) == -1)?;
 }

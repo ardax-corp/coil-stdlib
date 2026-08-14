@@ -1,6 +1,10 @@
 // HashMap — separate chaining over parallel Vecs (no Default on K/V).
 
-/// Open-addressed hash table with separate chaining (parallel Vec storage).
+class Entry<K, V> {
+    key: K,
+    value: V,
+}
+
 class HashMap<K, V> {
     heads: Vec<int>,
     keys: Vec<K>,
@@ -11,8 +15,12 @@ class HashMap<K, V> {
     cap: int,
 }
 
+class HashMapIter<K, V> {
+    map: HashMap<K, V>,
+    slot: int,
+}
+
 impl HashMap<K, V> {
-    /// Create a map with bucket count rounded up to the next power of two (min 8).
     static fn with_capacity(int cap) -> HashMap<K, V> {
         let n = 1;
         while n < cap {
@@ -34,13 +42,10 @@ impl HashMap<K, V> {
         return new HashMap(heads, keys, vals, next, live, 0, n);
     }
 
-    /// Empty map with default capacity 8.
     static fn new() -> HashMap<K, V> {
         return HashMap::with_capacity(8);
     }
 
-    /// Number of live key-value pairs.
-    /// Number of live key-value pairs.
     fn size() -> int {
         return self.len;
     }
@@ -49,12 +54,10 @@ impl HashMap<K, V> {
         return self.len == 0;
     }
 
-    /// Bucket count (power of two).
     fn capacity() -> int {
         return self.cap;
     }
 
-    /// Remove all entries without shrinking buckets.
     fn clear() {
         let i = 0;
         while i < self.cap {
@@ -68,6 +71,34 @@ impl HashMap<K, V> {
             j = j + 1;
         }
         self.len = 0;
+    }
+
+    fn keys() -> Vec<K> {
+        let out: Vec<K> = Vec::new();
+        let i = 0;
+        while i < self.keys.len() {
+            if self.live[i] == 1 {
+                out.push(self.keys[i]);
+            }
+            i = i + 1;
+        }
+        return out;
+    }
+
+    fn values() -> Vec<V> {
+        let out: Vec<V> = Vec::new();
+        let i = 0;
+        while i < self.vals.len() {
+            if self.live[i] == 1 {
+                out.push(self.vals[i]);
+            }
+            i = i + 1;
+        }
+        return out;
+    }
+
+    fn iter() -> HashMapIter<K, V> {
+        return new HashMapIter(self, 0);
     }
 }
 
@@ -133,7 +164,6 @@ impl HashMap<K: Eq + Hash, V> {
         self.cap = new_cap;
     }
 
-    /// Insert or replace. Returns `true` when a new key was inserted.
     fn insert(K k, V v) -> bool {
         let found = self.find(k);
         if found >= 0 {
@@ -154,13 +184,11 @@ impl HashMap<K: Eq + Hash, V> {
         return true;
     }
 
-    /// True when `k` is present.
     fn contains(K k) -> bool {
         return self.find(k) >= 0;
     }
 
-    /// Return the value for `k`, or `fallback` when absent.
-    fn get_or(K k, V fallback) -> V {
+    fn get(K k, V fallback) -> V {
         let found = self.find(k);
         if found >= 0 {
             return self.vals[found];
@@ -168,7 +196,6 @@ impl HashMap<K: Eq + Hash, V> {
         return fallback;
     }
 
-    /// Remove `k`. Returns `true` when a live entry was removed.
     fn remove(K k) -> bool {
         let h = self.bucket(k);
         let idx = self.heads[h];
@@ -192,3 +219,28 @@ impl HashMap<K: Eq + Hash, V> {
         return false;
     }
 }
+
+impl IntoIterator<HashMap<K, V>> {
+    type Item = Entry<K, V>;
+    type IntoIter = HashMapIter<K, V>;
+    fn into_iter(HashMap<K, V> m) -> HashMapIter<K, V> {
+        return new HashMapIter(m, 0);
+    }
+}
+
+impl Iterator<HashMapIter<K, V>> {
+    type Item = Entry<K, V>;
+    fn next(HashMapIter<K, V> it) -> Option<Entry<K, V>> {
+        let n = it.map.keys.len();
+        while it.slot < n {
+            let s = it.slot;
+            it.slot = it.slot + 1;
+            if it.map.live[s] == 1 {
+                let e = new Entry(it.map.keys[s], it.map.vals[s]);
+                return Option::Some(e);
+            }
+        }
+        return Option::None;
+    }
+}
+
