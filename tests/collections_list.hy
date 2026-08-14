@@ -37,3 +37,11 @@ test("list empty peek") {
     assert(xs.size() == 1)?;
     assert((xs.peek_front() ?? 0) == 5)?;
 }
+
+test("list empty and single pop_back") {
+    let xs = List::new();
+    assert((xs.pop_back() ?? -7) == -7)?;
+    xs.push_back(9);
+    assert((xs.pop_back() ?? 0) == 9)?;
+    assert(xs.is_empty())?;
+}

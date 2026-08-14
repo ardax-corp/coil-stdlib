@@ -79,3 +79,33 @@ test("map string") {
     assert(len(out) == 2)?;
     assert(out[0] == "aa")?;
 }
+
+test("empty first last and uneven chunks") {
+    let empty: Vec<int> = Vec::new();
+    assert((first(empty) ?? -1) == -1)?;
+    assert((last(empty) ?? -1) == -1)?;
+    let xs: Vec<int> = Vec::new();
+    xs.push(1);
+    xs.push(2);
+    xs.push(3);
+    let parts = chunks(xs, 2);
+    assert(len(parts) == 2)?;
+    assert(len(parts[0]) == 2)?;
+    assert(parts[0][0] == 1)?;
+    assert(parts[0][1] == 2)?;
+    assert(len(parts[1]) == 1)?;
+    assert(parts[1][0] == 3)?;
+    let none = chunks(xs, 0);
+    assert(len(none) == 0)?;
+}
+
+test("binary search edges") {
+    let empty: Vec<int> = Vec::new();
+    assert((binary_search(empty, 1) ?? -1) == -1)?;
+    let xs: Vec<int> = Vec::new();
+    xs.push(1);
+    xs.push(3);
+    xs.push(5);
+    assert((binary_search(xs, 1) ?? -1) == 0)?;
+    assert((binary_search(xs, 5) ?? -1) == 2)?;
+}
