@@ -11,6 +11,10 @@ package (`use http::client::{Client};`).
 CSPRNG is `crypto::random_u64` / `random_bytes` on
 [coil-crypto](https://github.com/ardax-corp/coil-crypto).
 
+JSON lives in the separate [coil-json](https://github.com/ardax-corp/coil-json)
+package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
+`codec::json`. This package does not re-export it. See [JSON](codec.md).
+
 | Module | Import | Role |
 |--------|--------|------|
 | `ascii` | `use ascii::{is_digit, is_alnum, …};` | ASCII classify / digit / case helpers |

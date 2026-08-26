@@ -7,10 +7,12 @@ this package layers `.hy` helpers on top.
 Managed with [spool](https://github.com/ardax-corp/spool), same organization as
 the language and package manager.
 
-**Docs:** [docs/](docs/README.md) — consume, module catalog, IO adapters.
+**Docs:** [docs/](docs/README.md) — consume, module catalog, IO adapters, JSON.
 
 HTTP lives in [coil-http](https://github.com/ardax-corp/coil-http) (separate package).
 CSPRNG is `crypto::random_u64` / `random_bytes` on [coil-crypto](https://github.com/ardax-corp/coil-crypto).
+JSON lives in [coil-json](https://github.com/ardax-corp/coil-json) (separate package).
+See [docs/codec.md](docs/codec.md).
 
 Import **explicitly** — `use path::*` is banned (`E0124`). Prelude is auto-injected.
 
