@@ -1,5 +1,4 @@
-// Seeded PRNG (`Rng`) and crypto-backed helpers (virtual `crypto` / `time`).
-use crypto::{random_u64, random_bytes};
+// Seeded PRNG (`Rng`). `from_time` mixes virtual `time` into the seed.
 use time::{epoch, timestamp};
 
 class Rng {
@@ -83,18 +82,4 @@ impl Rng {
         }
         return out;
     }
-}
-
-/// Uniform `u64` from the host CSPRNG.
-fn crypto_u64() -> Result<int, CryptoError> {
-    return random_u64()?;
-}
-
-/// Fill a new buffer of `n` random bytes (`n <= 0` → empty).
-fn crypto_bytes(int n) -> Result<Vec<byte>, CryptoError> {
-    if n <= 0 {
-        let empty: Vec<byte> = Vec::new();
-        return empty;
-    }
-    return random_bytes(n)?;
 }
