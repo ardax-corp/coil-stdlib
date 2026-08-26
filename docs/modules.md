@@ -8,6 +8,8 @@ auto-imported from virtual `prelude::math` in the compiler — not this package.
 
 HTTP lives in the separate [coil-http](https://github.com/ardax-corp/coil-http)
 package (`use http::client::{Client};`).
+CSPRNG is `crypto::random_u64` / `random_bytes` on
+[coil-crypto](https://github.com/ardax-corp/coil-crypto).
 
 | Module | Import | Role |
 |--------|--------|------|
@@ -24,7 +26,7 @@ package (`use http::client::{Client};`).
 | `collections::list` | `use collections::list::{List};` | Mutable deque (singly-linked); `peek_*` / `pop_*` → `Option` |
 | `collections::tree` | `use collections::tree::{TreeMap};` | Mutable BST map over `Ord`+`Eq`; remove / min / max / iter |
 | `num` | `use num::{abs, min, signum, gcd, …};` | Numeric helpers: `abs`, `min`/`max`/`clamp` over `Ord`, `round`, `pow`, `signum`, `gcd`/`lcm`, `trunc`/`fract`, NaN/inf checks, euclidean div/rem, `hypot` |
-| `random` | `use random::{Rng, crypto_u64, …};` | Seeded `Rng` PRNG + `crypto_u64` / `crypto_bytes` wrappers |
+| `random` | `use random::{Rng};` | Seeded `Rng` PRNG (`from_time` mixes virtual `time`) |
 | `path` | `use path::{Path};` | `Path` value: join / normalize / components / FS + file I/O |
 | `io::sync` | `use io::sync::{write_all, copy, …};` | Blocking adapters — [IO adapters](io.md) |
 | `io::file` | `use io::file::{read_text, append_bytes, …};` | Whole-file read/write/append — [IO adapters](io.md) |
