@@ -10,6 +10,7 @@ the language and package manager.
 **Docs:** [docs/](docs/README.md) — consume, module catalog, IO adapters.
 
 HTTP lives in [coil-http](https://github.com/ardax-corp/coil-http) (separate package).
+CSPRNG is `crypto::random_u64` / `random_bytes` on [coil-crypto](https://github.com/ardax-corp/coil-crypto).
 
 Import **explicitly** — `use path::*` is banned (`E0124`). Prelude is auto-injected.
 
