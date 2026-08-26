@@ -61,9 +61,6 @@ let s = j.encode_str(v)?;
 let bytes = j.encode(v)?;
 ```
 
-`JsonValue` / `JsonError` and the rest of the call surface are in the
-consume walkthrough. This page does not re-document them.
-
 ## HTTP bodies
 
 [coil-http](https://github.com/ardax-corp/coil-http) keeps request bodies as
