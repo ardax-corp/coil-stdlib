@@ -33,15 +33,15 @@ impl Path {
         return false;
     }
 
-    static fn from(string s) -> Path {
+    pub static fn from(string s) -> Path {
         return new Path(s);
     }
 
-    fn as_str() -> string {
+    pub fn as_str() -> string {
         return self.raw;
     }
 
-    fn join(Path other) -> Result<Path, IoError> {
+    pub fn join(Path other) -> Result<Path, IoError> {
         let a = self.raw;
         let b = other.raw;
         if len(b) == 0 {
@@ -80,7 +80,7 @@ impl Path {
         };
     }
 
-    fn dirname() -> Result<Path, IoError> {
+    pub fn dirname() -> Result<Path, IoError> {
         let path = self.raw;
         let b = to_bytes(path);
         let n = len(b);
@@ -120,7 +120,7 @@ impl Path {
         return new Path(".");
     }
 
-    fn basename() -> Result<string, IoError> {
+    pub fn basename() -> Result<string, IoError> {
         let path = self.raw;
         let b = to_bytes(path);
         let n = len(b);
@@ -154,7 +154,7 @@ impl Path {
         return from_bytes(bytes_slice(b, 0, end))?;
     }
 
-    fn extension() -> Result<string, IoError> {
+    pub fn extension() -> Result<string, IoError> {
         let base = self.basename()?;
         let b = to_bytes(base);
         let n = len(b);
@@ -171,7 +171,7 @@ impl Path {
         return "";
     }
 
-    fn is_absolute() -> bool {
+    pub fn is_absolute() -> bool {
         let path = self.raw;
         let b = to_bytes(path);
         if len(b) == 0 {
@@ -199,7 +199,7 @@ impl Path {
         return false;
     }
 
-    fn normalize() -> Result<Path, IoError> {
+    pub fn normalize() -> Result<Path, IoError> {
         let b = to_bytes(self.raw);
         let n = len(b);
         if n == 0 {
@@ -267,7 +267,7 @@ impl Path {
         };
     }
 
-    fn components() -> Result<Vec<string>, IoError> {
+    pub fn components() -> Result<Vec<string>, IoError> {
         let norm = self.normalize()?;
         let b = to_bytes(norm.raw);
         let out: Vec<string> = Vec::new();
@@ -301,72 +301,72 @@ impl Path {
         return out;
     }
 
-    fn exists() -> Result<bool, IoError> {
+    pub fn exists() -> Result<bool, IoError> {
         return fs_exists(self.raw)?;
     }
 
-    fn is_file() -> Result<bool, IoError> {
+    pub fn is_file() -> Result<bool, IoError> {
         return fs_is_file(self.raw)?;
     }
 
-    fn is_dir() -> Result<bool, IoError> {
+    pub fn is_dir() -> Result<bool, IoError> {
         return fs_is_dir(self.raw)?;
     }
 
-    fn metadata() {
+    pub fn metadata() {
         return fs_metadata(self.raw)?;
     }
 
-    fn list_dir() -> Result<Vec<string>, IoError> {
+    pub fn list_dir() -> Result<Vec<string>, IoError> {
         return fs_list_dir(self.raw)?;
     }
 
-    fn mkdir() -> Result<int, IoError> {
+    pub fn mkdir() -> Result<int, IoError> {
         fs_create_dir(self.raw)?;
         return 0;
     }
 
-    fn mkdir_all() -> Result<int, IoError> {
+    pub fn mkdir_all() -> Result<int, IoError> {
         fs_create_dir_all(self.raw)?;
         return 0;
     }
 
-    fn remove_file() -> Result<int, IoError> {
+    pub fn remove_file() -> Result<int, IoError> {
         fs_remove_file(self.raw)?;
         return 0;
     }
 
-    fn rename(Path dst) -> Result<int, IoError> {
+    pub fn rename(Path dst) -> Result<int, IoError> {
         fs_rename(self.raw, dst.raw)?;
         return 0;
     }
 
-    fn copy_to(Path dst) -> Result<int, IoError> {
+    pub fn copy_to(Path dst) -> Result<int, IoError> {
         fs_copy(self.raw, dst.raw)?;
         return 0;
     }
 
-    fn read_text() -> Result<string, IoError> {
+    pub fn read_text() -> Result<string, IoError> {
         return read_text(self.raw)?;
     }
 
-    fn write_text(string text) -> Result<int, IoError> {
+    pub fn write_text(string text) -> Result<int, IoError> {
         return write_text(self.raw, text)?;
     }
 
-    fn read_bytes() -> Result<Vec<byte>, IoError> {
+    pub fn read_bytes() -> Result<Vec<byte>, IoError> {
         return read_bytes(self.raw)?;
     }
 
-    fn write_bytes(Vec<byte> buf) -> Result<int, IoError> {
+    pub fn write_bytes(Vec<byte> buf) -> Result<int, IoError> {
         return write_bytes(self.raw, buf)?;
     }
 
-    fn append_text(string text) -> Result<int, IoError> {
+    pub fn append_text(string text) -> Result<int, IoError> {
         return append_text(self.raw, text)?;
     }
 
-    fn append_bytes(Vec<byte> buf) -> Result<int, IoError> {
+    pub fn append_bytes(Vec<byte> buf) -> Result<int, IoError> {
         return append_bytes(self.raw, buf)?;
     }
 }
