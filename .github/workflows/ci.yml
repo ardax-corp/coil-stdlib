@@ -52,8 +52,5 @@ jobs:
         run: make
         working-directory: .ci/coil-time
 
-      - name: Random + coil-time
-        run: .ci/coil-lang/target/debug/coil test tests/random.hy --allow-dload time --ffi-search-path .ci/coil-time/native --root .ci/coil-time/src
-
       - name: Language harness (`coil test`)
         run: .ci/coil-lang/target/debug/coil test --allow-dload time --ffi-search-path .ci/coil-time/native --root .ci/coil-time/src
