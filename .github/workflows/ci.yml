@@ -59,7 +59,8 @@ jobs:
             --allow-dload time \
             --ffi-search-path .ci/coil-time/native \
             --root .ci/coil-time/src \
-            | tee /tmp/coil-test.log
+            > /tmp/coil-test.log 2>&1
+          cat /tmp/coil-test.log
           if grep -q 'FAILED tests/random.hy' /tmp/coil-test.log; then
             exit 1
           fi
@@ -67,5 +68,3 @@ jobs:
             echo "random.hy did not report ok"
             exit 1
           fi
-          # Other files fail on current coil-lang (IntoIterator `for`, bytes pad, num VM);
-          # this PR is random-only and must not block on those.
