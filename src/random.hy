@@ -1,4 +1,4 @@
-// Seeded PRNG (`Rng`). `from_time` mixes virtual `time` into the seed.
+// Seeded PRNG (`Rng`). `from_time` mixes coil-time timestamps as ints.
 use time::{epoch, timestamp};
 
 class Rng {
@@ -6,7 +6,7 @@ class Rng {
 }
 
 impl Rng {
-    static fn seeded(int seed) -> Rng {
+    pub static fn seeded(int seed) -> Rng {
         let s = seed;
         if s == 0 {
             s = 1;
@@ -14,19 +14,25 @@ impl Rng {
         return new Rng(s);
     }
 
-    static fn from_time() -> Rng {
-        let a = match epoch() {
-            Result::Ok(v) => v,
-            Result::Err(_) => 0,
+    pub static fn from_time() -> Rng {
+        let a = 0;
+        match epoch() {
+            Result::Ok(ts) => {
+                a = ts.nanos();
+            },
+            Result::Err(_) => {},
         };
-        let b = match timestamp() {
-            Result::Ok(v) => v,
-            Result::Err(_) => 0,
+        let b = 0;
+        match timestamp() {
+            Result::Ok(ts) => {
+                b = ts.nanos();
+            },
+            Result::Err(_) => {},
         };
         return Rng::seeded(a ^ b ^ (b << 1));
     }
 
-    fn next_u64() -> int {
+    pub fn next_u64() -> int {
         let s = self.state % 1000000;
         self.state = s * 1009 + 17;
         return self.state;
@@ -40,7 +46,7 @@ impl Rng {
         return x;
     }
 
-    fn range(int lo, int hi) -> int {
+    pub fn range(int lo, int hi) -> int {
         if hi <= lo {
             return lo;
         }
@@ -55,13 +61,13 @@ impl Rng {
         }
     }
 
-    fn float() -> float {
+    pub fn float() -> float {
         let x = self.u64_abs();
         let r = x % 9007199254740992;
         return (r as float) / (9007199254740992 as float);
     }
 
-    fn bytes(int n) -> Vec<byte> {
+    pub fn bytes(int n) -> Vec<byte> {
         let out: Vec<byte> = Vec::new();
         if n <= 0 {
             return out;

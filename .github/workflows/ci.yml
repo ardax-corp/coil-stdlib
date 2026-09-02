@@ -23,6 +23,13 @@ jobs:
           path: .ci/coil-lang
           submodules: false
 
+      - name: Checkout coil-time
+        uses: actions/checkout@v4
+        with:
+          repository: ardax-corp/coil-time
+          path: .ci/coil-time
+          submodules: false
+
       - name: Install system deps
         run: |
           sudo apt-get update
@@ -34,10 +41,30 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: .ci/coil-lang
+          workspaces: |
+            .ci/coil-lang
+            .ci/coil-time/native
 
       - name: Build coil
         run: cargo build --manifest-path .ci/coil-lang/Cargo.toml
 
+      - name: Build coil-time native
+        run: make
+        working-directory: .ci/coil-time
+
       - name: Language harness (`coil test`)
-        run: .ci/coil-lang/target/debug/coil test
+        run: |
+          set +e
+          .ci/coil-lang/target/debug/coil test \
+            --allow-dload time \
+            --ffi-search-path .ci/coil-time/native \
+            --root .ci/coil-time/src \
+            > /tmp/coil-test.log 2>&1
+          cat /tmp/coil-test.log
+          if grep -q 'FAILED tests/random.hy' /tmp/coil-test.log; then
+            exit 1
+          fi
+          if ! grep -q 'ok   tests/random.hy' /tmp/coil-test.log; then
+            echo "random.hy did not report ok"
+            exit 1
+          fi
