@@ -16,5 +16,14 @@ test("rng range empty") {
 test("rng from_time") {
     let r = Rng::from_time();
     let x = r.next_u64();
-    assert(x >= 0 || x < 0)?;
+    let y = r.next_u64();
+    assert(x != y || x == y)?;
+    let n = r.range(0, 8);
+    assert(n >= 0)?;
+    assert(n < 8)?;
+    let buf = r.bytes(4);
+    assert(len(buf) == 4)?;
+    let r2 = Rng::from_time();
+    let z = r2.next_u64();
+    assert(z != 0 || z == 0)?;
 }
