@@ -30,8 +30,9 @@ roots = ["./src", "../coil-stdlib/src"]
 `random::Rng::from_time` seeds from [coil-time](https://github.com/ardax-corp/coil-time)
 timestamps as ints. This package's `coil.toml` loads time from `.ci/coil-time`
 (CI checkout). Sibling checkout is the same shape with `../coil-time`. Pass
-`--allow-dload time` and put `libtime` on `[ffi] search_paths`. Do not grant
-dload from `[ffi] allow`.
+`--allow-dload time --root .ci/coil-time/src` (CLI `--root`; the compiler does
+not follow `[module] roots` or path deps for discovery) and put `libtime` on
+`[ffi] search_paths`. Do not grant dload from `[ffi] allow`.
 
 ## Language repo checkout
 

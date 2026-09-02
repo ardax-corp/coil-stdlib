@@ -40,5 +40,5 @@ Needs a Coil toolchain on `PATH` (or `COIL`) and a built
 that native:
 
 ```bash
-coil test --allow-dload time --ffi-search-path .ci/coil-time/native
+coil test --allow-dload time --ffi-search-path .ci/coil-time/native --root .ci/coil-time/src
 ```
