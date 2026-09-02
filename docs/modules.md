@@ -30,7 +30,7 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
 | `collections::list` | `use collections::list::{List};` | Mutable deque (singly-linked); `peek_*` / `pop_*` → `Option` |
 | `collections::tree` | `use collections::tree::{TreeMap};` | Mutable BST map over `Ord`+`Eq`; remove / min / max / iter |
 | `num` | `use num::{abs, min, signum, gcd, …};` | Numeric helpers: `abs`, `min`/`max`/`clamp` over `Ord`, `round`, `pow`, `signum`, `gcd`/`lcm`, `trunc`/`fract`, NaN/inf checks, euclidean div/rem, `hypot` |
-| `random` | `use random::{Rng};` | Seeded `Rng` PRNG (`from_time` mixes virtual `time`) |
+| `random` | `use random::{Rng};` | Seeded `Rng` PRNG (`from_time` mixes [coil-time](https://github.com/ardax-corp/coil-time) timestamps as ints) |
 | `path` | `use path::{Path};` | `Path` value: join / normalize / components / FS + file I/O |
 | `io::sync` | `use io::sync::{write_all, copy, …};` | Blocking adapters — [IO adapters](io.md) |
 | `io::file` | `use io::file::{read_text, append_bytes, …};` | Whole-file read/write/append — [IO adapters](io.md) |
