@@ -1,4 +1,4 @@
-// Seeded PRNG (`Rng`). `from_time` mixes virtual `time` into the seed.
+// Seeded PRNG (`Rng`). `from_time` mixes coil-time timestamps as ints.
 use time::{epoch, timestamp};
 
 class Rng {
@@ -16,11 +16,11 @@ impl Rng {
 
     static fn from_time() -> Rng {
         let a = match epoch() {
-            Result::Ok(v) => v,
+            Result::Ok(ts) => ts.nanos(),
             Result::Err(_) => 0,
         };
         let b = match timestamp() {
-            Result::Ok(v) => v,
+            Result::Ok(ts) => ts.nanos(),
             Result::Err(_) => 0,
         };
         return Rng::seeded(a ^ b ^ (b << 1));
