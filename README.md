@@ -34,11 +34,11 @@ docs/                 # package documentation
 
 ## Develop
 
-Needs a Coil toolchain on `PATH` (or `COIL`) and a built
-[coil-time](https://github.com/ardax-corp/coil-time) checkout at `.ci/coil-time`
-(`make` there so `native/libtime.so` exists). `random::Rng::from_time` loads
-that native:
+Needs a Coil toolchain on `PATH` (or `COIL`) and a
+[coil-time](https://github.com/ardax-corp/coil-time) checkout at `.ci/coil-time`.
+`random::Rng::from_time` uses coil-time clocks through HostInvoke (Coil module
+root only — no `libtime` dload):
 
 ```bash
-coil test --allow-dload time --ffi-search-path .ci/coil-time/native --root .ci/coil-time/src
+coil test --root .ci/coil-time/src
 ```

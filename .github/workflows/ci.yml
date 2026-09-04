@@ -43,21 +43,14 @@ jobs:
         with:
           workspaces: |
             .ci/coil-lang
-            .ci/coil-time/native
 
       - name: Build coil
         run: cargo build --manifest-path .ci/coil-lang/Cargo.toml
-
-      - name: Build coil-time native
-        run: make
-        working-directory: .ci/coil-time
 
       - name: Language harness (`coil test`)
         run: |
           set +e
           .ci/coil-lang/target/debug/coil test \
-            --allow-dload time \
-            --ffi-search-path .ci/coil-time/native \
             --root .ci/coil-time/src \
             > /tmp/coil-test.log 2>&1
           cat /tmp/coil-test.log

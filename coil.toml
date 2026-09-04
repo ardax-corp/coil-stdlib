@@ -5,8 +5,5 @@ version = "0.1.0"
 [module]
 roots = ["./src", ".ci/coil-time/src"]
 
-[ffi]
-search_paths = [".ci/coil-time/native"]
-
 [dependencies]
 time = { path = ".ci/coil-time", trusted = true }
