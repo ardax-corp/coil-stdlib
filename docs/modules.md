@@ -31,6 +31,7 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
 | `collections::map` | `use collections::map::{HashMap};` | Chaining hash map (`Eq`+`Hash`); `get(k, fallback)` |
 | `collections::set` | `use collections::set::{HashSet};` | Unique-value set backed by `HashMap<T, bool>` |
 | `collections::list` | `use collections::list::{List};` | Mutable deque (singly-linked); `peek_*` / `pop_*` → `Option` |
+| `collections::deque` | `use collections::deque::{VecDeque};` | Ring-buffer deque over growable `Vec`; O(1) push/pop at both ends |
 | `collections::tree` | `use collections::tree::{TreeMap};` | Mutable BST map over `Ord`+`Eq`; remove / min / max / iter |
 | `num` | `use num::{PI, E, TAU, abs, min, signum, gcd, …};` | Float constants `PI`/`E`/`TAU`; helpers: `abs`, `min`/`max`/`clamp` over `Ord`, `round`, `pow`, `signum`, `gcd`/`lcm`, `trunc`/`fract`, NaN/inf checks, euclidean div/rem, `hypot` |
 | `random` | `use random::{Rng};` | Seeded `Rng` PRNG (`from_time` mixes [coil-time](https://github.com/ardax-corp/coil-time) timestamps as ints) |
