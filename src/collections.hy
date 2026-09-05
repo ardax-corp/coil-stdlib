@@ -72,6 +72,70 @@ fn sort<T: Ord>(Vec<T> arr) -> Vec<T> {
     return out;
 }
 
+/// Stable mergesort by `key` (`K: Ord`). Input unchanged; equal keys keep order.
+fn merge_range_by<T, K: Ord>(Vec<T> buf, Vec<T> tmp, int lo, int mid, int hi, T -> K key) -> int {
+    let i = lo;
+    while i < hi {
+        tmp[i] = buf[i];
+        i = i + 1;
+    }
+    let a = lo;
+    let b = mid;
+    let k = lo;
+    while a < mid {
+        if b < hi {
+            if key(tmp[b]) < key(tmp[a]) {
+                buf[k] = tmp[b];
+                b = b + 1;
+            } else {
+                buf[k] = tmp[a];
+                a = a + 1;
+            }
+            k = k + 1;
+        } else {
+            break;
+        }
+    }
+    while a < mid {
+        buf[k] = tmp[a];
+        a = a + 1;
+        k = k + 1;
+    }
+    while b < hi {
+        buf[k] = tmp[b];
+        b = b + 1;
+        k = k + 1;
+    }
+    return 0;
+}
+
+fn sort_by<T, K: Ord>(Vec<T> arr, T -> K key) -> Vec<T> {
+    let n = len(arr);
+    let out: Vec<T> = Vec::new();
+    let tmp: Vec<T> = Vec::new();
+    let copy_i = 0;
+    while copy_i < n {
+        out.push(arr[copy_i]);
+        tmp.push(arr[copy_i]);
+        copy_i = copy_i + 1;
+    }
+    let width = 1;
+    while width < n {
+        let pos = 0;
+        while pos < n {
+            let lo = pos;
+            let mid = min_int(pos + width, n);
+            let hi = min_int(pos + width + width, n);
+            if mid < hi {
+                merge_range_by(out, tmp, lo, mid, hi, key);
+            }
+            pos = pos + width + width;
+        }
+        width = width + width;
+    }
+    return out;
+}
+
 /// Reverse a copy of `arr`.
 fn reverse<T>(Vec<T> arr) -> Vec<T> {
     let n = len(arr);

@@ -157,6 +157,8 @@ fn concat<T>(Vec<T> a, Vec<T> b) -> Vec<T> {
     return out;
 }
 
+/// Consecutive non-overlapping slices of `size` (last slice may be short).
+/// Empty when `size <= 0`. Name is `chunks` (no `chunk` alias).
 fn chunks<T>(Vec<T> xs, int size) -> Vec<Vec<T>> {
     let out: Vec<Vec<T>> = Vec::new();
     if size <= 0 {
@@ -176,6 +178,63 @@ fn chunks<T>(Vec<T> xs, int size) -> Vec<Vec<T>> {
         i = i + size;
     }
     return out;
+}
+
+/// Overlapping sliding windows of exact `size`. Empty if `size <= 0` or `size > len`.
+fn windows<T>(Vec<T> xs, int size) -> Vec<Vec<T>> {
+    let out: Vec<Vec<T>> = Vec::new();
+    let n = len(xs);
+    if size <= 0 {
+        return out;
+    }
+    if size > n {
+        return out;
+    }
+    let i = 0;
+    while i + size <= n {
+        let w: Vec<T> = Vec::new();
+        let j = 0;
+        while j < size {
+            w.push(xs[i + j]);
+            j = j + 1;
+        }
+        out.push(w);
+        i = i + 1;
+    }
+    return out;
+}
+
+/// Two-bucket result of `partition` (`matched` = pred true, `rest` = pred false).
+/// Named pair instead of `Vec<Vec<T>>` so callers do not index `[0]`/`[1]`.
+class Partitioned<T> {
+    matched: Vec<T>,
+    rest: Vec<T>,
+}
+
+impl Partitioned<T> {
+    pub fn matched() -> Vec<T> {
+        return self.matched;
+    }
+
+    pub fn rest() -> Vec<T> {
+        return self.rest;
+    }
+}
+
+/// Split `xs` into (`matched`, `rest`) by `pred`. Order inside each bucket is preserved.
+fn partition<T>(Vec<T> xs, T -> bool pred) -> Partitioned<T> {
+    let matched: Vec<T> = Vec::new();
+    let rest: Vec<T> = Vec::new();
+    let i = 0;
+    while i < len(xs) {
+        if pred(xs[i]) {
+            matched.push(xs[i]);
+        } else {
+            rest.push(xs[i]);
+        }
+        i = i + 1;
+    }
+    return new Partitioned(matched, rest);
 }
 
 fn fold(Vec<int> xs, int init, int -> int -> int folder) -> int {

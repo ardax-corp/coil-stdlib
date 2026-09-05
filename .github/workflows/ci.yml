@@ -76,3 +76,17 @@ jobs:
             echo "collections_bitset.hy did not report ok"
             exit 1
           fi
+          if grep -q 'FAILED tests/collections_vec.hy' /tmp/coil-test.log; then
+            exit 1
+          fi
+          if ! grep -q 'ok   tests/collections_vec.hy' /tmp/coil-test.log; then
+            echo "collections_vec.hy did not report ok"
+            exit 1
+          fi
+          if grep -q 'FAILED tests/collections.hy' /tmp/coil-test.log; then
+            exit 1
+          fi
+          if ! grep -q 'ok   tests/collections.hy' /tmp/coil-test.log; then
+            echo "collections.hy did not report ok"
+            exit 1
+          fi
