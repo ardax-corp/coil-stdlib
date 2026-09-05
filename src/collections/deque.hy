@@ -9,7 +9,7 @@ class VecDeque<T> {
 
 impl VecDeque<T> {
     /// Empty deque with ring capacity rounded up to the next power of two (min 8).
-    static fn with_capacity(int cap) -> VecDeque<T> {
+    pub static fn with_capacity(int cap) -> VecDeque<T> {
         let n = 1;
         while n < cap {
             n = n + n;
@@ -27,19 +27,19 @@ impl VecDeque<T> {
     }
 
     /// Empty deque with default capacity 8.
-    static fn new() -> VecDeque<T> {
+    pub static fn new() -> VecDeque<T> {
         return VecDeque::with_capacity(8);
     }
 
-    fn size() -> int {
+    pub fn size() -> int {
         return self.len;
     }
 
-    fn is_empty() -> bool {
+    pub fn is_empty() -> bool {
         return self.len == 0;
     }
 
-    fn capacity() -> int {
+    pub fn capacity() -> int {
         return self.cap;
     }
 
@@ -67,7 +67,7 @@ impl VecDeque<T> {
         self.cap = new_cap;
     }
 
-    fn push_back(T v) {
+    pub fn push_back(T v) {
         if self.len == self.cap {
             self.grow();
         }
@@ -75,7 +75,7 @@ impl VecDeque<T> {
         self.len = self.len + 1;
     }
 
-    fn push_front(T v) {
+    pub fn push_front(T v) {
         if self.len == self.cap {
             self.grow();
         }
@@ -88,21 +88,21 @@ impl VecDeque<T> {
         self.len = self.len + 1;
     }
 
-    fn peek_front() -> Option<T> {
+    pub fn peek_front() -> Option<T> {
         if self.len == 0 {
             return Option::None;
         }
         return self.buf[self.head];
     }
 
-    fn peek_back() -> Option<T> {
+    pub fn peek_back() -> Option<T> {
         if self.len == 0 {
             return Option::None;
         }
         return self.buf[self.slot(self.len - 1)];
     }
 
-    fn pop_front() -> Option<T> {
+    pub fn pop_front() -> Option<T> {
         if self.len == 0 {
             return Option::None;
         }
@@ -113,7 +113,7 @@ impl VecDeque<T> {
         return v;
     }
 
-    fn pop_back() -> Option<T> {
+    pub fn pop_back() -> Option<T> {
         if self.len == 0 {
             return Option::None;
         }
@@ -124,7 +124,7 @@ impl VecDeque<T> {
         return v;
     }
 
-    fn clear() {
+    pub fn clear() {
         let i = 0;
         while i < self.len {
             self.buf[self.slot(i)] = Option::None;
@@ -134,7 +134,7 @@ impl VecDeque<T> {
         self.len = 0;
     }
 
-    fn to_vec() -> Vec<T> {
+    pub fn to_vec() -> Vec<T> {
         let out: Vec<T> = Vec::new();
         let i = 0;
         while i < self.len {
