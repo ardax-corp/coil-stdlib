@@ -26,8 +26,8 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
 | `text` | `use text::{trim, split, rfind, …};` | String helpers via UTF-8 bytes (virtual `string` owns `format` / `to_bytes`) |
 | `encoding` | `use encoding::{encode, decode};` | Standard Base64 encode/decode |
 | `fmt` | `use fmt::{Buf, pad_left, …};` | Incremental string builder (`Buf`) and padding helpers |
-| `collections` | `use collections::{sort, reverse, …};` | Stable mergesort / `reverse` / `collect_ints` |
-| `collections::vec` | `use collections::vec::{map, filter, …};` | `Vec<T>` helpers: `map` / `filter` / `first` / `contains` / `chunks` / … |
+| `collections` | `use collections::{sort, sort_by, reverse, …};` | Stable mergesort / `sort_by` (`T -> K` with `K: Ord`) / `reverse` / `collect_ints` |
+| `collections::vec` | `use collections::vec::{map, filter, chunks, windows, partition, …};` | `Vec<T>` helpers: `map` / `filter` / `chunks` / `windows` / `partition` / `first` / `contains` / … |
 | `collections::map` | `use collections::map::{HashMap};` | Chaining hash map (`Eq`+`Hash`); `get(k, fallback)` |
 | `collections::set` | `use collections::set::{HashSet};` | Unique-value set backed by `HashMap<T, bool>` |
 | `collections::list` | `use collections::list::{List};` | Mutable deque (singly-linked); `peek_*` / `pop_*` → `Option` |
@@ -51,8 +51,13 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
   ([COI-12](https://linear.app/ardax/issue/COI-12)).
 - Generic `HashMap::get` returns a fallback value (not `Option<V>`) due to a
   compiler limitation on generic class methods returning `Option`.
-- `collections::vec::map` / `filter` accept open-`T` lambdas; `fold` is
+- `collections::vec::map` / `filter` / `partition` accept open-`T` lambdas; `fold` is
   currently available for `Vec<int>` only.
+- `chunks` is the only name (no `chunk` alias). `windows` is overlapping
+  exact-size slices; empty when `size <= 0` or `size > len`.
+- `partition` returns `Partitioned<T>` (`matched()` / `rest()`), a named pair
+  rather than `Vec<Vec<T>>`, so buckets are not positional `[0]`/`[1]`.
+- `sort_by<T, K: Ord>` uses the same `T -> K` / `K: Ord` story as `map` + `sort`.
 - `BitSet::with_capacity` / `capacity` are in **bits**. Storage is `Vec<int>`
   with 63 usable bits per word (Coil `int` is signed 64-bit; sign bit unused).
 
