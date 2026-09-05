@@ -212,11 +212,11 @@ class Partitioned<T> {
 }
 
 impl Partitioned<T> {
-    fn matched() -> Vec<T> {
+    pub fn matched() -> Vec<T> {
         return self.matched;
     }
 
-    fn rest() -> Vec<T> {
+    pub fn rest() -> Vec<T> {
         return self.rest;
     }
 }
