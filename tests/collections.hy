@@ -1,4 +1,4 @@
-use collections::{sort, reverse, collect_ints, collect_ints_inclusive};
+use collections::{sort, sort_by, reverse, collect_ints, collect_ints_inclusive};
 
 test("sort reverse collect") {
     let a = sort(Vec::from([3, 1, 4, 1, 5]));
@@ -53,4 +53,20 @@ test("sort preserves input and odd lengths") {
     assert(odd[4] == 5)?;
     assert(odd[5] == 6)?;
     assert(odd[6] == 7)?;
+}
+
+test("sort_by key and stability") {
+    let src = Vec::from([3, 1, 2, 1]);
+    let out = sort_by(src, fn (int x) => x);
+    assert(src[0] == 3)?;
+    assert(out[0] == 1)?;
+    assert(out[1] == 1)?;
+    assert(out[2] == 2)?;
+    assert(out[3] == 3)?;
+    let by_neg = sort_by(Vec::from([1, 2, 3]), fn (int x) => 0 - x);
+    assert(by_neg[0] == 3)?;
+    assert(by_neg[1] == 2)?;
+    assert(by_neg[2] == 1)?;
+    let empty: Vec<int> = Vec::new();
+    assert(len(sort_by(empty, fn (int x) => x)) == 0)?;
 }

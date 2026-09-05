@@ -1,5 +1,6 @@
 use collections::vec::{
     map, filter, fold, first, last, contains, index_of, concat, dedup, binary_search, chunks,
+    windows, partition,
 };
 
 test("map int") {
@@ -60,6 +61,73 @@ test("concat dedup chunks") {
     assert(len(u) == 2)?;
     let parts = chunks(c, 1);
     assert(len(parts) == 2)?;
+}
+
+test("windows overlapping") {
+    let xs: Vec<int> = Vec::new();
+    xs.push(1);
+    xs.push(2);
+    xs.push(3);
+    xs.push(4);
+    let w = windows(xs, 2);
+    assert(len(w) == 3)?;
+    assert(len(w[0]) == 2)?;
+    assert(w[0][0] == 1)?;
+    assert(w[0][1] == 2)?;
+    assert(w[1][0] == 2)?;
+    assert(w[1][1] == 3)?;
+    assert(w[2][0] == 3)?;
+    assert(w[2][1] == 4)?;
+    let full = windows(xs, 4);
+    assert(len(full) == 1)?;
+    assert(full[0][0] == 1)?;
+    assert(full[0][3] == 4)?;
+}
+
+test("windows empty cases") {
+    let xs: Vec<int> = Vec::new();
+    xs.push(1);
+    xs.push(2);
+    assert(len(windows(xs, 0)) == 0)?;
+    assert(len(windows(xs, 0 - 1)) == 0)?;
+    assert(len(windows(xs, 3)) == 0)?;
+    let empty: Vec<int> = Vec::new();
+    assert(len(windows(empty, 1)) == 0)?;
+}
+
+test("partition even odd") {
+    let xs: Vec<int> = Vec::new();
+    xs.push(1);
+    xs.push(2);
+    xs.push(3);
+    xs.push(4);
+    xs.push(5);
+    let p = partition(xs, fn (int x) => x % 2 == 0);
+    let yes = p.matched();
+    let no = p.rest();
+    assert(len(yes) == 2)?;
+    assert(yes[0] == 2)?;
+    assert(yes[1] == 4)?;
+    assert(len(no) == 3)?;
+    assert(no[0] == 1)?;
+    assert(no[1] == 3)?;
+    assert(no[2] == 5)?;
+}
+
+test("partition all none empty") {
+    let xs: Vec<int> = Vec::new();
+    xs.push(2);
+    xs.push(4);
+    let all_yes = partition(xs, fn (int x) => x % 2 == 0);
+    assert(len(all_yes.matched()) == 2)?;
+    assert(len(all_yes.rest()) == 0)?;
+    let none = partition(xs, fn (int x) => x < 0);
+    assert(len(none.matched()) == 0)?;
+    assert(len(none.rest()) == 2)?;
+    let empty: Vec<int> = Vec::new();
+    let z = partition(empty, fn (int x) => x == 0);
+    assert(len(z.matched()) == 0)?;
+    assert(len(z.rest()) == 0)?;
 }
 
 test("binary search") {
