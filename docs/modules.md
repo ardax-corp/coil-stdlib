@@ -32,6 +32,7 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
 | `collections::set` | `use collections::set::{HashSet};` | Unique-value set backed by `HashMap<T, bool>` |
 | `collections::list` | `use collections::list::{List};` | Mutable deque (singly-linked); `peek_*` / `pop_*` → `Option` |
 | `collections::deque` | `use collections::deque::{VecDeque};` | Ring-buffer deque over growable `Vec`; O(1) push/pop at both ends |
+| `collections::bitset` | `use collections::bitset::{BitSet};` | Dense bit set of non-negative `int` indices; 63 bits per `int` word |
 | `collections::tree` | `use collections::tree::{TreeMap};` | Mutable BST map over `Ord`+`Eq`; remove / min / max / iter |
 | `num` | `use num::{PI, E, TAU, abs, min, signum, gcd, …};` | Float constants `PI`/`E`/`TAU`; helpers: `abs`, `min`/`max`/`clamp` over `Ord`, `round`, `pow`, `signum`, `gcd`/`lcm`, `trunc`/`fract`, NaN/inf checks, euclidean div/rem, `hypot` |
 | `random` | `use random::{Rng};` | Seeded `Rng` PRNG (`from_time` mixes [coil-time](https://github.com/ardax-corp/coil-time) timestamps as ints) |
@@ -52,6 +53,8 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
   compiler limitation on generic class methods returning `Option`.
 - `collections::vec::map` / `filter` accept open-`T` lambdas; `fold` is
   currently available for `Vec<int>` only.
+- `BitSet::with_capacity` / `capacity` are in **bits**. Storage is `Vec<int>`
+  with 63 usable bits per word (Coil `int` is signed 64-bit; sign bit unused).
 
 What the **compiler** does *not* provide as builtins:
 [coil-lang not-builtins](https://github.com/ardax-corp/coil-lang/blob/main/docs/references/not-builtins.md).
