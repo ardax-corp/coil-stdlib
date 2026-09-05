@@ -16,6 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Default branch includes M1 prelude::math (atan…tanh, ids 125–135).
       - name: Checkout coil-lang
         uses: actions/checkout@v4
         with:
@@ -59,5 +60,12 @@ jobs:
           fi
           if ! grep -q 'ok   tests/random.hy' /tmp/coil-test.log; then
             echo "random.hy did not report ok"
+            exit 1
+          fi
+          if grep -q 'FAILED tests/num_const.hy' /tmp/coil-test.log; then
+            exit 1
+          fi
+          if ! grep -q 'ok   tests/num_const.hy' /tmp/coil-test.log; then
+            echo "num_const.hy did not report ok"
             exit 1
           fi

@@ -4,8 +4,17 @@
 // `abs` stays type-overloaded (numeric / negation, not Ord).
 // `min` / `max` / `clamp` are generic over `Ord` (int, float, and derived orders).
 // `pow` is userland: float wraps virtual `prelude::math::pow`; int is iterative.
+// IEEE scalars (`sin`/`atan`/`log10`/`rem`/`sinh`/…) stay on `prelude::math`
+// — auto-imported; this module does not re-export them.
 
 use prelude::math::{pow as float_pow};
+
+// Circle constant π (IEEE f64). `///` would bind to a following `fn`.
+static const PI = 3.141592653589793;
+// Natural logarithm base e (IEEE f64).
+static const E = 2.718281828459045;
+// Full turn τ = 2π (IEEE f64).
+static const TAU = 6.283185307179586;
 
 /// Absolute value of an integer.
 fn abs(int x) -> int {
