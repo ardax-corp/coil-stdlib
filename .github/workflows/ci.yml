@@ -62,10 +62,10 @@ jobs:
             echo "random.hy did not report ok"
             exit 1
           fi
-          if grep -q 'FAILED tests/num.hy' /tmp/coil-test.log; then
+          if grep -q 'FAILED tests/num_const.hy' /tmp/coil-test.log; then
             exit 1
           fi
-          if ! grep -q 'ok   tests/num.hy' /tmp/coil-test.log; then
-            echo "num.hy did not report ok"
+          if ! grep -q 'ok   tests/num_const.hy' /tmp/coil-test.log; then
+            echo "num_const.hy did not report ok"
             exit 1
           fi
