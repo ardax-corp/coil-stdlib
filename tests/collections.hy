@@ -70,3 +70,33 @@ test("sort_by key and stability") {
     let empty: Vec<int> = Vec::new();
     assert(len(sort_by(empty, fn (int x) => x)) == 0)?;
 }
+
+test("sort_by equal keys stay in input order") {
+    let src = Vec::from([21, 10, 22, 11, 20]);
+    let out = sort_by(src, fn (int x) => x / 10);
+    assert(src[0] == 21)?;
+    assert(src[1] == 10)?;
+    assert(src[2] == 22)?;
+    assert(src[3] == 11)?;
+    assert(src[4] == 20)?;
+    assert(len(out) == 5)?;
+    assert(out[0] == 10)?;
+    assert(out[1] == 11)?;
+    assert(out[2] == 21)?;
+    assert(out[3] == 22)?;
+    assert(out[4] == 20)?;
+}
+
+test("sort_by already grouped and singleton") {
+    let src = Vec::from([5, 15, 6, 16]);
+    let out = sort_by(src, fn (int x) => x % 10);
+    assert(src[0] == 5)?;
+    assert(src[3] == 16)?;
+    assert(out[0] == 5)?;
+    assert(out[1] == 15)?;
+    assert(out[2] == 6)?;
+    assert(out[3] == 16)?;
+    let one = sort_by(Vec::from([9]), fn (int x) => 0 - x);
+    assert(len(one) == 1)?;
+    assert(one[0] == 9)?;
+}
