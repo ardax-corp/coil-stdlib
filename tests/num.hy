@@ -26,6 +26,10 @@ test("pow clamp round") {
 
 test("signum gcd lcm") {
     assert(signum(4) == 1)?;
+    assert(signum(0) == 0)?;
+    assert(signum(0 - 3) == 0 - 1)?;
+    assert(signum(2.5) == 1.0)?;
+    assert(signum(0.0) == 0.0)?;
     assert(gcd(12, 18) == 6)?;
     assert(lcm(4, 6) == 12)?;
 }

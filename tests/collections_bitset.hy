@@ -82,3 +82,62 @@ test("bitset negative indices") {
     assert(s.remove(0 - 1) == false)?;
     assert(s.is_empty())?;
 }
+
+test("bitset word edges and remove cardinality") {
+    let w = bits_per_word();
+    let s = BitSet::new();
+    assert(s.insert(w - 1))?;
+    assert(s.insert(w))?;
+    assert(s.insert(w + 1))?;
+    assert(s.size() == 3)?;
+    assert(s.contains(w - 1))?;
+    assert(s.contains(w))?;
+    assert(s.contains(w + 1))?;
+    assert(s.remove(w))?;
+    assert(s.size() == 2)?;
+    assert(s.contains(w) == false)?;
+    assert(s.contains(w - 1))?;
+    assert(s.contains(w + 1))?;
+    assert(s.remove(w - 1))?;
+    assert(s.remove(w + 1))?;
+    assert(s.size() == 0)?;
+    assert(s.is_empty())?;
+}
+
+test("bitset with_capacity zero and exact word") {
+    let w = bits_per_word();
+    let z = BitSet::with_capacity(0);
+    assert(z.capacity() == 0)?;
+    assert(z.contains(0) == false)?;
+    assert(z.insert(0))?;
+    assert(z.capacity() == w)?;
+    let exact = BitSet::with_capacity(w);
+    assert(exact.capacity() == w)?;
+    assert(exact.insert(w - 1))?;
+    assert(exact.insert(w))?;
+    assert(exact.capacity() == w + w)?;
+    assert(exact.size() == 2)?;
+}
+
+test("bitset grow skip words then remove") {
+    let w = bits_per_word();
+    let s = BitSet::new();
+    assert(s.insert(w * 4))?;
+    assert(s.contains(w * 4))?;
+    assert(s.contains(0) == false)?;
+    assert(s.size() == 1)?;
+    assert(s.capacity() == w * 8)?;
+    assert(s.remove(w * 4))?;
+    assert(s.size() == 0)?;
+    assert(s.remove(w * 4) == false)?;
+}
+
+test("bitset negative after populated") {
+    let s = BitSet::new();
+    assert(s.insert(2))?;
+    assert(s.insert(0 - 5) == false)?;
+    assert(s.contains(0 - 5) == false)?;
+    assert(s.remove(0 - 5) == false)?;
+    assert(s.size() == 1)?;
+    assert(s.contains(2))?;
+}

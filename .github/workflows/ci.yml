@@ -90,3 +90,10 @@ jobs:
             echo "collections.hy did not report ok"
             exit 1
           fi
+          if grep -q 'FAILED tests/collections_deque.hy' /tmp/coil-test.log; then
+            exit 1
+          fi
+          if ! grep -q 'ok   tests/collections_deque.hy' /tmp/coil-test.log; then
+            echo "collections_deque.hy did not report ok"
+            exit 1
+          fi
