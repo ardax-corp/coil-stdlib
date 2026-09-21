@@ -22,13 +22,20 @@ test("split and case") {
     assert(len(parts) == 3)?;
     assert(parts[0] == "a")?;
     assert(parts[2] == "c")?;
-    // Case helpers return string; Result<string,string> niche was dropping new buffers.
-    assert(to_lower("AbC") == "abc")?;
-    assert(to_upper("AbC") == "ABC")?;
+    let low = match to_lower("AbC") {
+        Result::Ok(s) => s,
+        Result::Err(_) => panic "lower",
+    };
+    assert(low == "abc")?;
+    let up = match to_upper("AbC") {
+        Result::Ok(s) => s,
+        Result::Err(_) => panic "upper",
+    };
+    assert(up == "ABC")?;
 }
 
 test("replace split once and join") {
-    assert(replace("one two two", "two", "2") == "one 2 2")?;
+    assert(replace("one two two", "two", "2")? == "one 2 2")?;
     let pair = split_once("key=value=rest", "=")?;
     assert(pair[0] == "key")?;
     assert(pair[1] == "value=rest")?;
@@ -46,15 +53,15 @@ test("repeat text") {
 }
 
 test("pad text left") {
-    assert(pad_left("7", 3, "0") == "007")?;
+    assert(pad_left("7", 3, "0")? == "007")?;
 }
 
 test("pad text right") {
-    assert(pad_right("7", 3, "0") == "700")?;
+    assert(pad_right("7", 3, "0")? == "700")?;
 }
 
 test("pad text preserves wide input") {
-    assert(pad_right("wide", 2, "0") == "wide")?;
+    assert(pad_right("wide", 2, "0")? == "wide")?;
 }
 
 test("lines handles crlf") {
