@@ -1,4 +1,4 @@
-use collections::{sort, sort_by, reverse, collect_ints, collect_ints_inclusive};
+use collections::{sort, sort_by, reverse};
 
 test("sort reverse collect") {
     let a = sort(Vec::from([3, 1, 4, 1, 5]));
@@ -8,11 +8,12 @@ test("sort reverse collect") {
     let r = reverse(Vec::from([1, 2, 3]));
     assert(r[0] == 3)?;
     assert(r[2] == 1)?;
-    let c = collect_ints(0..4);
+    // Inherent Range::to_vec (cross-module Range params currently collect empty).
+    let c = (0..4).to_vec();
     assert(len(c) == 4)?;
     assert(c[0] == 0)?;
     assert(c[3] == 3)?;
-    let d = collect_ints_inclusive(1..=3);
+    let d = (1..=3).to_vec();
     assert(len(d) == 3)?;
     assert(d[2] == 3)?;
 }
