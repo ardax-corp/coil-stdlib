@@ -33,6 +33,13 @@ impl Path {
         return false;
     }
 
+    static fn bytes_to_string(Vec<byte> b) -> string {
+        return match from_bytes(b) {
+            Result::Ok(s) => s,
+            Result::Err(_) => panic "utf8",
+        };
+    }
+
     pub static fn from(string s) -> Path {
         return new Path(s);
     }
@@ -41,7 +48,7 @@ impl Path {
         return self.raw;
     }
 
-    pub fn join(Path other) -> Result<Path, IoError> {
+    pub fn join(Path other) -> Path {
         let a = self.raw;
         let b = other.raw;
         if len(b) == 0 {
@@ -56,36 +63,25 @@ impl Path {
         let b_starts = Path::is_sep(bb[0]);
         if a_ends {
             if b_starts {
-                return match from_bytes(bytes_concat(ab, bytes_slice(bb, 1, len(bb)))) {
-                    Result::Ok(s) => new Path(s),
-                    Result::Err(e) => raise e,
-                };
+                return new Path(Path::bytes_to_string(bytes_concat(ab, bytes_slice(bb, 1, len(bb)))));
             }
-            return match from_bytes(bytes_concat(ab, bb)) {
-                Result::Ok(s) => new Path(s),
-                Result::Err(e) => raise e,
-            };
+            return new Path(Path::bytes_to_string(bytes_concat(ab, bb)));
         }
         if b_starts {
-            return match from_bytes(bytes_concat(ab, bb)) {
-                Result::Ok(s) => new Path(s),
-                Result::Err(e) => raise e,
-            };
+            return new Path(Path::bytes_to_string(bytes_concat(ab, bb)));
         }
         let slash: Vec<byte> = Vec::new();
-        slash.push(47);
-        return match from_bytes(bytes_concat(bytes_concat(ab, slash), bb)) {
-            Result::Ok(s) => new Path(s),
-            Result::Err(e) => raise e,
-        };
+        slash.push("/");
+        return new Path(Path::bytes_to_string(bytes_concat(bytes_concat(ab, slash), bb)));
     }
 
-    pub fn dirname() -> Result<Path, IoError> {
+    pub fn dirname() -> Path {
         let path = self.raw;
         let b = to_bytes(path);
         let n = len(b);
         if n == 0 {
-            return new Path(".");
+            let dot = new Path(".");
+            return dot;
         }
         let end = n;
         while end > 1 {
@@ -106,21 +102,15 @@ impl Path {
             i = i - 1;
             if Path::is_sep(b[i]) {
                 if i == 0 {
-                    return match from_bytes(bytes_slice(b, 0, 1)) {
-                        Result::Ok(s) => new Path(s),
-                        Result::Err(e) => raise e,
-                    };
+                    return new Path(Path::bytes_to_string(bytes_slice(b, 0, 1)));
                 }
-                return match from_bytes(bytes_slice(b, 0, i)) {
-                    Result::Ok(s) => new Path(s),
-                    Result::Err(e) => raise e,
-                };
+                return new Path(Path::bytes_to_string(bytes_slice(b, 0, i)));
             }
         }
         return new Path(".");
     }
 
-    pub fn basename() -> Result<string, IoError> {
+    pub fn basename() -> string {
         let path = self.raw;
         let b = to_bytes(path);
         let n = len(b);
@@ -148,14 +138,14 @@ impl Path {
         while i > 0 {
             i = i - 1;
             if Path::is_sep(b[i]) {
-                return from_bytes(bytes_slice(b, i + 1, end))?;
+                return Path::bytes_to_string(bytes_slice(b, i + 1, end));
             }
         }
-        return from_bytes(bytes_slice(b, 0, end))?;
+        return Path::bytes_to_string(bytes_slice(b, 0, end));
     }
 
-    pub fn extension() -> Result<string, IoError> {
-        let base = self.basename()?;
+    pub fn extension() -> string {
+        let base = self.basename();
         let b = to_bytes(base);
         let n = len(b);
         let i = n;
@@ -165,7 +155,7 @@ impl Path {
                 if i + 1 >= n {
                     return "";
                 }
-                return from_bytes(bytes_slice(b, i + 1, n))?;
+                return Path::bytes_to_string(bytes_slice(b, i + 1, n));
             }
         }
         return "";
@@ -203,7 +193,8 @@ impl Path {
         let b = to_bytes(self.raw);
         let n = len(b);
         if n == 0 {
-            return new Path(".");
+            let dot = new Path(".");
+            return dot;
         }
         let leading = Path::is_sep(b[0]);
         let parts: Vec<string> = Vec::new();
@@ -243,12 +234,12 @@ impl Path {
         }
         let out: Vec<byte> = Vec::new();
         if leading {
-            out.push(47);
+            out.push("/");
         }
         let j = 0;
         while j < len(parts) {
             if j > 0 {
-                out.push(47);
+                out.push("/");
             }
             let pb = to_bytes(parts[j]);
             let k = 0;
@@ -259,7 +250,8 @@ impl Path {
             j = j + 1;
         }
         if len(out) == 0 {
-            return new Path(".");
+            let dot = new Path(".");
+            return dot;
         }
         return match from_bytes(out) {
             Result::Ok(s) => new Path(s),

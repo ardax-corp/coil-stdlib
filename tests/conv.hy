@@ -4,9 +4,23 @@ test("decimal integer format and parse") {
     assert(int_to_dec(0) == "0")?;
     assert(int_to_dec(42) == "42")?;
     assert(int_to_dec(-907) == "-907")?;
-    assert(parse_int("123")? == 123)?;
-    assert(parse_int("+8")? == 8)?;
-    assert(parse_int("-45")? == -45)?;
+    // Two-slot `Result<int,string>` + `?` twice in one test drops the value;
+    // match keeps the payload (same as tests/conv_extra.hy using one `?`).
+    let a = match parse_int("123") {
+        Result::Ok(v) => v,
+        Result::Err(_) => panic "parse 123",
+    };
+    let b = match parse_int("+8") {
+        Result::Ok(v) => v,
+        Result::Err(_) => panic "parse +8",
+    };
+    let c = match parse_int("-45") {
+        Result::Ok(v) => v,
+        Result::Err(_) => panic "parse -45",
+    };
+    assert(a == 123)?;
+    assert(b == 8)?;
+    assert(c == -45)?;
 }
 
 test("invalid decimal integer") {
