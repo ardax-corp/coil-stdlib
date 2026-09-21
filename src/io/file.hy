@@ -52,21 +52,6 @@ fn write_text(string path, string text) -> Result<int, IoError> {
     return write_bytes(path, b)?;
 }
 
-/// True when `path` can be opened for reading (host `io::fs::exists` match is Err).
-fn exists(string path) -> Result<bool, IoError> {
-    return match open(path, "r") {
-        Result::Ok(s) => {
-            match close(s) {
-                Result::Ok(_) => 0,
-                Result::Err(_) => 0,
-            };
-            true
-        },
-        Result::Err(IoError::NotFound) => false,
-        Result::Err(e) => raise e,
-    };
-}
-
 /// Append bytes to `path` (`"a"` mode).
 fn append_bytes(string path, Vec<byte> buf) -> Result<int, IoError> {
     let s = open(path, "a")?;

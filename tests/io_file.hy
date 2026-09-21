@@ -1,5 +1,5 @@
-use io::file::{read_text, write_text, exists};
-use io::fs::{remove_file};
+use io::file::{read_text, write_text, read_bytes, write_bytes};
+use io::fs::{exists, remove_file};
 
 test("read write text roundtrip") {
     let path = "/tmp/coil_stdlib_file_test.txt";
