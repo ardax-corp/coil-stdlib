@@ -3,68 +3,36 @@ use path::{Path};
 test("join dirname basename extension") {
     let a = Path::from("a");
     let b = Path::from("b");
-    let j = match a.join(b) {
-        Result::Ok(p) => p,
-        Result::Err(_) => panic "join",
-    };
+    // Path ops are infallible on UTF-8 we build; Result<Path, IoError> niche match was Err.
+    let j = a.join(b);
     assert(j.as_str() == "a/b")?;
     let a2 = Path::from("a/");
-    let j2 = match a2.join(b) {
-        Result::Ok(p) => p,
-        Result::Err(_) => panic "join2",
-    };
+    let j2 = a2.join(Path::from("b"));
     assert(j2.as_str() == "a/b")?;
-    let d = match Path::from("/tmp/x").dirname() {
-        Result::Ok(p) => p,
-        Result::Err(_) => panic "dirname",
-    };
+    let d = Path::from("/tmp/x").dirname();
     assert(d.as_str() == "/tmp")?;
-    let base = match Path::from("/tmp/x.txt").basename() {
-        Result::Ok(s) => s,
-        Result::Err(_) => panic "basename",
-    };
+    let base = Path::from("/tmp/x.txt").basename();
     assert(base == "x.txt")?;
-    let e = match Path::from("/tmp/x.txt").extension() {
-        Result::Ok(s) => s,
-        Result::Err(_) => panic "ext",
-    };
+    let e = Path::from("/tmp/x.txt").extension();
     assert(e == "txt")?;
     assert(Path::from("/tmp").is_absolute())?;
     assert(Path::from("rel").is_absolute() == false)?;
 }
 
 test("join empty sides") {
-    let j = match Path::from("a").join(Path::from("")) {
-        Result::Ok(p) => p,
-        Result::Err(_) => panic "join empty b",
-    };
+    let j = Path::from("a").join(Path::from(""));
     assert(j.as_str() == "a")?;
-    let j2 = match Path::from("").join(Path::from("b")) {
-        Result::Ok(p) => p,
-        Result::Err(_) => panic "join empty a",
-    };
+    let j2 = Path::from("").join(Path::from("b"));
     assert(j2.as_str() == "b")?;
 }
 
 test("dirname basename extension edges") {
-    let d = match Path::from("plain").dirname() {
-        Result::Ok(p) => p,
-        Result::Err(_) => panic "dirname plain",
-    };
+    let d = Path::from("plain").dirname();
     assert(d.as_str() == ".")?;
-    let b = match Path::from("plain").basename() {
-        Result::Ok(s) => s,
-        Result::Err(_) => panic "basename plain",
-    };
+    let b = Path::from("plain").basename();
     assert(b == "plain")?;
-    let e = match Path::from("noext").extension() {
-        Result::Ok(s) => s,
-        Result::Err(_) => panic "extension none",
-    };
+    let e = Path::from("noext").extension();
     assert(e == "")?;
-    let root = match Path::from("/").dirname() {
-        Result::Ok(p) => p,
-        Result::Err(_) => panic "dirname root",
-    };
+    let root = Path::from("/").dirname();
     assert(root.as_str() == "/")?;
 }
