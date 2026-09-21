@@ -17,10 +17,12 @@ use bytes::{
 };
 use ascii::{is_space};
 
-fn utf8_ok(Vec<byte> b) -> Result<string, string> {
+// Decode bytes to string. Keep this off Result-mode — niche Result<string,string>
+// drops newly built buffers (trim slices of interned bytes still worked).
+fn utf8_ok(Vec<byte> b) -> string {
     return match from_bytes(b) {
         Result::Ok(s) => s,
-        Result::Err(_) => raise "utf8",
+        Result::Err(_) => panic "utf8",
     };
 }
 
@@ -31,7 +33,8 @@ fn byte_len(string s) -> int {
 
 /// Slice by byte offsets; returns `Err` if the slice is not valid UTF-8.
 fn slice(string s, int start, int end) -> Result<string, string> {
-    return utf8_ok(bytes_slice(to_bytes(s), start, end))?;
+    let out = utf8_ok(bytes_slice(to_bytes(s), start, end));
+    return out;
 }
 
 /// Trim ASCII whitespace from the start.
@@ -46,7 +49,8 @@ fn trim_start(string s) -> Result<string, string> {
             break;
         }
     }
-    return utf8_ok(bytes_slice(b, lo, hi))?;
+    let out = utf8_ok(bytes_slice(b, lo, hi));
+    return out;
 }
 
 /// Trim ASCII whitespace from the end.
@@ -61,7 +65,8 @@ fn trim_end(string s) -> Result<string, string> {
             break;
         }
     }
-    return utf8_ok(bytes_slice(b, lo, hi))?;
+    let out = utf8_ok(bytes_slice(b, lo, hi));
+    return out;
 }
 
 /// Trim ASCII whitespace (space/tab/CR/LF) from both ends.
@@ -93,7 +98,8 @@ fn trim(string s) -> Result<string, string> {
             }
         }
     }
-    return utf8_ok(bytes_slice(b, lo, hi))?;
+    let out = utf8_ok(bytes_slice(b, lo, hi));
+    return out;
 }
 
 /// True when `hay` contains `needle` as a byte-exact substring.
@@ -130,8 +136,8 @@ fn split_at(string s, int at) -> Result<(string, string), string> {
     if at > len(b) {
         at = len(b);
     }
-    let left = utf8_ok(bytes_slice(b, 0, at))?;
-    let right = utf8_ok(bytes_slice(b, at, len(b)))?;
+    let left = utf8_ok(bytes_slice(b, 0, at));
+    let right = utf8_ok(bytes_slice(b, at, len(b)));
     return (left, right);
 }
 
@@ -150,12 +156,12 @@ fn split(string s, string sep) -> Result<Vec<string>, string> {
     while !done {
         let at = bytes_find_from(hay, needle, start);
         if at < 0 {
-            let part = utf8_ok(bytes_slice(hay, start, hn))?;
+            let part = utf8_ok(bytes_slice(hay, start, hn));
             out.push(part);
             done = true;
         }
         if at >= 0 {
-            let part = utf8_ok(bytes_slice(hay, start, at))?;
+            let part = utf8_ok(bytes_slice(hay, start, at));
             out.push(part);
             start = at + len(needle);
         }
@@ -171,15 +177,14 @@ fn split_once(string s, string sep) -> Result<(string, string), string> {
     if at < 0 {
         raise "separator not found";
     }
-    let left = utf8_ok(bytes_slice(hay, 0, at))?;
-    let right = utf8_ok(bytes_slice(hay, at + len(needle), len(hay)))?;
+    let left = utf8_ok(bytes_slice(hay, 0, at));
+    let right = utf8_ok(bytes_slice(hay, at + len(needle), len(hay)));
     return (left, right);
 }
 
 /// Replace every non-overlapping occurrence of `old` with `new`.
-fn replace(string s, string old, string new) -> Result<string, string> {
-    let out = bytes_replace(to_bytes(s), to_bytes(old), to_bytes(new));
-    return utf8_ok(out)?;
+fn replace(string s, string old, string new) -> string {
+    return utf8_ok(bytes_replace(to_bytes(s), to_bytes(old), to_bytes(new)));
 }
 
 /// Join strings with `sep` between adjacent parts.
@@ -208,21 +213,21 @@ fn repeat(string s, int n) -> string {
 }
 
 /// Pad on the left to a byte width using a one-byte `fill` string.
-fn pad_left(string s, int width, string fill) -> Result<string, string> {
+fn pad_left(string s, int width, string fill) -> string {
     let fill_bytes = to_bytes(fill);
     if len(fill_bytes) != 1 {
-        raise "fill must be one byte";
+        panic "fill must be one byte";
     }
-    return utf8_ok(bytes_pad_left(to_bytes(s), width, fill_bytes[0]))?;
+    return utf8_ok(bytes_pad_left(to_bytes(s), width, fill_bytes[0]));
 }
 
 /// Pad on the right to a byte width using a one-byte `fill` string.
-fn pad_right(string s, int width, string fill) -> Result<string, string> {
+fn pad_right(string s, int width, string fill) -> string {
     let fill_bytes = to_bytes(fill);
     if len(fill_bytes) != 1 {
-        raise "fill must be one byte";
+        panic "fill must be one byte";
     }
-    return utf8_ok(bytes_pad_right(to_bytes(s), width, fill_bytes[0]))?;
+    return utf8_ok(bytes_pad_right(to_bytes(s), width, fill_bytes[0]));
 }
 
 /// Split on LF and strip one optional CR from each resulting line.
@@ -276,7 +281,7 @@ fn eq(string a, string b) -> bool {
 }
 
 /// ASCII lower-case A..=Z only; other bytes unchanged.
-fn to_lower(string s) -> Result<string, string> {
+fn to_lower(string s) -> string {
     let b = to_bytes(s);
     let out: Vec<byte> = Vec::new();
     let i = 0;
@@ -299,11 +304,11 @@ fn to_lower(string s) -> Result<string, string> {
         }
         i = i + 1;
     }
-    return utf8_ok(out)?;
+    return utf8_ok(out);
 }
 
 /// ASCII upper-case a..=z only; other bytes unchanged.
-fn to_upper(string s) -> Result<string, string> {
+fn to_upper(string s) -> string {
     let b = to_bytes(s);
     let out: Vec<byte> = Vec::new();
     let i = 0;
@@ -326,5 +331,5 @@ fn to_upper(string s) -> Result<string, string> {
         }
         i = i + 1;
     }
-    return utf8_ok(out)?;
+    return utf8_ok(out);
 }
