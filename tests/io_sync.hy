@@ -1,5 +1,5 @@
-use io::{open, close, write_from, IoError};
-use io::sync::{write_all, read_to_end, read_exact};
+use io::{open, close, IoError};
+use io::sync::{write_all, write_from, read_to_end, read_exact};
 use io::fs::{remove_file};
 use string::{to_bytes, from_bytes};
 
