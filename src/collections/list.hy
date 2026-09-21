@@ -1,8 +1,8 @@
 // Mutable singly-linked list with O(1) push/pop at the front.
 
 class Node<T> {
-    value: T,
-    next: Option<Node<T>>,
+    pub value: T,
+    pub next: Option<Node<T>>,
 }
 
 class List<T> {
@@ -15,25 +15,25 @@ class ListIter<T> {
 }
 
 impl List<T> {
-    static fn new() -> List<T> {
+    pub static fn new() -> List<T> {
         return new List(Option::None, 0);
     }
 
-    fn size() -> int {
+    pub fn size() -> int {
         return self.len;
     }
 
-    fn is_empty() -> bool {
+    pub fn is_empty() -> bool {
         return self.len == 0;
     }
 
-    fn push_front(T v) {
+    pub fn push_front(T v) {
         let n = new Node(v, self.head);
         self.head = Option::Some(n);
         self.len = self.len + 1;
     }
 
-    fn push_back(T v) {
+    pub fn push_back(T v) {
         let n = new Node(v, Option::None);
         if self.is_empty() {
             self.head = Option::Some(n);
@@ -62,14 +62,14 @@ impl List<T> {
         self.len = self.len + 1;
     }
 
-    fn peek_front() -> Option<T> {
+    pub fn peek_front() -> Option<T> {
         return match self.head {
             Option::None => Option::None,
             Option::Some(n) => Option::Some(n.value),
         };
     }
 
-    fn pop_front() -> Option<T> {
+    pub fn pop_front() -> Option<T> {
         return match self.head {
             Option::None => Option::None,
             Option::Some(n) => {
@@ -81,7 +81,7 @@ impl List<T> {
         };
     }
 
-    fn pop_back() -> Option<T> {
+    pub fn pop_back() -> Option<T> {
         if self.is_empty() {
             return Option::None;
         }
@@ -127,12 +127,12 @@ impl List<T> {
         };
     }
 
-    fn clear() {
+    pub fn clear() {
         self.head = Option::None;
         self.len = 0;
     }
 
-    fn to_vec() -> Vec<T> {
+    pub fn to_vec() -> Vec<T> {
         let out: Vec<T> = Vec::new();
         let cur = self.head;
         let done = false;
@@ -150,29 +150,35 @@ impl List<T> {
         return out;
     }
 
-    fn iter() -> ListIter<T> {
+    pub fn iter() -> ListIter<T> {
         return new ListIter(self.head);
     }
 }
 
-impl IntoIterator<List<T>> {
-    type Item = T;
-    type IntoIter = ListIter<T>;
-    fn into_iter(List<T> xs) -> ListIter<T> {
-        return new ListIter(xs.head);
-    }
-}
-
-impl Iterator<ListIter<T>> {
-    type Item = T;
-    fn next(ListIter<T> it) -> Option<T> {
-        return match it.node {
+impl ListIter<T> {
+    pub fn next() -> Option<T> {
+        return match self.node {
             Option::None => Option::None,
             Option::Some(n) => {
                 let v = n.value;
-                it.node = n.next;
+                self.node = n.next;
                 return Option::Some(v);
             },
         };
+    }
+}
+
+impl IntoIterator for List<T> {
+    type Item = T;
+    type IntoIter = ListIter<T>;
+    pub fn into_iter(List<T> xs) -> ListIter<T> {
+        return xs.iter();
+    }
+}
+
+impl Iterator for ListIter<T> {
+    type Item = T;
+    pub fn next(ListIter<T> it) -> Option<T> {
+        return it.next();
     }
 }

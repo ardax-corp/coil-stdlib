@@ -1,16 +1,16 @@
 // Mutable BST over Ord+Eq keys, index-linked nodes.
 
 class Entry<K, V> {
-    key: K,
-    value: V,
+    pub key: K,
+    pub value: V,
 }
 
 class TreeMap<K, V> {
-    keys: Vec<K>,
-    vals: Vec<V>,
-    left: Vec<int>,
-    right: Vec<int>,
-    root: int,
+    pub keys: Vec<K>,
+    pub vals: Vec<V>,
+    pub left: Vec<int>,
+    pub right: Vec<int>,
+    pub root: int,
     len: int,
 }
 
@@ -21,7 +21,7 @@ class TreeMapIter<K, V> {
 }
 
 impl TreeMap<K, V> {
-    static fn new() -> TreeMap<K, V> {
+    pub static fn new() -> TreeMap<K, V> {
         let keys: Vec<K> = Vec::new();
         let vals: Vec<V> = Vec::new();
         let left: Vec<int> = Vec::new();
@@ -29,19 +29,19 @@ impl TreeMap<K, V> {
         return new TreeMap(keys, vals, left, right, 0 - 1, 0);
     }
 
-    static fn empty() -> TreeMap<K, V> {
+    pub static fn empty() -> TreeMap<K, V> {
         return TreeMap::new();
     }
 
-    fn size() -> int {
+    pub fn size() -> int {
         return self.len;
     }
 
-    fn is_empty() -> bool {
+    pub fn is_empty() -> bool {
         return self.len == 0;
     }
 
-    fn clear() {
+    pub fn clear() {
         self.keys = Vec::new();
         self.vals = Vec::new();
         self.left = Vec::new();
@@ -50,14 +50,14 @@ impl TreeMap<K, V> {
         self.len = 0;
     }
 
-    fn iter() -> TreeMapIter<K, V> {
+    pub fn iter() -> TreeMapIter<K, V> {
         let stack: Vec<int> = Vec::new();
         return new TreeMapIter(self, stack, 0);
     }
 }
 
 impl TreeMap<K: Ord + Eq, V> {
-    fn insert(K k, V v) -> bool {
+    pub fn insert(K k, V v) -> bool {
         if self.root < 0 {
             let slot = self.keys.len();
             self.keys.push(k);
@@ -104,7 +104,7 @@ impl TreeMap<K: Ord + Eq, V> {
         }
     }
 
-    fn contains(K k) -> bool {
+    pub fn contains(K k) -> bool {
         let cur = self.root;
         while cur >= 0 {
             if k == self.keys[cur] {
@@ -119,7 +119,7 @@ impl TreeMap<K: Ord + Eq, V> {
         return false;
     }
 
-    fn get(K k, V fallback) -> V {
+    pub fn get(K k, V fallback) -> V {
         let cur = self.root;
         while cur >= 0 {
             if k == self.keys[cur] {
@@ -180,7 +180,7 @@ impl TreeMap<K: Ord + Eq, V> {
         return cur;
     }
 
-    fn remove(K k) -> bool {
+    pub fn remove(K k) -> bool {
         let cur = self.root;
         let target = 0 - 1;
         while cur >= 0 {
@@ -222,7 +222,7 @@ impl TreeMap<K: Ord + Eq, V> {
         return true;
     }
 
-    fn min_key(K fallback) -> K {
+    pub fn min_key(K fallback) -> K {
         if self.root < 0 {
             return fallback;
         }
@@ -230,7 +230,7 @@ impl TreeMap<K: Ord + Eq, V> {
         return self.keys[n];
     }
 
-    fn max_key(K fallback) -> K {
+    pub fn max_key(K fallback) -> K {
         if self.root < 0 {
             return fallback;
         }
@@ -239,38 +239,43 @@ impl TreeMap<K: Ord + Eq, V> {
     }
 }
 
-impl IntoIterator<TreeMap<K, V>> {
-    type Item = Entry<K, V>;
-    type IntoIter = TreeMapIter<K, V>;
-    fn into_iter(TreeMap<K, V> m) -> TreeMapIter<K, V> {
-        let stack: Vec<int> = Vec::new();
-        return new TreeMapIter(m, stack, 0);
-    }
-}
-
-impl Iterator<TreeMapIter<K, V>> {
-    type Item = Entry<K, V>;
-    fn next(TreeMapIter<K, V> it) -> Option<Entry<K, V>> {
-        if it.phase == 0 {
-            let cur = it.map.root;
+impl TreeMapIter<K, V> {
+    pub fn next() -> Option<Entry<K, V>> {
+        if self.phase == 0 {
+            let cur = self.map.root;
             while cur >= 0 {
-                it.stack.push(cur);
-                cur = it.map.left[cur];
+                self.stack.push(cur);
+                cur = self.map.left[cur];
             }
-            it.phase = 1;
+            self.phase = 1;
         }
-        return match it.stack.pop() {
+        return match self.stack.pop() {
             Option::None => Option::None,
             Option::Some(node) => {
-                let right = it.map.right[node];
+                let right = self.map.right[node];
                 let cur = right;
                 while cur >= 0 {
-                    it.stack.push(cur);
-                    cur = it.map.left[cur];
+                    self.stack.push(cur);
+                    cur = self.map.left[cur];
                 }
-                let e = new Entry(it.map.keys[node], it.map.vals[node]);
+                let e = new Entry(self.map.keys[node], self.map.vals[node]);
                 return Option::Some(e);
             },
         };
+    }
+}
+
+impl IntoIterator for TreeMap<K, V> {
+    type Item = Entry<K, V>;
+    type IntoIter = TreeMapIter<K, V>;
+    pub fn into_iter(TreeMap<K, V> m) -> TreeMapIter<K, V> {
+        return m.iter();
+    }
+}
+
+impl Iterator for TreeMapIter<K, V> {
+    type Item = Entry<K, V>;
+    pub fn next(TreeMapIter<K, V> it) -> Option<Entry<K, V>> {
+        return it.next();
     }
 }

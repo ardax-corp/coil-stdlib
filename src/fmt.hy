@@ -6,27 +6,27 @@ class Buf {
 }
 
 impl Buf {
-    static fn new() -> Buf {
+    pub static fn new() -> Buf {
         return new Buf("");
     }
 
-    fn push_str(string s) {
+    pub fn push_str(string s) {
         self.text = self.text + s;
     }
 
-    fn push_int(int n) {
+    pub fn push_int(int n) {
         self.text = self.text + int_to_dec(n);
     }
 
-    fn push_hex(int n) {
+    pub fn push_hex(int n) {
         self.text = self.text + int_to_hex(n);
     }
 
-    fn to_string() -> string {
+    pub fn to_string() -> string {
         return self.text;
     }
 
-    fn pad_left(int width, string fill) -> Buf {
+    pub fn pad_left(int width, string fill) -> Buf {
         let need = width - len(self.text);
         let pad = "";
         let i = 0;
@@ -38,7 +38,7 @@ impl Buf {
         return self;
     }
 
-    fn pad_right(int width, string fill) -> Buf {
+    pub fn pad_right(int width, string fill) -> Buf {
         let need = width - len(self.text);
         let i = 0;
         while i < need {

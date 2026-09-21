@@ -7,11 +7,11 @@ class Bytes {
 }
 
 impl Bytes {
-    static fn from_vec(Vec<byte> buf) -> Bytes {
+    pub static fn from_vec(Vec<byte> buf) -> Bytes {
         return new Bytes(buf);
     }
 
-    static fn to_vec(Bytes b) -> Vec<byte> {
+    pub static fn to_vec(Bytes b) -> Vec<byte> {
         return b.buf;
     }
 }
