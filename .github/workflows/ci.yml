@@ -50,50 +50,7 @@ jobs:
 
       - name: Language harness (`coil test`)
         run: |
-          set +e
+          set -euo pipefail
           .ci/coil-lang/target/debug/coil test \
             --root .ci/coil-time/src \
-            > /tmp/coil-test.log 2>&1
-          cat /tmp/coil-test.log
-          if grep -q 'FAILED tests/random.hy' /tmp/coil-test.log; then
-            exit 1
-          fi
-          if ! grep -q 'ok   tests/random.hy' /tmp/coil-test.log; then
-            echo "random.hy did not report ok"
-            exit 1
-          fi
-          if grep -q 'FAILED tests/num_const.hy' /tmp/coil-test.log; then
-            exit 1
-          fi
-          if ! grep -q 'ok   tests/num_const.hy' /tmp/coil-test.log; then
-            echo "num_const.hy did not report ok"
-            exit 1
-          fi
-          if grep -q 'FAILED tests/collections_bitset.hy' /tmp/coil-test.log; then
-            exit 1
-          fi
-          if ! grep -q 'ok   tests/collections_bitset.hy' /tmp/coil-test.log; then
-            echo "collections_bitset.hy did not report ok"
-            exit 1
-          fi
-          if grep -q 'FAILED tests/collections_vec.hy' /tmp/coil-test.log; then
-            exit 1
-          fi
-          if ! grep -q 'ok   tests/collections_vec.hy' /tmp/coil-test.log; then
-            echo "collections_vec.hy did not report ok"
-            exit 1
-          fi
-          if grep -q 'FAILED tests/collections.hy' /tmp/coil-test.log; then
-            exit 1
-          fi
-          if ! grep -q 'ok   tests/collections.hy' /tmp/coil-test.log; then
-            echo "collections.hy did not report ok"
-            exit 1
-          fi
-          if grep -q 'FAILED tests/collections_deque.hy' /tmp/coil-test.log; then
-            exit 1
-          fi
-          if ! grep -q 'ok   tests/collections_deque.hy' /tmp/coil-test.log; then
-            echo "collections_deque.hy did not report ok"
-            exit 1
-          fi
+            2>&1 | tee /tmp/coil-test.log
