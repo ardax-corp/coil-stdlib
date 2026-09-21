@@ -1,27 +1,27 @@
 // HashMap — separate chaining over parallel Vecs (no Default on K/V).
 
 class Entry<K, V> {
-    key: K,
-    value: V,
+    pub key: K,
+    pub value: V,
 }
 
 class HashMap<K, V> {
     heads: Vec<int>,
-    keys: Vec<K>,
-    vals: Vec<V>,
+    pub keys: Vec<K>,
+    pub vals: Vec<V>,
     next: Vec<int>,
-    live: Vec<int>,
+    pub live: Vec<int>,
     len: int,
     cap: int,
 }
 
 class HashMapIter<K, V> {
-    map: HashMap<K, V>,
-    slot: int,
+    pub map: HashMap<K, V>,
+    pub slot: int,
 }
 
 impl HashMap<K, V> {
-    static fn with_capacity(int cap) -> HashMap<K, V> {
+    pub static fn with_capacity(int cap) -> HashMap<K, V> {
         let n = 1;
         while n < cap {
             n = n + n;
@@ -42,23 +42,23 @@ impl HashMap<K, V> {
         return new HashMap(heads, keys, vals, next, live, 0, n);
     }
 
-    static fn new() -> HashMap<K, V> {
+    pub static fn new() -> HashMap<K, V> {
         return HashMap::with_capacity(8);
     }
 
-    fn size() -> int {
+    pub fn size() -> int {
         return self.len;
     }
 
-    fn is_empty() -> bool {
+    pub fn is_empty() -> bool {
         return self.len == 0;
     }
 
-    fn capacity() -> int {
+    pub fn capacity() -> int {
         return self.cap;
     }
 
-    fn clear() {
+    pub fn clear() {
         let i = 0;
         while i < self.cap {
             self.heads[i] = 0 - 1;
@@ -73,7 +73,7 @@ impl HashMap<K, V> {
         self.len = 0;
     }
 
-    fn keys() -> Vec<K> {
+    pub fn keys() -> Vec<K> {
         let out: Vec<K> = Vec::new();
         let i = 0;
         while i < self.keys.len() {
@@ -85,7 +85,7 @@ impl HashMap<K, V> {
         return out;
     }
 
-    fn values() -> Vec<V> {
+    pub fn values() -> Vec<V> {
         let out: Vec<V> = Vec::new();
         let i = 0;
         while i < self.vals.len() {
@@ -97,7 +97,7 @@ impl HashMap<K, V> {
         return out;
     }
 
-    fn iter() -> HashMapIter<K, V> {
+    pub fn iter() -> HashMapIter<K, V> {
         return new HashMapIter(self, 0);
     }
 }
@@ -164,7 +164,7 @@ impl HashMap<K: Eq + Hash, V> {
         self.cap = new_cap;
     }
 
-    fn insert(K k, V v) -> bool {
+    pub fn insert(K k, V v) -> bool {
         let found = self.find(k);
         if found >= 0 {
             self.vals[found] = v;
@@ -184,11 +184,11 @@ impl HashMap<K: Eq + Hash, V> {
         return true;
     }
 
-    fn contains(K k) -> bool {
+    pub fn contains(K k) -> bool {
         return self.find(k) >= 0;
     }
 
-    fn get(K k, V fallback) -> V {
+    pub fn get(K k, V fallback) -> V {
         let found = self.find(k);
         if found >= 0 {
             return self.vals[found];
@@ -196,7 +196,7 @@ impl HashMap<K: Eq + Hash, V> {
         return fallback;
     }
 
-    fn remove(K k) -> bool {
+    pub fn remove(K k) -> bool {
         let h = self.bucket(k);
         let idx = self.heads[h];
         let prev = 0 - 1;
@@ -220,17 +220,17 @@ impl HashMap<K: Eq + Hash, V> {
     }
 }
 
-impl IntoIterator<HashMap<K, V>> {
+impl IntoIterator for HashMap<K, V> {
     type Item = Entry<K, V>;
     type IntoIter = HashMapIter<K, V>;
-    fn into_iter(HashMap<K, V> m) -> HashMapIter<K, V> {
-        return new HashMapIter(m, 0);
+    pub fn into_iter(HashMap<K, V> m) -> HashMapIter<K, V> {
+        return m.iter();
     }
 }
 
-impl Iterator<HashMapIter<K, V>> {
+impl Iterator for HashMapIter<K, V> {
     type Item = Entry<K, V>;
-    fn next(HashMapIter<K, V> it) -> Option<Entry<K, V>> {
+    pub fn next(HashMapIter<K, V> it) -> Option<Entry<K, V>> {
         let n = it.map.keys.len();
         while it.slot < n {
             let s = it.slot;
