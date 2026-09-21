@@ -16,8 +16,8 @@ class HashMap<K, V> {
 }
 
 class HashMapIter<K, V> {
-    pub map: HashMap<K, V>,
-    pub slot: int,
+    map: HashMap<K, V>,
+    slot: int,
 }
 
 impl HashMap<K, V> {
@@ -220,6 +220,21 @@ impl HashMap<K: Eq + Hash, V> {
     }
 }
 
+impl HashMapIter<K, V> {
+    pub fn next() -> Option<Entry<K, V>> {
+        let n = self.map.keys.len();
+        while self.slot < n {
+            let s = self.slot;
+            self.slot = self.slot + 1;
+            if self.map.live[s] == 1 {
+                let e = new Entry(self.map.keys[s], self.map.vals[s]);
+                return Option::Some(e);
+            }
+        }
+        return Option::None;
+    }
+}
+
 impl IntoIterator for HashMap<K, V> {
     type Item = Entry<K, V>;
     type IntoIter = HashMapIter<K, V>;
@@ -231,16 +246,6 @@ impl IntoIterator for HashMap<K, V> {
 impl Iterator for HashMapIter<K, V> {
     type Item = Entry<K, V>;
     pub fn next(HashMapIter<K, V> it) -> Option<Entry<K, V>> {
-        let n = it.map.keys.len();
-        while it.slot < n {
-            let s = it.slot;
-            it.slot = it.slot + 1;
-            if it.map.live[s] == 1 {
-                let e = new Entry(it.map.keys[s], it.map.vals[s]);
-                return Option::Some(e);
-            }
-        }
-        return Option::None;
+        return it.next();
     }
 }
-

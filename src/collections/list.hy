@@ -11,7 +11,7 @@ class List<T> {
 }
 
 class ListIter<T> {
-    pub node: Option<Node<T>>,
+    node: Option<Node<T>>,
 }
 
 impl List<T> {
@@ -155,6 +155,19 @@ impl List<T> {
     }
 }
 
+impl ListIter<T> {
+    pub fn next() -> Option<T> {
+        return match self.node {
+            Option::None => Option::None,
+            Option::Some(n) => {
+                let v = n.value;
+                self.node = n.next;
+                return Option::Some(v);
+            },
+        };
+    }
+}
+
 impl IntoIterator for List<T> {
     type Item = T;
     type IntoIter = ListIter<T>;
@@ -166,13 +179,6 @@ impl IntoIterator for List<T> {
 impl Iterator for ListIter<T> {
     type Item = T;
     pub fn next(ListIter<T> it) -> Option<T> {
-        return match it.node {
-            Option::None => Option::None,
-            Option::Some(n) => {
-                let v = n.value;
-                it.node = n.next;
-                return Option::Some(v);
-            },
-        };
+        return it.next();
     }
 }

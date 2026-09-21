@@ -15,9 +15,9 @@ class TreeMap<K, V> {
 }
 
 class TreeMapIter<K, V> {
-    pub map: TreeMap<K, V>,
-    pub stack: Vec<int>,
-    pub phase: int,
+    map: TreeMap<K, V>,
+    stack: Vec<int>,
+    phase: int,
 }
 
 impl TreeMap<K, V> {
@@ -239,6 +239,32 @@ impl TreeMap<K: Ord + Eq, V> {
     }
 }
 
+impl TreeMapIter<K, V> {
+    pub fn next() -> Option<Entry<K, V>> {
+        if self.phase == 0 {
+            let cur = self.map.root;
+            while cur >= 0 {
+                self.stack.push(cur);
+                cur = self.map.left[cur];
+            }
+            self.phase = 1;
+        }
+        return match self.stack.pop() {
+            Option::None => Option::None,
+            Option::Some(node) => {
+                let right = self.map.right[node];
+                let cur = right;
+                while cur >= 0 {
+                    self.stack.push(cur);
+                    cur = self.map.left[cur];
+                }
+                let e = new Entry(self.map.keys[node], self.map.vals[node]);
+                return Option::Some(e);
+            },
+        };
+    }
+}
+
 impl IntoIterator for TreeMap<K, V> {
     type Item = Entry<K, V>;
     type IntoIter = TreeMapIter<K, V>;
@@ -250,26 +276,6 @@ impl IntoIterator for TreeMap<K, V> {
 impl Iterator for TreeMapIter<K, V> {
     type Item = Entry<K, V>;
     pub fn next(TreeMapIter<K, V> it) -> Option<Entry<K, V>> {
-        if it.phase == 0 {
-            let cur = it.map.root;
-            while cur >= 0 {
-                it.stack.push(cur);
-                cur = it.map.left[cur];
-            }
-            it.phase = 1;
-        }
-        return match it.stack.pop() {
-            Option::None => Option::None,
-            Option::Some(node) => {
-                let right = it.map.right[node];
-                let cur = right;
-                while cur >= 0 {
-                    it.stack.push(cur);
-                    cur = it.map.left[cur];
-                }
-                let e = new Entry(it.map.keys[node], it.map.vals[node]);
-                return Option::Some(e);
-            },
-        };
+        return it.next();
     }
 }
