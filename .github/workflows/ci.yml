@@ -16,13 +16,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Pin includes COI-400 Result/? ABI (5032c12ccd4e) and M1 prelude::math.
+      # Pin includes COI-404 Result ABI follow-up (7b018d9) and M1 prelude::math.
       - name: Checkout coil-lang
         uses: actions/checkout@v4
         with:
           repository: ardax-corp/coil-lang
           path: .ci/coil-lang
-          ref: 5032c12ccd4e378bbafd148a101d321ac3e17959
+          ref: 7b018d9afaa860298ff2c2b790f56d8c13092304
           submodules: false
 
       - name: Checkout coil-time
