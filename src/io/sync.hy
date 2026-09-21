@@ -1,14 +1,13 @@
 // Blocking IO adapters over L0 + `await_*` (userland; not host natives).
 use io::{
     read,
-    write_from as host_write_from,
+    write_from,
     await_readable as wait_readable,
     await_writable as wait_writable,
     stdout,
     stderr,
     from_bytes as io_from_bytes,
 };
-use bytes::{slice as bytes_slice};
 use io::net::tcp::accept;
 use io::net::udp::{recv_from, send_to};
 use io::fs::{copy as fs_copy};
@@ -19,7 +18,7 @@ fn write_all(Stream s, Vec<byte> buf) -> Result<int, IoError> {
     let offset = 0;
     let total = len(buf);
     while offset < total {
-        match host_write_from(s, buf, offset) {
+        match write_from(s, buf, offset) {
             Result::Ok(n) => {
                 if n == 0 {
                     wait_writable(s)?;
@@ -37,23 +36,6 @@ fn write_all(Stream s, Vec<byte> buf) -> Result<int, IoError> {
         };
     }
     return 0;
-}
-
-/// Write `buf[offset..]`. Validates offset in userland; host `io::write_from`
-/// `Result<int, IoError>` does not match as Ok at mid/`len` offsets.
-fn write_from(Stream s, Vec<byte> buf, int offset) -> Result<int, IoError> {
-    if offset < 0 {
-        raise IoError::InvalidInput;
-    }
-    if offset > len(buf) {
-        raise IoError::InvalidInput;
-    }
-    if offset == len(buf) {
-        return 0;
-    }
-    let rest = bytes_slice(buf, offset, len(buf));
-    write_all(s, rest)?;
-    return len(rest);
 }
 
 /// Fill `buf` from `s`; returns bytes read or `None` on EOF before fill.
