@@ -38,7 +38,7 @@ fn write_all(Stream s, Vec<byte> buf) -> Result<int, IoError> {
     return 0;
 }
 
-/// Fill `buf` from `s`; returns bytes read or `None` on EOF before fill.
+/// Fill `buf` from `s`, parking on `WouldBlock`; `None` on EOF before fill.
 fn read_exact(Stream s, Vec<byte> buf) -> Result<Option<int>, IoError> {
     let need = len(buf);
     let filled = 0;
@@ -51,14 +51,14 @@ fn read_exact(Stream s, Vec<byte> buf) -> Result<Option<int>, IoError> {
             scratch.push(0);
             i = i + 1;
         }
-        match read(s, scratch)? {
-            Option::None => {
+        match read(s, scratch) {
+            Result::Ok(Option::None) => {
                 if filled == 0 {
                     return Option::None;
                 }
                 return Option::Some(filled);
             },
-            Option::Some(n) => {
+            Result::Ok(Option::Some(n)) => {
                 if n == 0 {
                     wait_readable(s)?;
                 }
@@ -71,12 +71,18 @@ fn read_exact(Stream s, Vec<byte> buf) -> Result<Option<int>, IoError> {
                     filled = filled + n;
                 }
             },
+            Result::Err(IoError::WouldBlock) => {
+                wait_readable(s)?;
+            },
+            Result::Err(e) => {
+                raise e;
+            },
         };
     }
     return Option::Some(filled);
 }
 
-/// Read from `s` until EOF into a new `Vec<byte>`.
+/// Read from `s` until EOF into a new `Vec<byte>`, parking on `WouldBlock`.
 fn read_to_end(Stream s) -> Result<Vec<byte>, IoError> {
     let acc: Vec<byte> = Vec::new();
     let chunk_size = 4096;
@@ -88,11 +94,11 @@ fn read_to_end(Stream s) -> Result<Vec<byte>, IoError> {
     }
     let done = false;
     while !done {
-        match read(s, scratch)? {
-            Option::None => {
+        match read(s, scratch) {
+            Result::Ok(Option::None) => {
                 done = true;
             },
-            Option::Some(n) => {
+            Result::Ok(Option::Some(n)) => {
                 if n == 0 {
                     wait_readable(s)?;
                 }
@@ -103,6 +109,12 @@ fn read_to_end(Stream s) -> Result<Vec<byte>, IoError> {
                         j = j + 1;
                     }
                 }
+            },
+            Result::Err(IoError::WouldBlock) => {
+                wait_readable(s)?;
+            },
+            Result::Err(e) => {
+                raise e;
             },
         };
     }
