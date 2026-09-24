@@ -19,7 +19,7 @@ Blocking helpers over L0 + `await_*` (`src/io/sync.hy`), not host natives.
 
 | Function | Notes |
 |----------|-------|
-| `write_all` / `read_exact` / `read_to_end` | `write_all` uses `io::write_from` |
+| `write_all` / `read_exact` / `read_to_end` | Park on `WouldBlock`; `write_all` uses `io::write_from` |
 | `accept_wait` | `accept` + `await_readable` |
 | `recv_from_wait` | `recv_from` + `await_readable` |
 | `print` / `println` / `eprintln` | UTF-8 stdout/stderr helpers |
