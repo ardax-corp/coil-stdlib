@@ -22,7 +22,7 @@ jobs:
         with:
           repository: ardax-corp/coil-lang
           path: .ci/coil-lang
-          ref: 9819a3d2a25d4fb9ae70b41cb85d325507cdee46
+          ref: f18d0b64960b09e8a56bfc230961c00841151fb5
           submodules: false
 
       - name: Checkout coil-time

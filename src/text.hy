@@ -1,19 +1,16 @@
-// String helpers built on UTF-8 byte buffers (userland).
+// String helpers on byte offsets (userland).
 // Byte-oriented offsets — slicing mid-codepoint yields UTF-8 errors.
 // Named `text` because virtual `string` already owns `format` / `to_bytes` / `from_bytes`.
-use string::{to_bytes, from_bytes};
-use bytes::{
-    slice as bytes_slice,
-    find as bytes_find,
-    find_from as bytes_find_from,
-    rfind as bytes_rfind,
-    replace as bytes_replace,
-    pad_left as bytes_pad_left,
-    pad_right as bytes_pad_right,
-    contains as bytes_contains,
-    starts_with as bytes_starts_with,
-    ends_with as bytes_ends_with,
-    eq as bytes_eq,
+// The search and slice helpers use the `string` byte natives, which read the
+// string in place instead of copying it through `to_bytes` on every call.
+use string::{
+    to_bytes,
+    from_bytes,
+    byte_at,
+    slice_bytes,
+    find_from as str_find_from,
+    rfind as str_rfind,
+    match_at,
 };
 use ascii::{is_space};
 
@@ -24,162 +21,144 @@ fn utf8_ok(Vec<byte> b) -> Result<string, string> {
     };
 }
 
+fn sub(string s, int start, int end) -> Result<string, string> {
+    return match slice_bytes(s, start, end) {
+        Result::Ok(x) => x,
+        Result::Err(_) => raise "utf8",
+    };
+}
+
+fn space_at(string s, int i) -> bool {
+    return is_space(byte_at(s, i) as byte);
+}
+
 /// Byte length of UTF-8 `s` (same as `len(to_bytes(s))`).
 fn byte_len(string s) -> int {
-    return len(to_bytes(s));
+    return len(s);
 }
 
 /// Slice by byte offsets; returns `Err` if the slice is not valid UTF-8.
 fn slice(string s, int start, int end) -> Result<string, string> {
-    return utf8_ok(bytes_slice(to_bytes(s), start, end))?;
+    return sub(s, start, end)?;
 }
 
 /// Trim ASCII whitespace from the start.
 fn trim_start(string s) -> Result<string, string> {
-    let b = to_bytes(s);
     let lo = 0;
-    let hi = len(b);
-    while lo < hi {
-        if is_space(b[lo]) {
-            lo = lo + 1;
-        } else {
-            break;
-        }
+    let hi = len(s);
+    while lo < hi && space_at(s, lo) {
+        lo = lo + 1;
     }
-    return utf8_ok(bytes_slice(b, lo, hi))?;
+    return sub(s, lo, hi)?;
 }
 
 /// Trim ASCII whitespace from the end.
 fn trim_end(string s) -> Result<string, string> {
-    let b = to_bytes(s);
-    let lo = 0;
-    let hi = len(b);
-    while hi > lo {
-        if is_space(b[hi - 1]) {
-            hi = hi - 1;
-        } else {
-            break;
-        }
+    let hi = len(s);
+    while hi > 0 && space_at(s, hi - 1) {
+        hi = hi - 1;
     }
-    return utf8_ok(bytes_slice(b, lo, hi))?;
+    return sub(s, 0, hi)?;
 }
 
 /// Trim ASCII whitespace (space/tab/CR/LF) from both ends.
 fn trim(string s) -> Result<string, string> {
-    let b = to_bytes(s);
     let lo = 0;
-    let hi = len(b);
-    let cont = 1;
-    while cont == 1 {
-        if lo >= hi {
-            cont = 0;
-        } else {
-            if is_space(b[lo]) {
-                lo = lo + 1;
-            } else {
-                cont = 0;
-            }
-        }
+    let hi = len(s);
+    while lo < hi && space_at(s, lo) {
+        lo = lo + 1;
     }
-    cont = 1;
-    while cont == 1 {
-        if hi <= lo {
-            cont = 0;
-        } else {
-            if is_space(b[hi - 1]) {
-                hi = hi - 1;
-            } else {
-                cont = 0;
-            }
-        }
+    while hi > lo && space_at(s, hi - 1) {
+        hi = hi - 1;
     }
-    return utf8_ok(bytes_slice(b, lo, hi))?;
+    return sub(s, lo, hi)?;
 }
 
 /// True when `hay` contains `needle` as a byte-exact substring.
 fn contains(string hay, string needle) -> bool {
-    return bytes_contains(to_bytes(hay), to_bytes(needle));
+    return str_find_from(hay, needle, 0) >= 0;
 }
 
 /// True when `s` begins with `prefix` (byte identity).
 fn starts_with(string s, string prefix) -> bool {
-    return bytes_starts_with(to_bytes(s), to_bytes(prefix));
+    return match_at(s, prefix, 0);
 }
 
 /// True when `s` ends with `suffix` (byte identity).
 fn ends_with(string s, string suffix) -> bool {
-    return bytes_ends_with(to_bytes(s), to_bytes(suffix));
+    return match_at(s, suffix, len(s) - len(suffix));
 }
 
 /// First byte offset of `needle` in `hay`, or `-1`. Empty needle → `0`.
 fn find(string hay, string needle) -> int {
-    return bytes_find(to_bytes(hay), to_bytes(needle));
+    return str_find_from(hay, needle, 0);
 }
 
 /// Last byte offset of `needle` in `hay`, or `-1`.
 fn rfind(string hay, string needle) -> int {
-    return bytes_rfind(to_bytes(hay), to_bytes(needle));
+    return str_rfind(hay, needle);
 }
 
 /// Split at byte offset `at` into `(left, right)`.
 fn split_at(string s, int at) -> Result<(string, string), string> {
-    let b = to_bytes(s);
     if at < 0 {
         at = 0;
     }
-    if at > len(b) {
-        at = len(b);
+    if at > len(s) {
+        at = len(s);
     }
-    let left = utf8_ok(bytes_slice(b, 0, at))?;
-    let right = utf8_ok(bytes_slice(b, at, len(b)))?;
+    let left = sub(s, 0, at)?;
+    let right = sub(s, at, len(s))?;
     return (left, right);
 }
 
 /// Split `s` on every occurrence of `sep` (byte-exact). Empty sep → `[s]`.
 fn split(string s, string sep) -> Result<Vec<string>, string> {
     let out: Vec<string> = Vec::new();
-    let hay = to_bytes(s);
-    let needle = to_bytes(sep);
-    if len(needle) == 0 {
+    let nn = len(sep);
+    if nn == 0 {
         out.push(s);
         return out;
     }
     let start = 0;
-    let done = false;
-    let hn = len(hay);
-    while !done {
-        let at = bytes_find_from(hay, needle, start);
-        if at < 0 {
-            let part = utf8_ok(bytes_slice(hay, start, hn))?;
-            out.push(part);
-            done = true;
-        }
-        if at >= 0 {
-            let part = utf8_ok(bytes_slice(hay, start, at))?;
-            out.push(part);
-            start = at + len(needle);
-        }
+    let at = str_find_from(s, sep, 0);
+    while at >= 0 {
+        let part = sub(s, start, at)?;
+        out.push(part);
+        start = at + nn;
+        at = str_find_from(s, sep, start);
     }
+    let last = sub(s, start, len(s))?;
+    out.push(last);
     return out;
 }
 
 /// Split at the first occurrence of `sep`, excluding the separator.
 fn split_once(string s, string sep) -> Result<(string, string), string> {
-    let hay = to_bytes(s);
-    let needle = to_bytes(sep);
-    let at = bytes_find(hay, needle);
+    let at = str_find_from(s, sep, 0);
     if at < 0 {
         raise "separator not found";
     }
-    let left = utf8_ok(bytes_slice(hay, 0, at))?;
-    let right = utf8_ok(bytes_slice(hay, at + len(needle), len(hay)))?;
+    let left = sub(s, 0, at)?;
+    let right = sub(s, at + len(sep), len(s))?;
     return (left, right);
 }
 
 /// Replace every non-overlapping occurrence of `old` with `new`.
 fn replace(string s, string old, string new) -> Result<string, string> {
-    let out = bytes_replace(to_bytes(s), to_bytes(old), to_bytes(new));
-    return utf8_ok(out)?;
+    let nn = len(old);
+    if nn == 0 {
+        return s;
+    }
+    let out = "";
+    let start = 0;
+    let at = str_find_from(s, old, 0);
+    while at >= 0 {
+        out = out + sub(s, start, at)? + new;
+        start = at + nn;
+        at = str_find_from(s, old, start);
+    }
+    return out + sub(s, start, len(s))?;
 }
 
 /// Join strings with `sep` between adjacent parts.
@@ -209,59 +188,40 @@ fn repeat(string s, int n) -> string {
 
 /// Pad on the left to a byte width using a one-byte `fill` string.
 fn pad_left(string s, int width, string fill) -> Result<string, string> {
-    let fill_bytes = to_bytes(fill);
-    if len(fill_bytes) != 1 {
+    if len(fill) != 1 {
         raise "fill must be one byte";
     }
-    return utf8_ok(bytes_pad_left(to_bytes(s), width, fill_bytes[0]))?;
+    return repeat(fill, width - len(s)) + s;
 }
 
 /// Pad on the right to a byte width using a one-byte `fill` string.
 fn pad_right(string s, int width, string fill) -> Result<string, string> {
-    let fill_bytes = to_bytes(fill);
-    if len(fill_bytes) != 1 {
+    if len(fill) != 1 {
         raise "fill must be one byte";
     }
-    return utf8_ok(bytes_pad_right(to_bytes(s), width, fill_bytes[0]))?;
+    return s + repeat(fill, width - len(s));
+}
+
+fn line_piece(string s, int start, int end) -> Result<string, string> {
+    if end > start && match_at(s, "\r", end - 1) {
+        end = end - 1;
+    }
+    return sub(s, start, end)?;
 }
 
 /// Split on LF and strip one optional CR from each resulting line.
 fn lines(string s) -> Result<Vec<string>, string> {
-    let b = to_bytes(s);
     let out: Vec<string> = Vec::new();
     let start = 0;
-    let i = 0;
-    let n = len(b);
-    while i < n {
-        if b[i] == "\n" {
-            let end = i;
-            if end > start {
-                if b[end - 1] == "\r" {
-                    end = end - 1;
-                }
-            }
-            let piece = match from_bytes(bytes_slice(b, start, end)) {
-                Result::Ok(x) => x,
-                Result::Err(_) => raise "utf8",
-            };
-            out.push(piece);
-            start = i + 1;
-        }
-        i = i + 1;
-    }
-    let end = n;
-    if end > start {
-        if b[end - 1] == "\r" {
-            end = end - 1;
-        }
-    }
-    if start <= n {
-        let piece = match from_bytes(bytes_slice(b, start, end)) {
-            Result::Ok(x) => x,
-            Result::Err(_) => raise "utf8",
-        };
+    let at = str_find_from(s, "\n", 0);
+    while at >= 0 {
+        let piece = line_piece(s, start, at)?;
         out.push(piece);
+        start = at + 1;
+        at = str_find_from(s, "\n", start);
     }
+    let last = line_piece(s, start, len(s))?;
+    out.push(last);
     return out;
 }
 
@@ -272,7 +232,7 @@ fn concat(string a, string b) -> string {
 
 /// True when strings are equal (byte identity).
 fn eq(string a, string b) -> bool {
-    return bytes_eq(to_bytes(a), to_bytes(b));
+    return a == b;
 }
 
 /// ASCII lower-case A..=Z only; other bytes unchanged.
