@@ -1,5 +1,5 @@
 use io::{open, close, write_from, IoError};
-use io::sync::{write_all, read_to_end, read_exact};
+use io::sync::{write_all, read_to_end, read_exact, copy};
 use io::fs::{remove_file};
 use string::{to_bytes, from_bytes};
 
@@ -181,5 +181,51 @@ test("write_all empty buffer") {
     match remove_file(path) {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "remove",
+    };
+}
+
+test("sync copy file") {
+    let src = "/tmp/coil_stdlib_sync_copy_src.txt";
+    let dst = "/tmp/coil_stdlib_sync_copy_dst.txt";
+    let w = match open(src, "w") {
+        Result::Ok(v) => v,
+        Result::Err(_) => panic "open src",
+    };
+    match write_all(w, to_bytes("copy-me")) {
+        Result::Ok(_) => 0,
+        Result::Err(_) => panic "seed",
+    };
+    match close(w) {
+        Result::Ok(_) => 0,
+        Result::Err(_) => panic "close src",
+    };
+    match copy(dst, src) {
+        Result::Ok(_) => 0,
+        Result::Err(_) => panic "copy",
+    };
+    let r = match open(dst, "r") {
+        Result::Ok(v) => v,
+        Result::Err(_) => panic "open dst",
+    };
+    let got = match read_to_end(r) {
+        Result::Ok(v) => v,
+        Result::Err(_) => panic "read",
+    };
+    match close(r) {
+        Result::Ok(_) => 0,
+        Result::Err(_) => panic "close",
+    };
+    let text = match from_bytes(got) {
+        Result::Ok(s) => s,
+        Result::Err(_) => panic "from_bytes",
+    };
+    assert(text == "copy-me")?;
+    match remove_file(src) {
+        Result::Ok(_) => 0,
+        Result::Err(_) => panic "rm src",
+    };
+    match remove_file(dst) {
+        Result::Ok(_) => 0,
+        Result::Err(_) => panic "rm dst",
     };
 }

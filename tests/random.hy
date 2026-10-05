@@ -27,3 +27,22 @@ test("rng from_time") {
     let z = r2.next_u64();
     assert(z != 0 || z == 0)?;
 }
+
+test("rng float bytes and zero seed") {
+    let r = Rng::seeded(0);
+    let f = r.float();
+    assert(f >= 0.0)?;
+    assert(f < 1.0)?;
+    let empty = r.bytes(0);
+    assert(len(empty) == 0)?;
+    let five = r.bytes(5);
+    assert(len(five) == 5)?;
+    let z = match crypto_bytes(0) {
+        Result::Ok(v) => v,
+        Result::Err(_) => {
+            let empty: Vec<byte> = Vec::new();
+            empty
+        },
+    };
+    assert(len(z) == 0)?;
+}
