@@ -7,7 +7,6 @@ on:
     branches: [main]
 
 env:
-  CARGO_TERM_COLOR: always
   CI: "true"
 
 jobs:
@@ -16,15 +15,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Pin includes COI-408 park/resume Result<(), IoError> (9819a3d / #457).
-      - name: Checkout coil-lang
-        uses: actions/checkout@v4
-        with:
-          repository: ardax-corp/coil-lang
-          path: .ci/coil-lang
-          ref: f18d0b64960b09e8a56bfc230961c00841151fb5
-          submodules: false
-
       - name: Checkout coil-time
         uses: actions/checkout@v4
         with:
@@ -32,26 +22,14 @@ jobs:
           path: .ci/coil-time
           submodules: false
 
-      - name: Install system deps
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libffi-dev libpcre2-dev build-essential
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: |
-            .ci/coil-lang
-
-      - name: Build coil
-        run: cargo build --manifest-path .ci/coil-lang/Cargo.toml
+      # coil comes from the coil-lang `edge` release (a snapshot of its main,
+      # rebuilt after every green coil-lang CI run) instead of a source build.
+      - name: Install coil (edge)
+        uses: ardax-corp/coil-lang/.github/actions/setup-coil@main
 
       - name: Language harness (`coil test`)
         run: |
           set -euo pipefail
-          .ci/coil-lang/target/debug/coil test \
+          coil test \
             --root .ci/coil-time/src \
             2>&1 | tee /tmp/coil-test.log
