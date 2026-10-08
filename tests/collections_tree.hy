@@ -66,3 +66,22 @@ test("treemap remove clear min max") {
     t.clear();
     assert(t.is_empty())?;
 }
+
+// The successor's parent is found by key, not by its slot index.
+test("treemap remove a node whose successor sits deeper") {
+    let t = TreeMap::new();
+    assert(t.insert(50, 1))?;
+    assert(t.insert(30, 2))?;
+    assert(t.insert(70, 3))?;
+    assert(t.insert(60, 4))?;
+    assert(t.insert(80, 5))?;
+    assert(t.insert(65, 6))?;
+    assert(t.remove(50))?;
+    assert(t.contains(50) == false)?;
+    assert(t.get(30, -1) == 2)?;
+    assert(t.get(60, -1) == 4)?;
+    assert(t.get(65, -1) == 6)?;
+    assert(t.get(70, -1) == 3)?;
+    assert(t.get(80, -1) == 5)?;
+    assert(t.size() == 5)?;
+}
