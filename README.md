@@ -40,5 +40,5 @@ Needs a Coil toolchain on `PATH` (or `COIL`) and a
 root only — no `libtime` dload):
 
 ```bash
-coil test --root .ci/coil-time/src
+coil test --allow-read --allow-write --allow-net --root .ci/coil-time/src
 ```

@@ -31,5 +31,6 @@ jobs:
         run: |
           set -euo pipefail
           coil test \
+            --allow-read --allow-write --allow-net \
             --root .ci/coil-time/src \
             2>&1 | tee /tmp/coil-test.log
