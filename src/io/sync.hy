@@ -229,11 +229,11 @@ fn read_line(Stream s) -> Result<Option<string>, IoError> {
     let lf: byte = "\n";
     let cr: byte = "\r";
     while !done {
-        match read(s, scratch)? {
-            Option::None => {
+        match read(s, scratch) {
+            Result::Ok(Option::None) => {
                 done = true;
             },
-            Option::Some(n) => {
+            Result::Ok(Option::Some(n)) => {
                 if n == 0 {
                     wait_readable(s)?;
                 }
@@ -247,6 +247,12 @@ fn read_line(Stream s) -> Result<Option<string>, IoError> {
                         acc.push(c);
                     }
                 }
+            },
+            Result::Err(IoError::WouldBlock) => {
+                wait_readable(s)?;
+            },
+            Result::Err(e) => {
+                raise e;
             },
         };
     }
