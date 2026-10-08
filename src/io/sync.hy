@@ -1,9 +1,9 @@
-// Blocking IO adapters over L0 + `await_*` (userland; not host natives).
+// Blocking IO adapters over L0 + `wait_readable` / `wait_writable` (userland; not host natives).
 use io::{
     read,
     write_from,
-    await_readable as wait_readable,
-    await_writable as wait_writable,
+    wait_readable,
+    wait_writable,
     stdout,
     stderr,
     from_bytes as io_from_bytes,
