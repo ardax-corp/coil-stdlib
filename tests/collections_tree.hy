@@ -1,4 +1,4 @@
-use collections::tree::{TreeMap};
+use collections::tree::TreeMap;
 
 test("treemap insert update") {
     let t = TreeMap::new();
