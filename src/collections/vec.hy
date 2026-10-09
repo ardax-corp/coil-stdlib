@@ -9,7 +9,9 @@ fn fold_int(Vec<int> xs, int init, int -> int -> int folder) -> int {
     return acc;
 }
 
-fn contains(Vec<int> xs, int needle) -> bool {
+fn contains(Vec<int> xs, int needle) -> bool
+    ensures !result || len(xs) > 0
+{
     let i = 0;
     while i < len(xs) {
         if xs[i] == needle {
@@ -20,7 +22,10 @@ fn contains(Vec<int> xs, int needle) -> bool {
     return false;
 }
 
-fn index_of(Vec<int> xs, int needle) -> int {
+fn index_of(Vec<int> xs, int needle) -> int
+    ensures result >= -1 && result < len(xs)
+    ensures result < 0 || xs[result] == needle
+{
     let i = 0;
     while i < len(xs) {
         if xs[i] == needle {
@@ -31,7 +36,9 @@ fn index_of(Vec<int> xs, int needle) -> int {
     return 0 - 1;
 }
 
-fn binary_search(Vec<int> xs, int needle) -> Option<int> {
+fn binary_search(Vec<int> xs, int needle) -> Option<int>
+    ensures found_at(xs, needle, result)
+{
     let lo = 0;
     let hi = len(xs);
     while lo < hi {
@@ -49,7 +56,18 @@ fn binary_search(Vec<int> xs, int needle) -> Option<int> {
     return Option::None;
 }
 
-fn dedup(Vec<int> xs) -> Vec<int> {
+/// `found` is `None` or an index of `needle` in `xs` (for contracts).
+fn found_at(Vec<int> xs, int needle, Option<int> found) -> bool {
+    return match found {
+        Option::None => true,
+        Option::Some(i) => i >= 0 && i < len(xs) && xs[i] == needle,
+    };
+}
+
+fn dedup(Vec<int> xs) -> Vec<int>
+    ensures len(result) <= len(xs)
+    ensures len(xs) == 0 || len(result) > 0
+{
     if len(xs) == 0 {
         let empty: Vec<int> = Vec::new();
         return empty;
@@ -66,7 +84,9 @@ fn dedup(Vec<int> xs) -> Vec<int> {
     return out;
 }
 
-fn contains(Vec<string> xs, string needle) -> bool {
+fn contains(Vec<string> xs, string needle) -> bool
+    ensures !result || len(xs) > 0
+{
     let i = 0;
     while i < len(xs) {
         if xs[i] == needle {
@@ -77,7 +97,10 @@ fn contains(Vec<string> xs, string needle) -> bool {
     return false;
 }
 
-fn index_of(Vec<string> xs, string needle) -> int {
+fn index_of(Vec<string> xs, string needle) -> int
+    ensures result >= -1 && result < len(xs)
+    ensures result < 0 || xs[result] == needle
+{
     let i = 0;
     while i < len(xs) {
         if xs[i] == needle {
@@ -88,7 +111,10 @@ fn index_of(Vec<string> xs, string needle) -> int {
     return 0 - 1;
 }
 
-fn dedup(Vec<string> xs) -> Vec<string> {
+fn dedup(Vec<string> xs) -> Vec<string>
+    ensures len(result) <= len(xs)
+    ensures len(xs) == 0 || len(result) > 0
+{
     if len(xs) == 0 {
         let empty: Vec<string> = Vec::new();
         return empty;
@@ -142,7 +168,9 @@ fn last<T>(Vec<T> xs) -> Option<T> {
     return Option::Some(xs[n - 1]);
 }
 
-fn concat<T>(Vec<T> a, Vec<T> b) -> Vec<T> {
+fn concat<T>(Vec<T> a, Vec<T> b) -> Vec<T>
+    ensures len(result) == len(a) + len(b)
+{
     let out: Vec<T> = Vec::new();
     let i = 0;
     while i < len(a) {

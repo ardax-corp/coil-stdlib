@@ -24,14 +24,19 @@ fn bits_per_word() -> int {
     return WORD_BITS;
 }
 
-class BitSet {
+class BitSet
+    invariant self.count >= 0 && self.count <= len(self.words) * WORD_BITS
+{
     words: Vec<int>,
     count: int,
 }
 
 impl BitSet {
     /// Empty set with storage for at least `bits` indices (`0` → no words).
-    pub static fn with_capacity(int bits) -> BitSet {
+    pub static fn with_capacity(int bits) -> BitSet
+        ensures result.size() == 0
+        ensures result.capacity() >= bits
+    {
         let words: Vec<int> = Vec::new();
         if bits > 0 {
             let n = (bits + WORD_BITS - 1) / WORD_BITS;
@@ -82,7 +87,11 @@ impl BitSet {
     }
 
     /// Insert index `i`; returns `true` when newly set. `i < 0` is ignored.
-    pub fn insert(int i) -> bool {
+    pub fn insert(int i) -> bool
+        ensures i < 0 || self.contains(i)
+        ensures !result || self.count == old(self.count) + 1
+        ensures result || self.count == old(self.count)
+    {
         if i < 0 {
             return false;
         }
@@ -112,7 +121,11 @@ impl BitSet {
     }
 
     /// Clear index `i`; returns `true` when a bit was unset.
-    pub fn remove(int i) -> bool {
+    pub fn remove(int i) -> bool
+        ensures !self.contains(i)
+        ensures !result || self.count == old(self.count) - 1
+        ensures result || self.count == old(self.count)
+    {
         if i < 0 {
             return false;
         }
@@ -131,7 +144,9 @@ impl BitSet {
     }
 
     /// Unset every bit; keeps allocated word capacity.
-    pub fn clear() {
+    pub fn clear()
+        ensures self.count == 0
+    {
         let n = len(self.words);
         let i = 0;
         while i < n {

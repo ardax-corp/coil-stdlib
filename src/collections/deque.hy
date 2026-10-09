@@ -1,6 +1,10 @@
 // Ring-buffer double-ended queue over a growable Vec (power-of-two cap).
 
-class VecDeque<T> {
+class VecDeque<T>
+    invariant self.len >= 0 && self.len <= self.cap
+    invariant self.head >= 0 && self.head < self.cap
+    invariant len(self.buf) == self.cap
+{
     buf: Vec<Option<T>>,
     head: int,
     len: int,
@@ -67,7 +71,9 @@ impl VecDeque<T> {
         self.cap = new_cap;
     }
 
-    pub fn push_back(T v) {
+    pub fn push_back(T v)
+        ensures self.len == old(self.len) + 1
+    {
         if self.len == self.cap {
             self.grow();
         }
@@ -75,7 +81,9 @@ impl VecDeque<T> {
         self.len = self.len + 1;
     }
 
-    pub fn push_front(T v) {
+    pub fn push_front(T v)
+        ensures self.len == old(self.len) + 1
+    {
         if self.len == self.cap {
             self.grow();
         }
@@ -102,7 +110,9 @@ impl VecDeque<T> {
         return self.buf[self.slot(self.len - 1)];
     }
 
-    pub fn pop_front() -> Option<T> {
+    pub fn pop_front() -> Option<T>
+        ensures self.len == old(self.len) - 1 || (old(self.len) == 0 && self.len == 0)
+    {
         if self.len == 0 {
             return Option::None;
         }
@@ -113,7 +123,9 @@ impl VecDeque<T> {
         return v;
     }
 
-    pub fn pop_back() -> Option<T> {
+    pub fn pop_back() -> Option<T>
+        ensures self.len == old(self.len) - 1 || (old(self.len) == 0 && self.len == 0)
+    {
         if self.len == 0 {
             return Option::None;
         }
@@ -124,7 +136,9 @@ impl VecDeque<T> {
         return v;
     }
 
-    pub fn clear() {
+    pub fn clear()
+        ensures self.len == 0
+    {
         let i = 0;
         while i < self.len {
             self.buf[self.slot(i)] = Option::None;
@@ -134,7 +148,9 @@ impl VecDeque<T> {
         self.len = 0;
     }
 
-    pub fn to_vec() -> Vec<T> {
+    pub fn to_vec() -> Vec<T>
+        ensures len(result) == self.len
+    {
         let out: Vec<T> = Vec::new();
         let i = 0;
         while i < self.len {

@@ -5,7 +5,12 @@ class Entry<K, V> {
     pub value: V,
 }
 
-class HashMap<K, V> {
+class HashMap<K, V>
+    invariant self.len >= 0 && self.len <= len(self.keys)
+    invariant self.cap >= 8 && len(self.heads) == self.cap
+    invariant len(self.vals) == len(self.keys) && len(self.next) == len(self.keys)
+    invariant len(self.live) == len(self.keys)
+{
     heads: Vec<int>,
     pub keys: Vec<K>,
     pub vals: Vec<V>,
@@ -58,7 +63,9 @@ impl HashMap<K, V> {
         return self.cap;
     }
 
-    pub fn clear() {
+    pub fn clear()
+        ensures self.len == 0
+    {
         let i = 0;
         while i < self.cap {
             self.heads[i] = 0 - 1;
@@ -73,7 +80,9 @@ impl HashMap<K, V> {
         self.len = 0;
     }
 
-    pub fn keys() -> Vec<K> {
+    pub fn keys() -> Vec<K>
+        ensures len(result) == self.len
+    {
         let out: Vec<K> = Vec::new();
         let i = 0;
         while i < self.keys.len() {
@@ -85,7 +94,9 @@ impl HashMap<K, V> {
         return out;
     }
 
-    pub fn values() -> Vec<V> {
+    pub fn values() -> Vec<V>
+        ensures len(result) == self.len
+    {
         let out: Vec<V> = Vec::new();
         let i = 0;
         while i < self.vals.len() {
@@ -164,7 +175,10 @@ impl HashMap<K: Eq + Hash, V> {
         self.cap = new_cap;
     }
 
-    pub fn insert(K k, V v) -> bool {
+    pub fn insert(K k, V v) -> bool
+        ensures !result || self.len == old(self.len) + 1
+        ensures result || self.len == old(self.len)
+    {
         let found = self.find(k);
         if found >= 0 {
             self.vals[found] = v;
@@ -196,7 +210,10 @@ impl HashMap<K: Eq + Hash, V> {
         return fallback;
     }
 
-    pub fn remove(K k) -> bool {
+    pub fn remove(K k) -> bool
+        ensures !result || self.len == old(self.len) - 1
+        ensures result || self.len == old(self.len)
+    {
         let h = self.bucket(k);
         let idx = self.heads[h];
         let prev = 0 - 1;
