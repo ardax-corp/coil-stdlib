@@ -141,7 +141,7 @@ impl TreeMap<K: Ord + Eq, V> {
             if cur == idx {
                 return p;
             }
-            if idx < self.keys[cur] {
+            if self.keys[idx] < self.keys[cur] {
                 p = cur;
                 cur = self.left[cur];
             } else {
