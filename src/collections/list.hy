@@ -5,7 +5,9 @@ class Node<T> {
     pub next: Option<Node<T>>,
 }
 
-class List<T> {
+class List<T>
+    invariant self.len >= 0
+{
     head: Option<Node<T>>,
     len: int,
 }
@@ -27,13 +29,17 @@ impl List<T> {
         return self.len == 0;
     }
 
-    pub fn push_front(T v) {
+    pub fn push_front(T v)
+        ensures self.len == old(self.len) + 1
+    {
         let n = new Node(v, self.head);
         self.head = Option::Some(n);
         self.len = self.len + 1;
     }
 
-    pub fn push_back(T v) {
+    pub fn push_back(T v)
+        ensures self.len == old(self.len) + 1
+    {
         let n = new Node(v, Option::None);
         if self.is_empty() {
             self.head = Option::Some(n);
@@ -69,7 +75,9 @@ impl List<T> {
         };
     }
 
-    pub fn pop_front() -> Option<T> {
+    pub fn pop_front() -> Option<T>
+        ensures self.len == old(self.len) - 1 || (old(self.len) == 0 && self.len == 0)
+    {
         return match self.head {
             Option::None => Option::None,
             Option::Some(n) => {
@@ -81,7 +89,9 @@ impl List<T> {
         };
     }
 
-    pub fn pop_back() -> Option<T> {
+    pub fn pop_back() -> Option<T>
+        ensures self.len == old(self.len) - 1 || (old(self.len) == 0 && self.len == 0)
+    {
         if self.is_empty() {
             return Option::None;
         }
@@ -127,12 +137,16 @@ impl List<T> {
         };
     }
 
-    pub fn clear() {
+    pub fn clear()
+        ensures self.len == 0
+    {
         self.head = Option::None;
         self.len = 0;
     }
 
-    pub fn to_vec() -> Vec<T> {
+    pub fn to_vec() -> Vec<T>
+        ensures len(result) == self.len
+    {
         let out: Vec<T> = Vec::new();
         let cur = self.head;
         let done = false;

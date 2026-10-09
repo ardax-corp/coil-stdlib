@@ -28,6 +28,21 @@ fn sub(string s, int start, int end) -> Result<string, string> {
     };
 }
 
+/// Length of an `Ok` string, `-1` for an `Err` (for contracts).
+fn ok_len(Result<string, string> r) -> int {
+    return match r {
+        Result::Ok(x) => len(x),
+        Result::Err(_) => -1,
+    };
+}
+
+fn max_int(int a, int b) -> int {
+    if a > b {
+        return a;
+    }
+    return b;
+}
+
 fn space_at(string s, int i) -> bool {
     return is_space(byte_at(s, i) as byte);
 }
@@ -43,7 +58,9 @@ fn slice(string s, int start, int end) -> Result<string, string> {
 }
 
 /// Trim ASCII whitespace from the start.
-fn trim_start(string s) -> Result<string, string> {
+fn trim_start(string s) -> Result<string, string>
+    ensures ok_len(result) >= 0 && ok_len(result) <= len(s)
+{
     let lo = 0;
     let hi = len(s);
     while lo < hi && space_at(s, lo) {
@@ -53,7 +70,9 @@ fn trim_start(string s) -> Result<string, string> {
 }
 
 /// Trim ASCII whitespace from the end.
-fn trim_end(string s) -> Result<string, string> {
+fn trim_end(string s) -> Result<string, string>
+    ensures ok_len(result) >= 0 && ok_len(result) <= len(s)
+{
     let hi = len(s);
     while hi > 0 && space_at(s, hi - 1) {
         hi = hi - 1;
@@ -62,7 +81,9 @@ fn trim_end(string s) -> Result<string, string> {
 }
 
 /// Trim ASCII whitespace (space/tab/CR/LF) from both ends.
-fn trim(string s) -> Result<string, string> {
+fn trim(string s) -> Result<string, string>
+    ensures ok_len(result) >= 0 && ok_len(result) <= len(s)
+{
     let lo = 0;
     let hi = len(s);
     while lo < hi && space_at(s, lo) {
@@ -75,27 +96,40 @@ fn trim(string s) -> Result<string, string> {
 }
 
 /// True when `hay` contains `needle` as a byte-exact substring.
-fn contains(string hay, string needle) -> bool {
+fn contains(string hay, string needle) -> bool
+    ensures !result || len(needle) <= len(hay)
+{
     return str_find_from(hay, needle, 0) >= 0;
 }
 
 /// True when `s` begins with `prefix` (byte identity).
-fn starts_with(string s, string prefix) -> bool {
+fn starts_with(string s, string prefix) -> bool
+    ensures !result || len(prefix) <= len(s)
+{
     return match_at(s, prefix, 0);
 }
 
 /// True when `s` ends with `suffix` (byte identity).
-fn ends_with(string s, string suffix) -> bool {
+fn ends_with(string s, string suffix) -> bool
+    ensures !result || len(suffix) <= len(s)
+{
     return match_at(s, suffix, len(s) - len(suffix));
 }
 
 /// First byte offset of `needle` in `hay`, or `-1`. Empty needle → `0`.
-fn find(string hay, string needle) -> int {
+fn find(string hay, string needle) -> int
+    ensures result >= -1 && result <= len(hay)
+    ensures result < 0 || match_at(hay, needle, result)
+    ensures len(needle) > 0 || result == 0
+{
     return str_find_from(hay, needle, 0);
 }
 
 /// Last byte offset of `needle` in `hay`, or `-1`.
-fn rfind(string hay, string needle) -> int {
+fn rfind(string hay, string needle) -> int
+    ensures result >= -1 && result <= len(hay)
+    ensures result < 0 || match_at(hay, needle, result)
+{
     return str_rfind(hay, needle);
 }
 
@@ -162,7 +196,10 @@ fn replace(string s, string old, string new) -> Result<string, string> {
 }
 
 /// Join strings with `sep` between adjacent parts.
-fn join(Vec<string> parts, string sep) -> string {
+fn join(Vec<string> parts, string sep) -> string
+    ensures len(parts) > 0 || result == ""
+    ensures len(parts) != 1 || result == parts[0]
+{
     let out = "";
     let i = 0;
     while i < len(parts) {
@@ -176,7 +213,10 @@ fn join(Vec<string> parts, string sep) -> string {
 }
 
 /// Repeat `s` `n` times. Non-positive counts produce an empty string.
-fn repeat(string s, int n) -> string {
+fn repeat(string s, int n) -> string
+    ensures n > 0 || result == ""
+    ensures n <= 0 || len(result) == len(s) * n
+{
     let out = "";
     let i = 0;
     while i < n {
@@ -187,7 +227,10 @@ fn repeat(string s, int n) -> string {
 }
 
 /// Pad on the left to a byte width using a one-byte `fill` string.
-fn pad_left(string s, int width, string fill) -> Result<string, string> {
+fn pad_left(string s, int width, string fill) -> Result<string, string>
+    ensures len(fill) != 1 || ok_len(result) == max_int(width, len(s))
+    ensures len(fill) == 1 || ok_len(result) == -1
+{
     if len(fill) != 1 {
         raise "fill must be one byte";
     }
@@ -195,7 +238,10 @@ fn pad_left(string s, int width, string fill) -> Result<string, string> {
 }
 
 /// Pad on the right to a byte width using a one-byte `fill` string.
-fn pad_right(string s, int width, string fill) -> Result<string, string> {
+fn pad_right(string s, int width, string fill) -> Result<string, string>
+    ensures len(fill) != 1 || ok_len(result) == max_int(width, len(s))
+    ensures len(fill) == 1 || ok_len(result) == -1
+{
     if len(fill) != 1 {
         raise "fill must be one byte";
     }
@@ -226,7 +272,9 @@ fn lines(string s) -> Result<Vec<string>, string> {
 }
 
 /// Concatenate two strings.
-fn concat(string a, string b) -> string {
+fn concat(string a, string b) -> string
+    ensures len(result) == len(a) + len(b)
+{
     return a + b;
 }
 
@@ -236,7 +284,9 @@ fn eq(string a, string b) -> bool {
 }
 
 /// ASCII lower-case A..=Z only; other bytes unchanged.
-fn to_lower(string s) -> Result<string, string> {
+fn to_lower(string s) -> Result<string, string>
+    ensures ok_len(result) == len(s)
+{
     let b = to_bytes(s);
     let out: Vec<byte> = Vec::new();
     let i = 0;
@@ -263,7 +313,9 @@ fn to_lower(string s) -> Result<string, string> {
 }
 
 /// ASCII upper-case a..=z only; other bytes unchanged.
-fn to_upper(string s) -> Result<string, string> {
+fn to_upper(string s) -> Result<string, string>
+    ensures ok_len(result) == len(s)
+{
     let b = to_bytes(s);
     let out: Vec<byte> = Vec::new();
     let i = 0;

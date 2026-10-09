@@ -5,7 +5,12 @@ class Entry<K, V> {
     pub value: V,
 }
 
-class TreeMap<K, V> {
+class TreeMap<K, V>
+    invariant self.len >= 0 && self.len <= len(self.keys)
+    invariant len(self.vals) == len(self.keys)
+    invariant len(self.left) == len(self.keys) && len(self.right) == len(self.keys)
+    invariant (self.root < 0) == (self.len == 0)
+{
     pub keys: Vec<K>,
     pub vals: Vec<V>,
     pub left: Vec<int>,
@@ -41,7 +46,9 @@ impl TreeMap<K, V> {
         return self.len == 0;
     }
 
-    pub fn clear() {
+    pub fn clear()
+        ensures self.len == 0
+    {
         self.keys = Vec::new();
         self.vals = Vec::new();
         self.left = Vec::new();
@@ -57,7 +64,10 @@ impl TreeMap<K, V> {
 }
 
 impl TreeMap<K: Ord + Eq, V> {
-    pub fn insert(K k, V v) -> bool {
+    pub fn insert(K k, V v) -> bool
+        ensures !result || self.len == old(self.len) + 1
+        ensures result || self.len == old(self.len)
+    {
         if self.root < 0 {
             let slot = self.keys.len();
             self.keys.push(k);
@@ -180,7 +190,10 @@ impl TreeMap<K: Ord + Eq, V> {
         return cur;
     }
 
-    pub fn remove(K k) -> bool {
+    pub fn remove(K k) -> bool
+        ensures !result || self.len == old(self.len) - 1
+        ensures result || self.len == old(self.len)
+    {
         let cur = self.root;
         let target = 0 - 1;
         while cur >= 0 {
