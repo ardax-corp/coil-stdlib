@@ -23,7 +23,7 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
 | `arith` | `use arith::{INT_MAX, INT_MIN, Checked, Wrapping, …};` | Explicit int overflow: `checked_*` (`Option`), `wrapping_*` (mod 2^64), `saturating_*`, `overflowing_*` (`(int, bool)`); plain `+ - *` panic on overflow |
 | `ascii` | `use ascii::{is_digit, is_alnum, …};` | ASCII classify / digit / case helpers |
 | `conv` | `use conv::{parse_int, int_to_hex, …};` | `int_to_dec` / `parse_int` / `parse_float` / radix parse |
-| `bytes` | `use bytes::{slice, concat, to_hex, …};` | `[byte]` helpers; `Bytes` wrapper; hex encode/decode |
+| `bytes` | `use bytes::{slice, concat, to_hex, …};` | `Vec<byte>` helpers; `Bytes` wrapper; hex encode/decode |
 | `text` | `use text::{trim, split, rfind, …};` | String helpers via UTF-8 bytes (virtual `string` owns `format` / `to_bytes`) |
 | `encoding` | `use encoding::{encode, decode};` | Standard Base64 encode/decode |
 | `fmt` | `use fmt::{Buf, pad_left, …};` | Incremental string builder (`Buf`) and padding helpers |
@@ -45,7 +45,8 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
 
 - Prefer **byte offsets** for `text::slice` / `find` (mid-codepoint slices error on decode).
 - Byte constants use single-byte string literals (`"/"`, `"\n"`) under `byte` /
-  `[byte]` expected types; whole strings coerce to `[byte]` / `[byte; N]` too.
+  `Vec<byte>` expected types; whole string literals coerce to `Vec<byte>` /
+  `[byte; N]` too (`to_bytes(s)` for a string value).
 - `num` is named so a project `math.hy` does not shadow it.
 - Collections that are type-tied should be **methods** (`m.insert(k, v)`).
   Cross-module user classes are still limited in the language
