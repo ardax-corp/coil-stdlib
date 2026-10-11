@@ -2,7 +2,7 @@
 
 Userland `.hy` library for [Coil](https://github.com/ardax-corp/coil-lang).
 Language builtins and virtual modules stay in the
-[coil-lang references](https://github.com/ardax-corp/coil-lang/blob/main/docs/references/README.md).
+[Coil references](https://github.com/ardax-corp/coil-website/tree/main/src/content/docs/references).
 
 | Page | Contents |
 |------|----------|
@@ -12,7 +12,7 @@ Language builtins and virtual modules stay in the
 | [JSON](codec.md) | [coil-json](https://github.com/ardax-corp/coil-json) — not in-tree `codec::json` |
 
 HTTP is [coil-http](https://github.com/ardax-corp/coil-http) — install via spool.
-JSON is [coil-json](https://github.com/ardax-corp/coil-json) — sibling roots or `{ git }` plus `coil.lock`; see [JSON](codec.md).
+JSON is [coil-json](https://github.com/ardax-corp/coil-json) — `spool add json --git … --rev …` or a sibling `--root`; see [JSON](codec.md).
 
 Language tutorials that *use* these modules (virtual `io` + adapters):
-[IO streams](https://github.com/ardax-corp/coil-lang/blob/main/docs/manual/tutorial/10-io-streams.md).
+[IO streams](https://github.com/ardax-corp/coil-website/blob/main/src/content/docs/manual/tutorial/10-io-streams.md).

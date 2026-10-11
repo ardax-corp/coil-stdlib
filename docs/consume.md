@@ -39,7 +39,7 @@ not follow `[module] roots` or path deps for discovery). Do not pass
 
 [coil-lang](https://github.com/ardax-corp/coil-lang) does not vendor this tree.
 Clone it as a sibling (`../coil-stdlib`) or under `coil-lang/.deps/coil-stdlib`.
-Workspace `coil.toml` already lists those roots.
+Its workspace `coil.toml` lists those roots for spool; with plain `coil`, pass `--root ../coil-stdlib/src`.
 
-Manifest schema: [coil.toml project config](https://github.com/ardax-corp/coil-lang/blob/main/docs/references/project-config.md).
+Manifest schema (read by spool, not by `coil`): [project config](https://github.com/ardax-corp/coil-website/blob/main/src/content/docs/references/project-config.md).
 `spool` vs `coil package`: [spool README](https://github.com/ardax-corp/spool).
