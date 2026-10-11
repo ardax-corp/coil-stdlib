@@ -63,4 +63,4 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
   with 63 usable bits per word (Coil `int` is signed 64-bit; sign bit unused).
 
 What the **compiler** does *not* provide as builtins:
-[coil-lang not-builtins](https://github.com/ardax-corp/coil-lang/blob/main/docs/references/not-builtins.md).
+[not-builtins](https://github.com/ardax-corp/coil-website/blob/main/src/content/docs/references/not-builtins.md).
