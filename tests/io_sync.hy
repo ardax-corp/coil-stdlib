@@ -1,3 +1,4 @@
+use tests::assert;
 use io::{open, close, write_from, IoError};
 use io::sync::{write_all, read_to_end, read_exact};
 use io::fs::{remove_file};
@@ -34,7 +35,7 @@ test("write_from offset skips prefix") {
         Result::Ok(v) => v,
         Result::Err(_) => panic "from_bytes",
     };
-    assert(text == "hello")?;
+    assert!(text == "hello");
     match remove_file(path) {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "remove",
@@ -59,7 +60,9 @@ test("write_from rejects bad offsets") {
         Result::Err(_) => panic "past tag",
     };
     match write_from(s, buf, 4) {
-        Result::Ok(n) => assert(n == 0)?,
+        Result::Ok(n) => {
+            assert!(n == 0);
+        },
         Result::Err(_) => panic "at len",
     };
     match close(s) {
@@ -103,7 +106,7 @@ test("write_all roundtrip") {
         Result::Ok(v) => v,
         Result::Err(_) => panic "from_bytes",
     };
-    assert(text == "stdlib-sync-ok")?;
+    assert!(text == "stdlib-sync-ok");
     match remove_file(path) {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "remove",
@@ -131,7 +134,9 @@ test("read_exact fills buffer") {
     };
     let buf = to_bytes("XXXX");
     match read_exact(r, buf) {
-        Result::Ok(Option::Some(n)) => assert(n == 4)?,
+        Result::Ok(Option::Some(n)) => {
+            assert!(n == 4);
+        },
         Result::Ok(Option::None) => panic "eof",
         Result::Err(_) => panic "read_exact",
     };
@@ -143,7 +148,7 @@ test("read_exact fills buffer") {
         Result::Ok(v) => v,
         Result::Err(_) => panic "from_bytes",
     };
-    assert(text == "abcd")?;
+    assert!(text == "abcd");
     match remove_file(path) {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "remove",
@@ -177,7 +182,7 @@ test("write_all empty buffer") {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "close r",
     };
-    assert(len(got) == 0)?;
+    assert!(len(got) == 0);
     match remove_file(path) {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "remove",
