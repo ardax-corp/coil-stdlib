@@ -1,4 +1,4 @@
-use macro::{Code, Expr, TypeRef, lit};
+use macro::{Code, Expr, lit};
 
 macro not(Expr expression) -> Code {
     return quote expr {
@@ -8,7 +8,7 @@ macro not(Expr expression) -> Code {
 
 macro eq(Expr lhs, Expr rhs) -> Code {
     return quote expr {
-        ${lsh} == ${rhs}
+        ${lhs} == ${rhs}
     };
 }
 
@@ -36,7 +36,7 @@ macro and(Expr lhs, Expr rhs) -> Code {
 macro assert(Expr condition) -> Code {
     return quote stmts {
         if !${condition} {
-            raise "Assertion: '" + ${lit(condition.str())} + "' failed";
+            raise ${lit("Assertion: '" + condition.str() + "' failed")};
         }
     };
 }
@@ -44,7 +44,7 @@ macro assert(Expr condition) -> Code {
 macro assert(Expr condition, Expr message) -> Code {
     return quote stmts {
         if !${condition} {
-            raise ${message}
+            raise ${message};
         }
     };
 }
