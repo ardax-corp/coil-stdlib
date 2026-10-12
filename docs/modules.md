@@ -21,6 +21,7 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
 | Module | Import | Role |
 |--------|--------|------|
 | `arith` | `use arith::{INT_MAX, INT_MIN, Checked, Wrapping, …};` | Explicit int overflow: `checked_*` (`Option`), `wrapping_*` (mod 2^64), `saturating_*`, `overflowing_*` (`(int, bool)`); plain `+ - *` panic on overflow |
+| `cell` | `use cell::{Ref};` | `Ref<T>` shared mutable cell (`get` / `set` / `replace` / `update`); use it where a `use (x)` capture snapshot needs to see writes |
 | `ascii` | `use ascii::{is_digit, is_alnum, …};` | ASCII classify / digit / case helpers |
 | `conv` | `use conv::{parse_int, int_to_hex, …};` | `int_to_dec` / `parse_int` / `parse_float` / radix parse |
 | `bytes` | `use bytes::{slice, concat, to_hex, …};` | `Vec<byte>` helpers; `Bytes` wrapper; hex encode/decode |
@@ -62,6 +63,9 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
 - `sort_by<T, K: Ord>` uses the same `T -> K` / `K: Ord` story as `map` + `sort`.
 - `BitSet::with_capacity` / `capacity` are in **bits**. Storage is `Vec<int>`
   with 63 usable bits per word (Coil `int` is signed 64-bit; sign bit unused).
+- Lambda, `defer` and task `use (x)` captures copy the local, so assigning to
+  it inside the closure is not seen outside. Capture a `cell::Ref` instead and
+  call `set` / `update` on it.
 
 What the **compiler** does *not* provide as builtins:
 [not-builtins](https://github.com/ardax-corp/coil-website/blob/main/src/content/docs/references/not-builtins.md).
