@@ -24,6 +24,7 @@ Virtual-module host primitives (`io::read`) stay as free fns.
 ```text
 coil.toml
 src/ascii.hy          # use ascii::…
+src/cell.hy           # use cell::{Ref}
 src/collections/      # map, set, list, deque, bitset, tree, vec
 src/path.hy           # use path::{Path, …}
 tests/                # coil test
