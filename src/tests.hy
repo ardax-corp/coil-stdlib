@@ -35,7 +35,7 @@ macro and(Expr lhs, Expr rhs) -> Code {
 
 macro assert(Expr condition) -> Code {
     return quote stmts {
-        if !${condition} {
+        if true != ${condition} {
             raise ${lit("Assertion: '" + condition.str() + "' failed")};
         }
     };
@@ -43,7 +43,7 @@ macro assert(Expr condition) -> Code {
 
 macro assert(Expr condition, Expr message) -> Code {
     return quote stmts {
-        if !${condition} {
+        if true != ${condition} {
             raise ${message};
         }
     };
