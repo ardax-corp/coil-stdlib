@@ -6,10 +6,10 @@ class Entry<K, V> {
 }
 
 class HashMap<K, V>
-    invariant self.len >= 0 && self.len <= len(self.keys)
-    invariant self.cap >= 8 && len(self.heads) == self.cap
-    invariant len(self.vals) == len(self.keys) && len(self.next) == len(self.keys)
-    invariant len(self.live) == len(self.keys)
+    invariant self.len >= 0 && self.len <= self.keys.len()
+    invariant self.cap >= 8 && self.heads.len() == self.cap
+    invariant self.vals.len() == self.keys.len() && self.next.len() == self.keys.len()
+    invariant self.live.len() == self.keys.len()
 {
     heads: Vec<int>,
     pub keys: Vec<K>,
@@ -81,7 +81,7 @@ impl HashMap<K, V> {
     }
 
     pub fn keys() -> Vec<K>
-        ensures len(result) == self.len
+        ensures result.len() == self.len
     {
         let out: Vec<K> = Vec::new();
         let i = 0;
@@ -95,7 +95,7 @@ impl HashMap<K, V> {
     }
 
     pub fn values() -> Vec<V>
-        ensures len(result) == self.len
+        ensures result.len() == self.len
     {
         let out: Vec<V> = Vec::new();
         let i = 0;

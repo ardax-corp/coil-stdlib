@@ -23,7 +23,7 @@ test("rng from_time") {
     assert!(n >= 0);
     assert!(n < 8);
     let buf = r.bytes(4);
-    assert!(len(buf) == 4);
+    assert!(buf.len() == 4);
     let r2 = Rng::from_time();
     let z = r2.next_u64();
     assert!(z != 0 || z == 0);

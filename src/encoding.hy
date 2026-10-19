@@ -42,10 +42,10 @@ fn b64_char(int n) -> byte {
 fn encode(Vec<byte> data) -> string {
     let out: Vec<byte> = Vec::new();
     let i = 0;
-    while i < len(data) {
+    while i < data.len() {
         let b0 = data[i] as int;
         let b1 = 0;
-        let rem = len(data) - i;
+        let rem = data.len() - i;
         if rem > 1 {
             b1 = data[i + 1] as int;
         }
@@ -87,7 +87,7 @@ fn decode(string s) -> Result<Vec<byte>, string> {
     let q3 = -1;
     let qi = 0;
     let i = 0;
-    while i < len(b) {
+    while i < b.len() {
         let c = b[i];
         i = i + 1;
         if c == "=" {

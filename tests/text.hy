@@ -20,7 +20,7 @@ test("split and case") {
         Result::Ok(p) => p,
         Result::Err(_) => panic "split",
     };
-    assert!(len(parts) == 3);
+    assert!(parts.len() == 3);
     assert!(parts[0] == "a");
     assert!(parts[2] == "c");
     let low = match to_lower("AbC") {
@@ -67,14 +67,14 @@ test("pad text preserves wide input") {
 
 test("lines handles crlf") {
     let rows = lines("a\r\nb")?;
-    assert!(len(rows) == 2);
+    assert!(rows.len() == 2);
     assert!(rows[0] == "a");
     assert!(rows[1] == "b");
 }
 
 test("lines preserves trailing empty line") {
     let rows = lines("a\r\nb\n")?;
-    assert!(len(rows) == 3);
+    assert!(rows.len() == 3);
     assert!(rows[0] == "a");
     assert!(rows[1] == "b");
     assert!(rows[2] == "");

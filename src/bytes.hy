@@ -19,7 +19,7 @@ impl Bytes {
 /// True when `a[ao..ao+n)` equals `b[bo..bo+n)` (caller guarantees bounds).
 fn region_eq(Vec<byte> a, int ao, Vec<byte> b, int bo, int n) -> bool
     requires ao >= 0 && bo >= 0 && n >= 0
-    requires ao + n <= len(a) && bo + n <= len(b)
+    requires ao + n <= a.len() && bo + n <= b.len()
 {
     let i = 0;
     let ok = true;
@@ -46,11 +46,11 @@ fn hex_nibble(int n) -> string {
 
 /// Hex-encode a byte buffer (lowercase).
 fn to_hex(Vec<byte> buf) -> string
-    ensures len(result) == 2 * len(buf)
+    ensures result.len() == 2 * buf.len()
 {
     let out = "";
     let i = 0;
-    while i < len(buf) {
+    while i < buf.len() {
         let v = buf[i] as int;
         out = out + hex_nibble(v / 16);
         out = out + hex_nibble(v % 16);
@@ -62,7 +62,7 @@ fn to_hex(Vec<byte> buf) -> string
 /// Decode a lowercase/uppercase hex string into bytes.
 fn from_hex(string s) -> Result<Vec<byte>, string> {
     let b = to_bytes(s);
-    let n = len(b);
+    let n = b.len();
     if n % 2 != 0 {
         raise "invalid hex";
     }
@@ -88,8 +88,8 @@ fn from_hex(string s) -> Result<Vec<byte>, string> {
 
 /// Copy `src[start..end)` into a new buffer (clamped to `src` bounds).
 fn slice(Vec<byte> src, int start, int end) -> Vec<byte>
-    ensures len(result) <= len(src)
-    ensures start < end || len(result) == 0
+    ensures result.len() <= src.len()
+    ensures start < end || result.len() == 0
 {
     let out: Vec<byte> = Vec::new();
     let i = start;
@@ -97,7 +97,7 @@ fn slice(Vec<byte> src, int start, int end) -> Vec<byte>
         i = 0;
     }
     while i < end {
-        if i < len(src) {
+        if i < src.len() {
             out.push(src[i]);
         }
         i = i + 1;
@@ -107,17 +107,17 @@ fn slice(Vec<byte> src, int start, int end) -> Vec<byte>
 
 /// Append `b` after `a` into a new buffer.
 fn concat(Vec<byte> a, Vec<byte> b) -> Vec<byte>
-    ensures len(result) == len(a) + len(b)
+    ensures result.len() == a.len() + b.len()
     ensures starts_with(result, a) && ends_with(result, b)
 {
     let out: Vec<byte> = Vec::new();
     let i = 0;
-    while i < len(a) {
+    while i < a.len() {
         out.push(a[i]);
         i = i + 1;
     }
     let j = 0;
-    while j < len(b) {
+    while j < b.len() {
         out.push(b[j]);
         j = j + 1;
     }
@@ -126,22 +126,22 @@ fn concat(Vec<byte> a, Vec<byte> b) -> Vec<byte>
 
 /// True when `a` and `b` have equal length and equal bytes.
 fn eq(Vec<byte> a, Vec<byte> b) -> bool
-    ensures !result || len(a) == len(b)
+    ensures !result || a.len() == b.len()
 {
-    if len(a) != len(b) {
+    if a.len() != b.len() {
         return false;
     }
-    return region_eq(a, 0, b, 0, len(a));
+    return region_eq(a, 0, b, 0, a.len());
 }
 
 /// First index of `needle` in `hay` at or after `start`, or `-1`.
 fn find_from(Vec<byte> hay, Vec<byte> needle, int start) -> int
-    ensures result >= -1 && result <= len(hay)
-    ensures result < 0 || result >= start || (start > len(hay) && result == len(hay))
-    ensures result < 0 || (result + len(needle) <= len(hay) && region_eq(hay, result, needle, 0, len(needle)))
+    ensures result >= -1 && result <= hay.len()
+    ensures result < 0 || result >= start || (start > hay.len() && result == hay.len())
+    ensures result < 0 || (result + needle.len() <= hay.len() && region_eq(hay, result, needle, 0, needle.len()))
 {
-    let hn = len(hay);
-    let nn = len(needle);
+    let hn = hay.len();
+    let nn = needle.len();
     let i = start;
     if i < 0 {
         i = 0;
@@ -169,11 +169,11 @@ fn find(Vec<byte> hay, Vec<byte> needle) -> int {
 }
 
 fn rfind(Vec<byte> hay, Vec<byte> needle) -> int
-    ensures result >= -1 && result <= len(hay)
-    ensures result < 0 || (result + len(needle) <= len(hay) && region_eq(hay, result, needle, 0, len(needle)))
+    ensures result >= -1 && result <= hay.len()
+    ensures result < 0 || (result + needle.len() <= hay.len() && region_eq(hay, result, needle, 0, needle.len()))
 {
-    let hn = len(hay);
-    let nn = len(needle);
+    let hn = hay.len();
+    let nn = needle.len();
     if nn == 0 {
         return hn;
     }
@@ -191,26 +191,26 @@ fn rfind(Vec<byte> hay, Vec<byte> needle) -> int
 }
 
 fn contains(Vec<byte> hay, Vec<byte> needle) -> bool
-    ensures !result || len(needle) <= len(hay)
+    ensures !result || needle.len() <= hay.len()
 {
     return find(hay, needle) >= 0;
 }
 
 fn starts_with(Vec<byte> buf, Vec<byte> prefix) -> bool
-    ensures !result || len(prefix) <= len(buf)
+    ensures !result || prefix.len() <= buf.len()
 {
-    let n = len(prefix);
-    if n > len(buf) {
+    let n = prefix.len();
+    if n > buf.len() {
         return false;
     }
     return region_eq(buf, 0, prefix, 0, n);
 }
 
 fn ends_with(Vec<byte> buf, Vec<byte> suffix) -> bool
-    ensures !result || len(suffix) <= len(buf)
+    ensures !result || suffix.len() <= buf.len()
 {
-    let n = len(suffix);
-    let m = len(buf);
+    let n = suffix.len();
+    let m = buf.len();
     if n > m {
         return false;
     }
@@ -222,7 +222,7 @@ fn copy(Vec<byte> src) -> Vec<byte>
 {
     let out: Vec<byte> = Vec::new();
     let i = 0;
-    while i < len(src) {
+    while i < src.len() {
         out.push(src[i]);
         i = i + 1;
     }
@@ -230,23 +230,23 @@ fn copy(Vec<byte> src) -> Vec<byte>
 }
 
 fn replace(Vec<byte> hay, Vec<byte> old, Vec<byte> new) -> Vec<byte>
-    ensures len(old) > 0 || eq(result, hay)
-    ensures len(old) == 0 || contains(hay, old) || eq(result, hay)
+    ensures old.len() > 0 || eq(result, hay)
+    ensures old.len() == 0 || contains(hay, old) || eq(result, hay)
 {
-    if len(old) == 0 {
+    if old.len() == 0 {
         return copy(hay);
     }
     let out: Vec<byte> = Vec::new();
     let i = 0;
-    let on = len(old);
-    while i < len(hay) {
-        let matches = i + on <= len(hay);
+    let on = old.len();
+    while i < hay.len() {
+        let matches = i + on <= hay.len();
         if matches {
             matches = region_eq(hay, i, old, 0, on);
         }
         if matches {
             let k = 0;
-            while k < len(new) {
+            while k < new.len() {
                 out.push(new[k]);
                 k = k + 1;
             }
@@ -260,14 +260,14 @@ fn replace(Vec<byte> hay, Vec<byte> old, Vec<byte> new) -> Vec<byte>
 }
 
 fn repeat(Vec<byte> src, int n) -> Vec<byte>
-    ensures n > 0 || len(result) == 0
-    ensures n <= 0 || len(result) == len(src) * n
+    ensures n > 0 || result.len() == 0
+    ensures n <= 0 || result.len() == src.len() * n
 {
     let out: Vec<byte> = Vec::new();
     let count = 0;
     while count < n {
         let i = 0;
-        while i < len(src) {
+        while i < src.len() {
             out.push(src[i]);
             i = i + 1;
         }
@@ -277,19 +277,19 @@ fn repeat(Vec<byte> src, int n) -> Vec<byte>
 }
 
 fn pad_left(Vec<byte> src, int width, byte fill) -> Vec<byte>
-    ensures len(result) >= len(src) && len(result) >= width
-    ensures len(result) == len(src) || len(result) == width
+    ensures result.len() >= src.len() && result.len() >= width
+    ensures result.len() == src.len() || result.len() == width
     ensures ends_with(result, src)
 {
     let out: Vec<byte> = Vec::new();
-    let padding = width - len(src);
+    let padding = width - src.len();
     let i = 0;
     while i < padding {
         out.push(fill);
         i = i + 1;
     }
     let j = 0;
-    while j < len(src) {
+    while j < src.len() {
         out.push(src[j]);
         j = j + 1;
     }
@@ -297,13 +297,13 @@ fn pad_left(Vec<byte> src, int width, byte fill) -> Vec<byte>
 }
 
 fn pad_right(Vec<byte> src, int width, byte fill) -> Vec<byte>
-    ensures len(result) >= len(src) && len(result) >= width
-    ensures len(result) == len(src) || len(result) == width
+    ensures result.len() >= src.len() && result.len() >= width
+    ensures result.len() == src.len() || result.len() == width
     ensures starts_with(result, src)
 {
     let out: Vec<byte> = Vec::new();
     let j = 0;
-    let n = len(src);
+    let n = src.len();
     while j < n {
         out.push(src[j]);
         j = j + 1;
@@ -325,7 +325,7 @@ fn to_string(Vec<byte> b) -> Result<string, string> {
 }
 
 fn from_string(string s) -> Vec<byte>
-    ensures len(result) == len(s)
+    ensures result.len() == s.len()
 {
     return to_bytes(s);
 }

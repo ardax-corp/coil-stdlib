@@ -27,7 +27,7 @@ impl Buf {
     }
 
     pub fn pad_left(int width, string fill) -> Buf {
-        let need = width - len(self.text);
+        let need = width - self.text.len();
         let pad = "";
         let i = 0;
         while i < need {
@@ -39,7 +39,7 @@ impl Buf {
     }
 
     pub fn pad_right(int width, string fill) -> Buf {
-        let need = width - len(self.text);
+        let need = width - self.text.len();
         let i = 0;
         while i < need {
             self.text = self.text + fill;

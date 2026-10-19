@@ -6,9 +6,9 @@ class Entry<K, V> {
 }
 
 class TreeMap<K, V>
-    invariant self.len >= 0 && self.len <= len(self.keys)
-    invariant len(self.vals) == len(self.keys)
-    invariant len(self.left) == len(self.keys) && len(self.right) == len(self.keys)
+    invariant self.len >= 0 && self.len <= self.keys.len()
+    invariant self.vals.len() == self.keys.len()
+    invariant self.left.len() == self.keys.len() && self.right.len() == self.keys.len()
     invariant (self.root < 0) == (self.len == 0)
 {
     pub keys: Vec<K>,

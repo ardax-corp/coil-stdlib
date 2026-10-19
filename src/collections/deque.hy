@@ -3,7 +3,7 @@
 class VecDeque<T>
     invariant self.len >= 0 && self.len <= self.cap
     invariant self.head >= 0 && self.head < self.cap
-    invariant len(self.buf) == self.cap
+    invariant self.buf.len() == self.cap
 {
     buf: Vec<Option<T>>,
     head: int,
@@ -149,7 +149,7 @@ impl VecDeque<T> {
     }
 
     pub fn to_vec() -> Vec<T>
-        ensures len(result) == self.len
+        ensures result.len() == self.len
     {
         let out: Vec<T> = Vec::new();
         let i = 0;

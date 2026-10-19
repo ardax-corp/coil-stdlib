@@ -182,7 +182,7 @@ test("write_all empty buffer") {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "close r",
     };
-    assert!(len(got) == 0);
+    assert!(got.len() == 0);
     match remove_file(path) {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "remove",

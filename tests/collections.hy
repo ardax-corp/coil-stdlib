@@ -11,11 +11,11 @@ test("sort reverse collect") {
     assert!(r[2] == 1);
     // Inherent Range::to_vec (cross-module Range params currently collect empty).
     let c = (0..4).to_vec();
-    assert!(len(c) == 4);
+    assert!(c.len() == 4);
     assert!(c[0] == 0);
     assert!(c[3] == 3);
     let d = (1..=3).to_vec();
-    assert!(len(d) == 3);
+    assert!(d.len() == 3);
     assert!(d[2] == 3);
 }
 
@@ -29,7 +29,7 @@ test("sort larger and empty") {
     assert!(b[4] == 2);
     let empty: Vec<int> = Vec::new();
     let sorted = sort(empty);
-    assert!(len(sorted) == 0);
+    assert!(sorted.len() == 0);
 }
 
 test("sort preserves input and odd lengths") {
@@ -42,7 +42,7 @@ test("sort preserves input and odd lengths") {
     assert!(out[1] == 2);
     assert!(out[2] == 3);
     let one = sort(Vec::from([7]));
-    assert!(len(one) == 1);
+    assert!(one.len() == 1);
     assert!(one[0] == 7);
     let sorted = sort(Vec::from([1, 2, 3, 4]));
     assert!(sorted[0] == 1);
@@ -70,7 +70,7 @@ test("sort_by key and stability") {
     assert!(by_neg[1] == 2);
     assert!(by_neg[2] == 1);
     let empty: Vec<int> = Vec::new();
-    assert!(len(sort_by(empty, fn (int x) => x)) == 0);
+    assert!(sort_by(empty, fn (int x) => x).len() == 0);
 }
 
 test("sort_by equal keys stay in input order") {
@@ -81,7 +81,7 @@ test("sort_by equal keys stay in input order") {
     assert!(src[2] == 22);
     assert!(src[3] == 11);
     assert!(src[4] == 20);
-    assert!(len(out) == 5);
+    assert!(out.len() == 5);
     assert!(out[0] == 10);
     assert!(out[1] == 11);
     assert!(out[2] == 21);
@@ -99,6 +99,6 @@ test("sort_by already grouped and singleton") {
     assert!(out[2] == 6);
     assert!(out[3] == 16);
     let one = sort_by(Vec::from([9]), fn (int x) => 0 - x);
-    assert!(len(one) == 1);
+    assert!(one.len() == 1);
     assert!(one[0] == 9);
 }

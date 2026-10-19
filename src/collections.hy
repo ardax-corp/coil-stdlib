@@ -49,9 +49,9 @@ fn min_int(int a, int b) -> int
 
 /// Stable bottom-up mergesort for `Ord` elements (new vector; input unchanged).
 fn sort<T: Ord>(Vec<T> arr) -> Vec<T>
-    ensures len(result) == len(arr)
+    ensures result.len() == arr.len()
 {
-    let n = len(arr);
+    let n = arr.len();
     let out: Vec<T> = Vec::new();
     let tmp: Vec<T> = Vec::new();
     let copy_i = 0;
@@ -115,7 +115,7 @@ fn merge_range_by<T, K: Ord>(Vec<T> buf, Vec<T> tmp, int lo, int mid, int hi, T 
 }
 
 fn sort_by<T, K: Ord>(Vec<T> arr, T -> K key) -> Vec<T> {
-    let n = len(arr);
+    let n = arr.len();
     let out: Vec<T> = Vec::new();
     let tmp: Vec<T> = Vec::new();
     let copy_i = 0;
@@ -143,9 +143,9 @@ fn sort_by<T, K: Ord>(Vec<T> arr, T -> K key) -> Vec<T> {
 
 /// Reverse a copy of `arr`.
 fn reverse<T>(Vec<T> arr) -> Vec<T>
-    ensures len(result) == len(arr)
+    ensures result.len() == arr.len()
 {
-    let n = len(arr);
+    let n = arr.len();
     let out: Vec<T> = Vec::new();
     let i = n;
     while i > 0 {
