@@ -11,7 +11,7 @@ use io::file::{read_text, write_text};
 ```
 
 Structure concurrent IO with `task::scope` / `spawn` (IO inside a task parks it).
-`block_on` is deprecated (`E0129`).
+For a one-off generator, `task::block_on` resumes it to completion.
 Tutorials: [IO streams](https://github.com/ardax-corp/coil-website/blob/main/src/content/docs/manual/tutorial/10-io-streams.md), [Tasks](https://github.com/ardax-corp/coil-website/blob/main/src/content/docs/manual/tutorial/12-tasks.md).
 
 ## `io::sync`
