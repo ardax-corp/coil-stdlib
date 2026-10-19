@@ -6,12 +6,11 @@ use io::{
     wait_writable,
     stdout,
     stderr,
-    from_bytes as io_from_bytes,
 };
 use io::net::tcp::accept;
 use io::net::udp::{recv_from, send_to};
 use io::fs::{copy as fs_copy};
-use string::{to_bytes as str_to_bytes};
+use string::{from_bytes as str_from_bytes, to_bytes as str_to_bytes};
 
 /// Write every byte of `buf` to `s`, parking on `WouldBlock` until done.
 fn write_all(Stream s, Vec<byte> buf) -> Result<int, IoError> {
@@ -267,8 +266,8 @@ fn read_line(Stream s) -> Result<Option<string>, IoError> {
                 trimmed.push(acc[i]);
                 i = i + 1;
             }
-            return Option::Some(io_from_bytes(trimmed)?);
+            return Option::Some(str_from_bytes(trimmed)?);
         }
     }
-    return Option::Some(io_from_bytes(acc)?);
+    return Option::Some(str_from_bytes(acc)?);
 }
