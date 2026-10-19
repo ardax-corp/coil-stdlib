@@ -16,7 +16,7 @@ use string::{to_bytes as str_to_bytes};
 /// Write every byte of `buf` to `s`, parking on `WouldBlock` until done.
 fn write_all(Stream s, Vec<byte> buf) -> Result<int, IoError> {
     let offset = 0;
-    let total = len(buf);
+    let total = buf.len();
     while offset < total {
         match write_from(s, buf, offset) {
             Result::Ok(n) => {
@@ -40,7 +40,7 @@ fn write_all(Stream s, Vec<byte> buf) -> Result<int, IoError> {
 
 /// Fill `buf` from `s`, parking on `WouldBlock`; `None` on EOF before fill.
 fn read_exact(Stream s, Vec<byte> buf) -> Result<Option<int>, IoError> {
-    let need = len(buf);
+    let need = buf.len();
     let filled = 0;
     while filled < need {
         // Scratch length must equal remaining: L0 `read` fills the whole buffer.
@@ -259,11 +259,11 @@ fn read_line(Stream s) -> Result<Option<string>, IoError> {
     if !saw {
         return Option::None;
     }
-    if len(acc) > 0 {
-        if acc[len(acc) - 1] == cr {
+    if acc.len() > 0 {
+        if acc[acc.len() - 1] == cr {
             let trimmed: Vec<byte> = Vec::new();
             let i = 0;
-            while i + 1 < len(acc) {
+            while i + 1 < acc.len() {
                 trimmed.push(acc[i]);
                 i = i + 1;
             }

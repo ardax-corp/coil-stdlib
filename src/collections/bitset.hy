@@ -25,7 +25,7 @@ fn bits_per_word() -> int {
 }
 
 class BitSet
-    invariant self.count >= 0 && self.count <= len(self.words) * WORD_BITS
+    invariant self.count >= 0 && self.count <= self.words.len() * WORD_BITS
 {
     words: Vec<int>,
     count: int,
@@ -63,13 +63,13 @@ impl BitSet {
         return self.count == 0;
     }
 
-    /// Current bit capacity (`len(words) * 63`); grows when inserting past it.
+    /// Current bit capacity (`words.len() * 63`); grows when inserting past it.
     pub fn capacity() -> int {
-        return len(self.words) * WORD_BITS;
+        return self.words.len() * WORD_BITS;
     }
 
     fn grow_to_word(int wi) {
-        let n = len(self.words);
+        let n = self.words.len();
         if wi < n {
             return;
         }
@@ -113,7 +113,7 @@ impl BitSet {
             return false;
         }
         let wi = i / WORD_BITS;
-        if wi >= len(self.words) {
+        if wi >= self.words.len() {
             return false;
         }
         let mask = word_mask(i % WORD_BITS);
@@ -130,7 +130,7 @@ impl BitSet {
             return false;
         }
         let wi = i / WORD_BITS;
-        if wi >= len(self.words) {
+        if wi >= self.words.len() {
             return false;
         }
         let mask = word_mask(i % WORD_BITS);
@@ -147,7 +147,7 @@ impl BitSet {
     pub fn clear()
         ensures self.count == 0
     {
-        let n = len(self.words);
+        let n = self.words.len();
         let i = 0;
         while i < n {
             self.words[i] = 0;

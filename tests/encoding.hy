@@ -28,7 +28,7 @@ test("base64 roundtrip lengths") {
     assert!(encode(to_bytes("a")) == "YQ==");
     assert!(encode(to_bytes("hi")) == "aGk=");
     assert!(encode(to_bytes("abc")) == "YWJj");
-    assert!(len(must_decode("")) == 0);
+    assert!(must_decode("").len() == 0);
     assert!(decode_str("YQ==") == "a");
     assert!(decode_str("aGk=") == "hi");
     assert!(decode_str("YWJj") == "abc");

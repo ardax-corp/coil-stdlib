@@ -42,5 +42,5 @@ test("ref holds heap values") {
     let r: Ref<Vec<int>> = Ref::new(Vec::new());
     r.get().push(1);
     r.set([7, 8]);
-    assert!(len(r.get()) == 2);
+    assert!(r.get().len() == 2);
 }

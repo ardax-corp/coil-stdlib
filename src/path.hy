@@ -44,19 +44,19 @@ impl Path {
     pub fn join(Path other) -> Result<Path, IoError> {
         let a = self.raw;
         let b = other.raw;
-        if len(b) == 0 {
+        if b.len() == 0 {
             return new Path(a);
         }
-        if len(a) == 0 {
+        if a.len() == 0 {
             return new Path(b);
         }
         let ab = to_bytes(a);
         let bb = to_bytes(b);
-        let a_ends = Path::is_sep(ab[len(ab) - 1]);
+        let a_ends = Path::is_sep(ab[ab.len() - 1]);
         let b_starts = Path::is_sep(bb[0]);
         if a_ends {
             if b_starts {
-                return match from_bytes(bytes_concat(ab, bytes_slice(bb, 1, len(bb)))) {
+                return match from_bytes(bytes_concat(ab, bytes_slice(bb, 1, bb.len()))) {
                     Result::Ok(s) => new Path(s),
                     Result::Err(e) => raise e,
                 };
@@ -83,7 +83,7 @@ impl Path {
     pub fn dirname() -> Result<Path, IoError> {
         let path = self.raw;
         let b = to_bytes(path);
-        let n = len(b);
+        let n = b.len();
         if n == 0 {
             return new Path(".");
         }
@@ -123,7 +123,7 @@ impl Path {
     pub fn basename() -> Result<string, IoError> {
         let path = self.raw;
         let b = to_bytes(path);
-        let n = len(b);
+        let n = b.len();
         if n == 0 {
             return "";
         }
@@ -157,7 +157,7 @@ impl Path {
     pub fn extension() -> Result<string, IoError> {
         let base = self.basename()?;
         let b = to_bytes(base);
-        let n = len(b);
+        let n = b.len();
         let i = n;
         while i > 0 {
             i = i - 1;
@@ -174,13 +174,13 @@ impl Path {
     pub fn is_absolute() -> bool {
         let path = self.raw;
         let b = to_bytes(path);
-        if len(b) == 0 {
+        if b.len() == 0 {
             return false;
         }
         if Path::is_sep(b[0]) {
             return true;
         }
-        if len(b) >= 2 {
+        if b.len() >= 2 {
             if b[0] >= "A" {
                 if b[0] <= "Z" {
                     if b[1] == ":" {
@@ -201,7 +201,7 @@ impl Path {
 
     pub fn normalize() -> Result<Path, IoError> {
         let b = to_bytes(self.raw);
-        let n = len(b);
+        let n = b.len();
         if n == 0 {
             return new Path(".");
         }
@@ -222,7 +222,7 @@ impl Path {
                         Result::Err(e) => raise e,
                     };
                     if piece == ".." {
-                        if len(parts) > 0 {
+                        if parts.len() > 0 {
                             match parts.pop() {
                                 Option::Some(_) => 0,
                                 Option::None => 0,
@@ -246,19 +246,19 @@ impl Path {
             out.push(47);
         }
         let j = 0;
-        while j < len(parts) {
+        while j < parts.len() {
             if j > 0 {
                 out.push(47);
             }
             let pb = to_bytes(parts[j]);
             let k = 0;
-            while k < len(pb) {
+            while k < pb.len() {
                 out.push(pb[k]);
                 k = k + 1;
             }
             j = j + 1;
         }
-        if len(out) == 0 {
+        if out.len() == 0 {
             return new Path(".");
         }
         return match from_bytes(out) {
@@ -271,7 +271,7 @@ impl Path {
         let norm = self.normalize()?;
         let b = to_bytes(norm.raw);
         let out: Vec<string> = Vec::new();
-        let n = len(b);
+        let n = b.len();
         if n == 0 {
             return out;
         }

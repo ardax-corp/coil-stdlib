@@ -41,7 +41,7 @@ test("deque wraparound then grow") {
     assert!(xs.capacity() == 16);
     assert!(xs.size() == 9);
     let v = xs.to_vec();
-    assert!(len(v) == 9);
+    assert!(v.len() == 9);
     assert!(v[0] == 2);
     assert!(v[7] == 9);
     assert!(v[8] == 10);
@@ -71,7 +71,7 @@ test("deque to_vec and clear reuse") {
     xs.push_back(2);
     xs.push_back(3);
     let v = xs.to_vec();
-    assert!(len(v) == 3);
+    assert!(v.len() == 3);
     assert!(v[0] == 1);
     assert!(v[2] == 3);
     xs.clear();
@@ -143,7 +143,7 @@ test("deque both ends after wrap then grow") {
     xs.push_back(102);
     assert!(xs.capacity() == 16);
     let v = xs.to_vec();
-    assert!(len(v) == 9);
+    assert!(v.len() == 9);
     assert!(v[0] == 100);
     assert!(v[1] == 1);
     assert!(v[6] == 6);

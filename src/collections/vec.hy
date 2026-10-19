@@ -1,7 +1,7 @@
 fn fold_int(Vec<int> xs, int init, int -> int -> int folder) -> int {
     let acc = init;
     let i = 0;
-    while i < len(xs) {
+    while i < xs.len() {
         let step = folder(acc);
         acc = step(xs[i]);
         i = i + 1;
@@ -10,10 +10,10 @@ fn fold_int(Vec<int> xs, int init, int -> int -> int folder) -> int {
 }
 
 fn contains(Vec<int> xs, int needle) -> bool
-    ensures !result || len(xs) > 0
+    ensures !result || xs.len() > 0
 {
     let i = 0;
-    while i < len(xs) {
+    while i < xs.len() {
         if xs[i] == needle {
             return true;
         }
@@ -23,11 +23,11 @@ fn contains(Vec<int> xs, int needle) -> bool
 }
 
 fn index_of(Vec<int> xs, int needle) -> int
-    ensures result >= -1 && result < len(xs)
+    ensures result >= -1 && result < xs.len()
     ensures result < 0 || xs[result] == needle
 {
     let i = 0;
-    while i < len(xs) {
+    while i < xs.len() {
         if xs[i] == needle {
             return i;
         }
@@ -40,7 +40,7 @@ fn binary_search(Vec<int> xs, int needle) -> Option<int>
     ensures found_at(xs, needle, result)
 {
     let lo = 0;
-    let hi = len(xs);
+    let hi = xs.len();
     while lo < hi {
         let mid = lo + (hi - lo) / 2;
         if xs[mid] < needle {
@@ -60,22 +60,22 @@ fn binary_search(Vec<int> xs, int needle) -> Option<int>
 fn found_at(Vec<int> xs, int needle, Option<int> found) -> bool {
     return match found {
         Option::None => true,
-        Option::Some(i) => i >= 0 && i < len(xs) && xs[i] == needle,
+        Option::Some(i) => i >= 0 && i < xs.len() && xs[i] == needle,
     };
 }
 
 fn dedup(Vec<int> xs) -> Vec<int>
-    ensures len(result) <= len(xs)
-    ensures len(xs) == 0 || len(result) > 0
+    ensures result.len() <= xs.len()
+    ensures xs.len() == 0 || result.len() > 0
 {
-    if len(xs) == 0 {
+    if xs.len() == 0 {
         let empty: Vec<int> = Vec::new();
         return empty;
     }
     let out: Vec<int> = Vec::new();
     out.push(xs[0]);
     let i = 1;
-    while i < len(xs) {
+    while i < xs.len() {
         if xs[i] != xs[i - 1] {
             out.push(xs[i]);
         }
@@ -85,10 +85,10 @@ fn dedup(Vec<int> xs) -> Vec<int>
 }
 
 fn contains(Vec<string> xs, string needle) -> bool
-    ensures !result || len(xs) > 0
+    ensures !result || xs.len() > 0
 {
     let i = 0;
-    while i < len(xs) {
+    while i < xs.len() {
         if xs[i] == needle {
             return true;
         }
@@ -98,11 +98,11 @@ fn contains(Vec<string> xs, string needle) -> bool
 }
 
 fn index_of(Vec<string> xs, string needle) -> int
-    ensures result >= -1 && result < len(xs)
+    ensures result >= -1 && result < xs.len()
     ensures result < 0 || xs[result] == needle
 {
     let i = 0;
-    while i < len(xs) {
+    while i < xs.len() {
         if xs[i] == needle {
             return i;
         }
@@ -112,17 +112,17 @@ fn index_of(Vec<string> xs, string needle) -> int
 }
 
 fn dedup(Vec<string> xs) -> Vec<string>
-    ensures len(result) <= len(xs)
-    ensures len(xs) == 0 || len(result) > 0
+    ensures result.len() <= xs.len()
+    ensures xs.len() == 0 || result.len() > 0
 {
-    if len(xs) == 0 {
+    if xs.len() == 0 {
         let empty: Vec<string> = Vec::new();
         return empty;
     }
     let out: Vec<string> = Vec::new();
     out.push(xs[0]);
     let i = 1;
-    while i < len(xs) {
+    while i < xs.len() {
         if xs[i] != xs[i - 1] {
             out.push(xs[i]);
         }
@@ -134,7 +134,7 @@ fn dedup(Vec<string> xs) -> Vec<string>
 fn map<T, U>(Vec<T> xs, T -> U mapper) -> Vec<U> {
     let out: Vec<U> = Vec::new();
     let i = 0;
-    while i < len(xs) {
+    while i < xs.len() {
         out.push(mapper(xs[i]));
         i = i + 1;
     }
@@ -144,7 +144,7 @@ fn map<T, U>(Vec<T> xs, T -> U mapper) -> Vec<U> {
 fn filter<T>(Vec<T> xs, T -> bool pred) -> Vec<T> {
     let out: Vec<T> = Vec::new();
     let i = 0;
-    while i < len(xs) {
+    while i < xs.len() {
         if pred(xs[i]) {
             out.push(xs[i]);
         }
@@ -154,14 +154,14 @@ fn filter<T>(Vec<T> xs, T -> bool pred) -> Vec<T> {
 }
 
 fn first<T>(Vec<T> xs) -> Option<T> {
-    if len(xs) == 0 {
+    if xs.len() == 0 {
         return Option::None;
     }
     return Option::Some(xs[0]);
 }
 
 fn last<T>(Vec<T> xs) -> Option<T> {
-    let n = len(xs);
+    let n = xs.len();
     if n == 0 {
         return Option::None;
     }
@@ -169,16 +169,16 @@ fn last<T>(Vec<T> xs) -> Option<T> {
 }
 
 fn concat<T>(Vec<T> a, Vec<T> b) -> Vec<T>
-    ensures len(result) == len(a) + len(b)
+    ensures result.len() == a.len() + b.len()
 {
     let out: Vec<T> = Vec::new();
     let i = 0;
-    while i < len(a) {
+    while i < a.len() {
         out.push(a[i]);
         i = i + 1;
     }
     let j = 0;
-    while j < len(b) {
+    while j < b.len() {
         out.push(b[j]);
         j = j + 1;
     }
@@ -193,11 +193,11 @@ fn chunks<T>(Vec<T> xs, int size) -> Vec<Vec<T>> {
         return out;
     }
     let i = 0;
-    while i < len(xs) {
+    while i < xs.len() {
         let chunk: Vec<T> = Vec::new();
         let j = 0;
         while j < size {
-            if i + j < len(xs) {
+            if i + j < xs.len() {
                 chunk.push(xs[i + j]);
             }
             j = j + 1;
@@ -211,7 +211,7 @@ fn chunks<T>(Vec<T> xs, int size) -> Vec<Vec<T>> {
 /// Overlapping sliding windows of exact `size`. Empty if `size <= 0` or `size > len`.
 fn windows<T>(Vec<T> xs, int size) -> Vec<Vec<T>> {
     let out: Vec<Vec<T>> = Vec::new();
-    let n = len(xs);
+    let n = xs.len();
     if size <= 0 {
         return out;
     }
@@ -254,7 +254,7 @@ fn partition<T>(Vec<T> xs, T -> bool pred) -> Partitioned<T> {
     let matched: Vec<T> = Vec::new();
     let rest: Vec<T> = Vec::new();
     let i = 0;
-    while i < len(xs) {
+    while i < xs.len() {
         if pred(xs[i]) {
             matched.push(xs[i]);
         } else {
@@ -268,7 +268,7 @@ fn partition<T>(Vec<T> xs, T -> bool pred) -> Partitioned<T> {
 fn fold(Vec<int> xs, int init, int -> int -> int folder) -> int {
     let acc = init;
     let i = 0;
-    while i < len(xs) {
+    while i < xs.len() {
         let step = folder(acc);
         acc = step(xs[i]);
         i = i + 1;

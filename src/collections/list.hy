@@ -145,7 +145,7 @@ impl List<T> {
     }
 
     pub fn to_vec() -> Vec<T>
-        ensures len(result) == self.len
+        ensures result.len() == self.len
     {
         let out: Vec<T> = Vec::new();
         let cur = self.head;

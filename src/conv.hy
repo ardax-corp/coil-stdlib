@@ -6,7 +6,7 @@ use bytes::{slice as bytes_slice};
 fn trim_ascii(string s) -> string {
     let b = to_bytes(s);
     let lo = 0;
-    let hi = len(b);
+    let hi = b.len();
     while lo < hi {
         if is_space(b[lo]) {
             lo = lo + 1;
@@ -107,7 +107,7 @@ fn int_to_bin(int n) -> string {
 fn parse_int_radix(string s, int radix) -> Result<int, string> {
     let trimmed = trim_ascii(s);
     let b = to_bytes(trimmed);
-    if len(b) == 0 {
+    if b.len() == 0 {
         raise "invalid integer";
     }
     let i = 0;
@@ -116,11 +116,11 @@ fn parse_int_radix(string s, int radix) -> Result<int, string> {
         negative = b[i] == "-";
         i = i + 1;
     }
-    if i >= len(b) {
+    if i >= b.len() {
         raise "invalid integer";
     }
     let value = 0;
-    while i < len(b) {
+    while i < b.len() {
         let digit = -1;
         if radix == 10 {
             digit = digit_val(b[i]);
@@ -155,7 +155,7 @@ fn parse_int(string s) -> Result<int, string> {
 /// Parse an optionally signed decimal float with an optional exponent.
 fn parse_float(string s) -> Result<float, string> {
     let b = to_bytes(trim_ascii(s));
-    if len(b) == 0 {
+    if b.len() == 0 {
         raise "invalid float";
     }
 
@@ -167,13 +167,13 @@ fn parse_float(string s) -> Result<float, string> {
         }
         i = i + 1;
     }
-    if i >= len(b) {
+    if i >= b.len() {
         raise "invalid float";
     }
 
     let value = 0.0;
     let saw_digit = false;
-    while i < len(b) {
+    while i < b.len() {
         if is_digit(b[i]) == false {
             break;
         }
@@ -184,10 +184,10 @@ fn parse_float(string s) -> Result<float, string> {
     }
 
     let frac_places: int = 0;
-    if i < len(b) {
+    if i < b.len() {
         if b[i] == "." {
             i = i + 1;
-            while i < len(b) {
+            while i < b.len() {
                 if is_digit(b[i]) == false {
                     break;
                 }
@@ -211,17 +211,17 @@ fn parse_float(string s) -> Result<float, string> {
 
     let exponent: int = 0;
     let divide_exp = false;
-    if i < len(b) {
+    if i < b.len() {
         if b[i] == "e" || b[i] == "E" {
             i = i + 1;
-            if i < len(b) {
+            if i < b.len() {
                 if b[i] == "-" || b[i] == "+" {
                     divide_exp = b[i] == "-";
                     i = i + 1;
                 }
             }
             let exponent_start = i;
-            while i < len(b) {
+            while i < b.len() {
                 if is_digit(b[i]) == false {
                     break;
                 }
@@ -234,7 +234,7 @@ fn parse_float(string s) -> Result<float, string> {
             }
         }
     }
-    if i != len(b) {
+    if i != b.len() {
         raise "invalid float";
     }
 

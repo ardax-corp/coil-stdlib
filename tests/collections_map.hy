@@ -74,6 +74,6 @@ test("hashmap keys values") {
     assert!(m.insert(2, 20));
     let ks = m.keys();
     let vs = m.values();
-    assert!(len(ks) == 2);
-    assert!(len(vs) == 2);
+    assert!(ks.len() == 2);
+    assert!(vs.len() == 2);
 }

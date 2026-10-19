@@ -31,7 +31,7 @@ fn sub(string s, int start, int end) -> Result<string, string> {
 /// Length of an `Ok` string, `-1` for an `Err` (for contracts).
 fn ok_len(Result<string, string> r) -> int {
     return match r {
-        Result::Ok(x) => len(x),
+        Result::Ok(x) => x.len(),
         Result::Err(_) => -1,
     };
 }
@@ -47,9 +47,9 @@ fn space_at(string s, int i) -> bool {
     return is_space(byte_at(s, i) as byte);
 }
 
-/// Byte length of UTF-8 `s` (same as `len(to_bytes(s))`).
+/// Byte length of UTF-8 `s` (same as `to_bytes(s).len()`).
 fn byte_len(string s) -> int {
-    return len(s);
+    return s.len();
 }
 
 /// Slice by byte offsets; returns `Err` if the slice is not valid UTF-8.
@@ -59,10 +59,10 @@ fn slice(string s, int start, int end) -> Result<string, string> {
 
 /// Trim ASCII whitespace from the start.
 fn trim_start(string s) -> Result<string, string>
-    ensures ok_len(result) >= 0 && ok_len(result) <= len(s)
+    ensures ok_len(result) >= 0 && ok_len(result) <= s.len()
 {
     let lo = 0;
-    let hi = len(s);
+    let hi = s.len();
     while lo < hi && space_at(s, lo) {
         lo = lo + 1;
     }
@@ -71,9 +71,9 @@ fn trim_start(string s) -> Result<string, string>
 
 /// Trim ASCII whitespace from the end.
 fn trim_end(string s) -> Result<string, string>
-    ensures ok_len(result) >= 0 && ok_len(result) <= len(s)
+    ensures ok_len(result) >= 0 && ok_len(result) <= s.len()
 {
-    let hi = len(s);
+    let hi = s.len();
     while hi > 0 && space_at(s, hi - 1) {
         hi = hi - 1;
     }
@@ -82,10 +82,10 @@ fn trim_end(string s) -> Result<string, string>
 
 /// Trim ASCII whitespace (space/tab/CR/LF) from both ends.
 fn trim(string s) -> Result<string, string>
-    ensures ok_len(result) >= 0 && ok_len(result) <= len(s)
+    ensures ok_len(result) >= 0 && ok_len(result) <= s.len()
 {
     let lo = 0;
-    let hi = len(s);
+    let hi = s.len();
     while lo < hi && space_at(s, lo) {
         lo = lo + 1;
     }
@@ -97,37 +97,37 @@ fn trim(string s) -> Result<string, string>
 
 /// True when `hay` contains `needle` as a byte-exact substring.
 fn contains(string hay, string needle) -> bool
-    ensures !result || len(needle) <= len(hay)
+    ensures !result || needle.len() <= hay.len()
 {
     return str_find_from(hay, needle, 0) >= 0;
 }
 
 /// True when `s` begins with `prefix` (byte identity).
 fn starts_with(string s, string prefix) -> bool
-    ensures !result || len(prefix) <= len(s)
+    ensures !result || prefix.len() <= s.len()
 {
     return match_at(s, prefix, 0);
 }
 
 /// True when `s` ends with `suffix` (byte identity).
 fn ends_with(string s, string suffix) -> bool
-    ensures !result || len(suffix) <= len(s)
+    ensures !result || suffix.len() <= s.len()
 {
-    return match_at(s, suffix, len(s) - len(suffix));
+    return match_at(s, suffix, s.len() - suffix.len());
 }
 
 /// First byte offset of `needle` in `hay`, or `-1`. Empty needle → `0`.
 fn find(string hay, string needle) -> int
-    ensures result >= -1 && result <= len(hay)
+    ensures result >= -1 && result <= hay.len()
     ensures result < 0 || match_at(hay, needle, result)
-    ensures len(needle) > 0 || result == 0
+    ensures needle.len() > 0 || result == 0
 {
     return str_find_from(hay, needle, 0);
 }
 
 /// Last byte offset of `needle` in `hay`, or `-1`.
 fn rfind(string hay, string needle) -> int
-    ensures result >= -1 && result <= len(hay)
+    ensures result >= -1 && result <= hay.len()
     ensures result < 0 || match_at(hay, needle, result)
 {
     return str_rfind(hay, needle);
@@ -138,18 +138,18 @@ fn split_at(string s, int at) -> Result<(string, string), string> {
     if at < 0 {
         at = 0;
     }
-    if at > len(s) {
-        at = len(s);
+    if at > s.len() {
+        at = s.len();
     }
     let left = sub(s, 0, at)?;
-    let right = sub(s, at, len(s))?;
+    let right = sub(s, at, s.len())?;
     return (left, right);
 }
 
 /// Split `s` on every occurrence of `sep` (byte-exact). Empty sep → `[s]`.
 fn split(string s, string sep) -> Result<Vec<string>, string> {
     let out: Vec<string> = Vec::new();
-    let nn = len(sep);
+    let nn = sep.len();
     if nn == 0 {
         out.push(s);
         return out;
@@ -162,7 +162,7 @@ fn split(string s, string sep) -> Result<Vec<string>, string> {
         start = at + nn;
         at = str_find_from(s, sep, start);
     }
-    let last = sub(s, start, len(s))?;
+    let last = sub(s, start, s.len())?;
     out.push(last);
     return out;
 }
@@ -174,13 +174,13 @@ fn split_once(string s, string sep) -> Result<(string, string), string> {
         raise "separator not found";
     }
     let left = sub(s, 0, at)?;
-    let right = sub(s, at + len(sep), len(s))?;
+    let right = sub(s, at + sep.len(), s.len())?;
     return (left, right);
 }
 
 /// Replace every non-overlapping occurrence of `old` with `new`.
 fn replace(string s, string old, string new) -> Result<string, string> {
-    let nn = len(old);
+    let nn = old.len();
     if nn == 0 {
         return s;
     }
@@ -192,17 +192,17 @@ fn replace(string s, string old, string new) -> Result<string, string> {
         start = at + nn;
         at = str_find_from(s, old, start);
     }
-    return out + sub(s, start, len(s))?;
+    return out + sub(s, start, s.len())?;
 }
 
 /// Join strings with `sep` between adjacent parts.
 fn join(Vec<string> parts, string sep) -> string
-    ensures len(parts) > 0 || result == ""
-    ensures len(parts) != 1 || result == parts[0]
+    ensures parts.len() > 0 || result == ""
+    ensures parts.len() != 1 || result == parts[0]
 {
     let out = "";
     let i = 0;
-    while i < len(parts) {
+    while i < parts.len() {
         if i > 0 {
             out = out + sep;
         }
@@ -215,7 +215,7 @@ fn join(Vec<string> parts, string sep) -> string
 /// Repeat `s` `n` times. Non-positive counts produce an empty string.
 fn repeat(string s, int n) -> string
     ensures n > 0 || result == ""
-    ensures n <= 0 || len(result) == len(s) * n
+    ensures n <= 0 || result.len() == s.len() * n
 {
     let out = "";
     let i = 0;
@@ -228,24 +228,24 @@ fn repeat(string s, int n) -> string
 
 /// Pad on the left to a byte width using a one-byte `fill` string.
 fn pad_left(string s, int width, string fill) -> Result<string, string>
-    ensures len(fill) != 1 || ok_len(result) == max_int(width, len(s))
-    ensures len(fill) == 1 || ok_len(result) == -1
+    ensures fill.len() != 1 || ok_len(result) == max_int(width, s.len())
+    ensures fill.len() == 1 || ok_len(result) == -1
 {
-    if len(fill) != 1 {
+    if fill.len() != 1 {
         raise "fill must be one byte";
     }
-    return repeat(fill, width - len(s)) + s;
+    return repeat(fill, width - s.len()) + s;
 }
 
 /// Pad on the right to a byte width using a one-byte `fill` string.
 fn pad_right(string s, int width, string fill) -> Result<string, string>
-    ensures len(fill) != 1 || ok_len(result) == max_int(width, len(s))
-    ensures len(fill) == 1 || ok_len(result) == -1
+    ensures fill.len() != 1 || ok_len(result) == max_int(width, s.len())
+    ensures fill.len() == 1 || ok_len(result) == -1
 {
-    if len(fill) != 1 {
+    if fill.len() != 1 {
         raise "fill must be one byte";
     }
-    return s + repeat(fill, width - len(s));
+    return s + repeat(fill, width - s.len());
 }
 
 fn line_piece(string s, int start, int end) -> Result<string, string> {
@@ -266,14 +266,14 @@ fn lines(string s) -> Result<Vec<string>, string> {
         start = at + 1;
         at = str_find_from(s, "\n", start);
     }
-    let last = line_piece(s, start, len(s))?;
+    let last = line_piece(s, start, s.len())?;
     out.push(last);
     return out;
 }
 
 /// Concatenate two strings.
 fn concat(string a, string b) -> string
-    ensures len(result) == len(a) + len(b)
+    ensures result.len() == a.len() + b.len()
 {
     return a + b;
 }
@@ -285,14 +285,14 @@ fn eq(string a, string b) -> bool {
 
 /// ASCII lower-case A..=Z only; other bytes unchanged.
 fn to_lower(string s) -> Result<string, string>
-    ensures ok_len(result) == len(s)
+    ensures ok_len(result) == s.len()
 {
     let b = to_bytes(s);
     let out: Vec<byte> = Vec::new();
     let i = 0;
     let a_up: byte = "A";
     let z_up: byte = "Z";
-    while i < len(b) {
+    while i < b.len() {
         let c = b[i];
         if c >= a_up {
             if c <= z_up {
@@ -314,14 +314,14 @@ fn to_lower(string s) -> Result<string, string>
 
 /// ASCII upper-case a..=z only; other bytes unchanged.
 fn to_upper(string s) -> Result<string, string>
-    ensures ok_len(result) == len(s)
+    ensures ok_len(result) == s.len()
 {
     let b = to_bytes(s);
     let out: Vec<byte> = Vec::new();
     let i = 0;
     let a_lo: byte = "a";
     let z_lo: byte = "z";
-    while i < len(b) {
+    while i < b.len() {
         let c = b[i];
         if c >= a_lo {
             if c <= z_lo {
