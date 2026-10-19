@@ -3,11 +3,9 @@
 //
 // `abs` stays type-overloaded (numeric / negation, not Ord).
 // `min` / `max` / `clamp` are generic over `Ord` (int, float, and derived orders).
-// `pow` is userland: float wraps virtual `prelude::math::pow`; int is iterative.
-// IEEE scalars (`sin`/`atan`/`log10`/`rem`/`sinh`/…) stay on `prelude::math`
+// `pow` is userland: float is the `**` operator (IEEE `powf`); int is iterative.
+// IEEE scalars (`sin`/`atan`/`log10`/`sinh`/…) stay on `prelude::math`
 // — auto-imported; this module does not re-export them.
-
-use prelude::math::{pow as float_pow};
 
 // Circle constant π (IEEE f64). `///` would bind to a following `fn`.
 static const PI = 3.141592653589793;
@@ -66,7 +64,7 @@ fn clamp<T: Ord>(T x, T lo, T hi) -> T {
 
 /// Float power via libm (`base ** exp` IEEE semantics).
 fn pow(float a, float b) -> float {
-    return float_pow(a, b);
+    return a ** b;
 }
 
 /// Integer power `base ** exp` for `exp >= 0`; `exp == 0` → `1`; `exp < 0` → `0`.
