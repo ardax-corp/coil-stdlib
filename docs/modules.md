@@ -3,10 +3,11 @@
 `use path::*` is banned (`E0124`). List names explicitly.
 
 IEEE float math is auto-imported from virtual `prelude::math` in the
-compiler — not this package: frozen `sin`/`cos`/`tan`/`sqrt`/`floor`/`ceil`/
-`exp`/`ln`/`pow`, plus M1 `atan`/`atan2`/`asin`/`acos`, `log10`/`log2`/`cbrt`,
-`rem` (f64 rem/fmod), and `sinh`/`cosh`/`tanh`. `num` does not re-export those.
-`pow` is userland here (int + float overload). Named float constants `PI`,
+compiler — not this package: `sin`/`cos`/`tan`/`sqrt`/`floor`/`ceil`/
+`exp`/`ln`, `atan`/`atan2`/`asin`/`acos`, `log10`/`log2`/`cbrt`, and
+`sinh`/`cosh`/`tanh`. `num` does not re-export those. Float power and
+remainder are the `**` and `%` operators; `num::pow` is the function form
+(int + float overload). Named float constants `PI`,
 `E`, and `TAU` live on `num` as compile-time `static const` (not HostInvoke).
 
 HTTP lives in the separate [coil-http](https://github.com/ardax-corp/coil-http)
