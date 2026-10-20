@@ -7,7 +7,9 @@
 // - `Overflowing`: the wrapped result and whether it wrapped.
 //
 // All of it is plain Coil: every check runs before the operation, and no
-// intermediate result overflows. Shifts and bit ops never trap.
+// intermediate result overflows. A shift count outside `0..=63` traps
+// (coil-lang#1076); the `*_shl` / `*_shr` methods take any count. Within
+// range, shifts and bit ops never trap.
 
 // Largest `int`. (`///` would bind to a following `fn`.)
 const INT_MAX = 9223372036854775807;
@@ -36,6 +38,12 @@ trait Checked<S> {
 
     /// `a ** exp`, or `None` when it does not fit or `exp` is negative.
     fn checked_pow(S a, int exp) -> Option<S> {}
+
+    /// `a << n`, or `None` when `n` is outside `0..=63`.
+    fn checked_shl(S a, int n) -> Option<S> {}
+
+    /// `a >> n`, or `None` when `n` is outside `0..=63`.
+    fn checked_shr(S a, int n) -> Option<S> {}
 }
 
 trait Wrapping<S> {
@@ -54,6 +62,12 @@ trait Wrapping<S> {
     /// `a ** exp` modulo 2^64. Panics with `negative exponent` when
     /// `exp < 0`, like `**`.
     fn wrapping_pow(S a, int exp) -> S {}
+
+    /// `a << (n & 63)`: the count is taken modulo 64.
+    fn wrapping_shl(S a, int n) -> S {}
+
+    /// `a >> (n & 63)`: the count is taken modulo 64.
+    fn wrapping_shr(S a, int n) -> S {}
 }
 
 trait Saturating<S> {
@@ -87,6 +101,12 @@ trait Overflowing<S> {
     /// The wrapped `a ** exp`, and whether it wrapped. Panics with
     /// `negative exponent` when `exp < 0`, like `**`.
     fn overflowing_pow(S a, int exp) -> (S, bool) {}
+
+    /// `a << (n & 63)`, and whether `n` was outside `0..=63`.
+    fn overflowing_shl(S a, int n) -> (S, bool) {}
+
+    /// `a >> (n & 63)`, and whether `n` was outside `0..=63`.
+    fn overflowing_shr(S a, int n) -> (S, bool) {}
 }
 
 fn add_fits(int a, int b) -> bool {
@@ -193,6 +213,10 @@ fn pow_exp_check(int exp) {
     }
 }
 
+fn shift_in_range(int n) -> bool {
+    return n >= 0 && n <= 63;
+}
+
 impl Checked for int {
     pub fn checked_add(int a, int b) -> Option<int> {
         if add_fits(a, b) {
@@ -249,6 +273,20 @@ impl Checked for int {
         }
         return Some(r);
     }
+
+    pub fn checked_shl(int a, int n) -> Option<int> {
+        if shift_in_range(n) {
+            return Some(a << n);
+        }
+        return None;
+    }
+
+    pub fn checked_shr(int a, int n) -> Option<int> {
+        if shift_in_range(n) {
+            return Some(a >> n);
+        }
+        return None;
+    }
 }
 
 impl Wrapping for int {
@@ -272,6 +310,14 @@ impl Wrapping for int {
         pow_exp_check(exp);
         let (r, _) = pow_wrapped(a, exp);
         return r;
+    }
+
+    pub fn wrapping_shl(int a, int n) -> int {
+        return a << (n & 63);
+    }
+
+    pub fn wrapping_shr(int a, int n) -> int {
+        return a >> (n & 63);
     }
 }
 
@@ -339,5 +385,13 @@ impl Overflowing for int {
     pub fn overflowing_pow(int a, int exp) -> (int, bool) {
         pow_exp_check(exp);
         return pow_wrapped(a, exp);
+    }
+
+    pub fn overflowing_shl(int a, int n) -> (int, bool) {
+        return (a << (n & 63), !shift_in_range(n));
+    }
+
+    pub fn overflowing_shr(int a, int n) -> (int, bool) {
+        return (a >> (n & 63), !shift_in_range(n));
     }
 }
