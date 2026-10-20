@@ -21,7 +21,7 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
 
 | Module | Import | Role |
 |--------|--------|------|
-| `arith` | `use arith::{INT_MAX, INT_MIN, Checked, Wrapping, …};` | Explicit int overflow for add/sub/mul/neg/pow: `checked_*` (`Option`), `wrapping_*` (mod 2^64), `saturating_*`, `overflowing_*` (`(int, bool)`); plain `+ - *` panic on overflow |
+| `arith` | `use arith::{INT_MAX, INT_MIN, Checked, Wrapping, …};` | Explicit int overflow for add/sub/mul/neg/pow: `checked_*` (`Option`), `wrapping_*` (mod 2^64), `saturating_*`, `overflowing_*` (`(int, bool)`); plain `+ - *` panic on overflow. `checked_shl`/`shr`, `wrapping_shl`/`shr` (count `& 63`) and `overflowing_shl`/`shr` take a shift count outside `0..=63`, which `<<` / `>>` trap on |
 | `cell` | `use cell::{Ref};` | `Ref<T>` shared mutable cell (`get` / `set` / `replace` / `update`); use it where a `use (x)` capture snapshot needs to see writes |
 | `ascii` | `use ascii::{is_digit, is_alnum, …};` | ASCII classify / digit / case helpers |
 | `conv` | `use conv::{parse_int, int_to_hex, …};` | `int_to_dec` / `parse_int` / `parse_float` / radix parse |
