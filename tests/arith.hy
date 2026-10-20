@@ -180,3 +180,27 @@ test("overflowing pow") {
     let (g, t) = 7.overflowing_pow(0);
     assert!(g == 1 && !t);
 }
+
+// A negative exponent panics with `negative exponent`, like `**`. Only
+// `should_panic` doc examples can observe a panic, so these carry them.
+
+/// ```should_panic
+/// # use arith::Wrapping;
+/// let e = 0 - 1;
+/// let _ = 2.wrapping_pow(e);
+/// ```
+fn wrapping_pow_negative_panics() {}
+
+/// ```should_panic
+/// # use arith::Saturating;
+/// let e = 0 - 1;
+/// let _ = 2.saturating_pow(e);
+/// ```
+fn saturating_pow_negative_panics() {}
+
+/// ```should_panic
+/// # use arith::Overflowing;
+/// let e = 0 - 1;
+/// let _ = 2.overflowing_pow(e);
+/// ```
+fn overflowing_pow_negative_panics() {}
