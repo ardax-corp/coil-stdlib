@@ -6,7 +6,7 @@
 //
 // `with_capacity(bits)` and `capacity()` are measured in bits.
 
-static const WORD_BITS = 63;
+const WORD_BITS = 63;
 
 /// Mask for bit `b` in `0..WORD_BITS` (`1` doubled `b` times).
 fn word_mask(int b) -> int {
