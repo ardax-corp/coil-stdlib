@@ -204,3 +204,79 @@ fn saturating_pow_negative_panics() {}
 /// let _ = 2.overflowing_pow(e);
 /// ```
 fn overflowing_pow_negative_panics() {}
+
+// Shift counts for #36: in range (`0..=63`), `64`, `-1` and large counts.
+test("checked shl shr") {
+    assert!(or(1.checked_shl(0), 0) == 1);
+    assert!(or(1.checked_shl(4), 0) == 16);
+    assert!(or(1.checked_shl(63), 0) == INT_MIN);
+    assert!(or(neg(1).checked_shl(63), 0) == INT_MIN);
+    assert!(or(3.checked_shl(62), 0) == INT_MIN + 4611686018427387904);
+    assert!(none(1.checked_shl(64)));
+    assert!(none(1.checked_shl(neg(1))));
+    assert!(none(1.checked_shl(65)));
+    assert!(none(1.checked_shl(1000)));
+    assert!(none(1.checked_shl(INT_MAX)));
+    assert!(none(1.checked_shl(INT_MIN)));
+    assert!(none(0.checked_shl(64)));
+    assert!(or(256.checked_shr(0), 0) == 256);
+    assert!(or(256.checked_shr(4), 0) == 16);
+    assert!(or(neg(1000).checked_shr(3), 0) == neg(125));
+    assert!(or(INT_MIN.checked_shr(63), 0) == neg(1));
+    assert!(or(INT_MAX.checked_shr(63), 1) == 0);
+    assert!(none(256.checked_shr(64)));
+    assert!(none(256.checked_shr(neg(1))));
+    assert!(none(256.checked_shr(65)));
+    assert!(none(256.checked_shr(1000)));
+    assert!(none(256.checked_shr(INT_MAX)));
+    assert!(none(256.checked_shr(INT_MIN)));
+}
+
+test("wrapping shl shr") {
+    assert!(1.wrapping_shl(0) == 1);
+    assert!(1.wrapping_shl(4) == 16);
+    assert!(1.wrapping_shl(63) == INT_MIN);
+    assert!(5.wrapping_shl(64) == 5);
+    assert!(1.wrapping_shl(neg(1)) == INT_MIN);
+    assert!(1.wrapping_shl(65) == 2);
+    assert!(3.wrapping_shl(1000) == 3298534883328);
+    assert!(1.wrapping_shl(INT_MAX) == INT_MIN);
+    assert!(5.wrapping_shl(INT_MIN) == 5);
+    assert!(256.wrapping_shr(4) == 16);
+    assert!(neg(1000).wrapping_shr(3) == neg(125));
+    assert!(INT_MIN.wrapping_shr(63) == neg(1));
+    assert!(256.wrapping_shr(64) == 256);
+    assert!(INT_MIN.wrapping_shr(neg(1)) == neg(1));
+    assert!(INT_MAX.wrapping_shr(neg(1)) == 0);
+    assert!(256.wrapping_shr(65) == 128);
+    assert!(neg(1000).wrapping_shr(1027) == neg(125));
+    assert!(INT_MIN.wrapping_shr(INT_MAX) == neg(1));
+    assert!(256.wrapping_shr(INT_MIN) == 256);
+}
+
+test("overflowing shl shr") {
+    let (a, o) = 1.overflowing_shl(4);
+    assert!(a == 16 && !o);
+    let (b, p) = 1.overflowing_shl(63);
+    assert!(b == INT_MIN && !p);
+    let (c, q) = 5.overflowing_shl(64);
+    assert!(c == 5 && q);
+    let (d, r) = 1.overflowing_shl(neg(1));
+    assert!(d == INT_MIN && r);
+    let (f, s) = 3.overflowing_shl(1000);
+    assert!(f == 3298534883328 && s);
+    let (g, t) = 5.overflowing_shl(INT_MIN);
+    assert!(g == 5 && t);
+    let (h, u) = neg(1000).overflowing_shr(3);
+    assert!(h == neg(125) && !u);
+    let (i, v) = INT_MIN.overflowing_shr(63);
+    assert!(i == neg(1) && !v);
+    let (j, w) = 256.overflowing_shr(64);
+    assert!(j == 256 && w);
+    let (k, x) = INT_MIN.overflowing_shr(neg(1));
+    assert!(k == neg(1) && x);
+    let (l, y) = 256.overflowing_shr(65);
+    assert!(l == 128 && y);
+    let (m, z) = INT_MIN.overflowing_shr(INT_MAX);
+    assert!(m == neg(1) && z);
+}
