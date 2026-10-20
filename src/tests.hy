@@ -16,7 +16,7 @@ macro matches(Expr ty, Expr expr) -> Code {
     return quote expr {
         match ${expr} {
             ${ty} => true,
-            _ => false,
+            default => false,
         }
     };
 }
