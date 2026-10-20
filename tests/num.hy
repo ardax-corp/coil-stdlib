@@ -1,11 +1,11 @@
 use tests::assert;
-use num::{clamp, round, pow, signum, gcd, lcm, trunc, div_euclid, rem_euclid, hypot, is_finite};
+use num::{clamp, round, signum, gcd, lcm, trunc, div_euclid, rem_euclid, hypot, is_finite};
 
 test("pow clamp round") {
-    assert!(pow(2, 8) == 256);
-    assert!(pow(2, 0) == 1);
-    assert!(pow(2, 0 - 1) == 0);
-    assert!(pow(2.0, 10.0) == 1024.0);
+    assert!(2 ** 8 == 256);
+    assert!(2 ** 0 == 1);
+    assert!(2.0 ** 10.0 == 1024.0);
+    assert!(2.0 ** -1.0 == 0.5);
     assert!(clamp(5, 0, 3) == 3);
     assert!(clamp(0 - 1, 0, 3) == 0);
     assert!(clamp(2, 0, 3) == 2);

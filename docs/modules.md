@@ -6,8 +6,8 @@ IEEE float math is auto-imported from virtual `prelude::math` in the
 compiler — not this package: `sin`/`cos`/`tan`/`sqrt`/`floor`/`ceil`/
 `exp`/`ln`, `atan`/`atan2`/`asin`/`acos`, `log10`/`log2`/`cbrt`, and
 `sinh`/`cosh`/`tanh`. `num` does not re-export those. Float power and
-remainder are the `**` and `%` operators; `num::pow` is the function form
-(int + float overload). Named float constants `PI`,
+remainder are the `**` and `%` operators (`num` has no `pow`; overflow-aware
+int powers are `arith`'s `checked_pow` and friends). Named float constants `PI`,
 `E`, and `TAU` live on `num` as compile-time `const`s (not HostInvoke).
 
 HTTP lives in the separate [coil-http](https://github.com/ardax-corp/coil-http)
@@ -21,7 +21,7 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
 
 | Module | Import | Role |
 |--------|--------|------|
-| `arith` | `use arith::{INT_MAX, INT_MIN, Checked, Wrapping, …};` | Explicit int overflow: `checked_*` (`Option`), `wrapping_*` (mod 2^64), `saturating_*`, `overflowing_*` (`(int, bool)`); plain `+ - *` panic on overflow |
+| `arith` | `use arith::{INT_MAX, INT_MIN, Checked, Wrapping, …};` | Explicit int overflow for add/sub/mul/neg/pow: `checked_*` (`Option`), `wrapping_*` (mod 2^64), `saturating_*`, `overflowing_*` (`(int, bool)`); plain `+ - *` panic on overflow |
 | `cell` | `use cell::{Ref};` | `Ref<T>` shared mutable cell (`get` / `set` / `replace` / `update`); use it where a `use (x)` capture snapshot needs to see writes |
 | `ascii` | `use ascii::{is_digit, is_alnum, …};` | ASCII classify / digit / case helpers |
 | `conv` | `use conv::{parse_int, int_to_hex, …};` | `int_to_dec` / `parse_int` / `parse_float` / radix parse |
@@ -37,7 +37,7 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
 | `collections::deque` | `use collections::deque::{VecDeque};` | Ring-buffer deque over growable `Vec`; O(1) push/pop at both ends |
 | `collections::bitset` | `use collections::bitset::{BitSet};` | Dense bit set of non-negative `int` indices; 63 bits per `int` word |
 | `collections::tree` | `use collections::tree::{TreeMap};` | Mutable BST map over `Ord`+`Eq`; remove / min / max / iter |
-| `num` | `use num::{PI, E, TAU, abs, min, signum, gcd, …};` | Float constants `PI`/`E`/`TAU`; helpers: `abs`, `min`/`max`/`clamp` over `Ord`, `round`, `pow`, `signum`, `gcd`/`lcm`, `trunc`/`fract`, NaN/inf checks, euclidean div/rem, `hypot` |
+| `num` | `use num::{PI, E, TAU, abs, min, signum, gcd, …};` | Float constants `PI`/`E`/`TAU`; helpers: `abs`, `min`/`max`/`clamp` over `Ord`, `round`, `signum`, `gcd`/`lcm`, `trunc`/`fract`, NaN/inf checks, euclidean div/rem, `hypot` |
 | `random` | `use random::{Rng};` | Seeded `Rng` PRNG (`from_time` mixes [coil-time](https://github.com/ardax-corp/coil-time) timestamps as ints) |
 | `path` | `use path::{Path};` | `Path` value: join / normalize / components / FS + file I/O |
 | `io::sync` | `use io::sync::{write_all, copy, …};` | Blocking adapters — [IO adapters](io.md) |

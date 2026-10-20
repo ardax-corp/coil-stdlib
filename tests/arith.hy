@@ -106,3 +106,101 @@ test("overflowing") {
     let (k, v) = 4.overflowing_neg();
     assert!(k == neg(4) && !v);
 }
+
+test("checked pow") {
+    assert!(or(2.checked_pow(10), 0) == 1024);
+    assert!(or(3.checked_pow(0), 0) == 1);
+    assert!(or(0.checked_pow(0), 0) == 1);
+    assert!(or(0.checked_pow(5), 1) == 0);
+    assert!(or(neg(3).checked_pow(3), 0) == neg(27));
+    assert!(or(2.checked_pow(62), 0) == 4611686018427387904);
+    assert!(none(2.checked_pow(63)));
+    assert!(or(neg(2).checked_pow(63), 0) == INT_MIN);
+    assert!(none(neg(2).checked_pow(64)));
+    assert!(or(3.checked_pow(39), 0) == 4052555153018976267);
+    assert!(none(3.checked_pow(40)));
+    assert!(or(INT_MAX.checked_pow(1), 0) == INT_MAX);
+    assert!(none(INT_MAX.checked_pow(2)));
+    assert!(or(INT_MIN.checked_pow(1), 0) == INT_MIN);
+    assert!(or(1.checked_pow(INT_MAX), 0) == 1);
+    assert!(or(neg(1).checked_pow(INT_MAX), 0) == neg(1));
+    assert!(or(neg(1).checked_pow(INT_MAX - 1), 0) == 1);
+    assert!(none(2.checked_pow(neg(1))));
+    assert!(none(1.checked_pow(neg(1))));
+    assert!(none(0.checked_pow(INT_MIN)));
+}
+
+test("checked pow matches **") {
+    let b = 0 - 7;
+    while b <= 7 {
+        let e = 0;
+        while e <= 20 {
+            assert!(or(b.checked_pow(e), 0) == b ** e);
+            e = e + 1;
+        }
+        b = b + 1;
+    }
+}
+
+test("wrapping pow") {
+    assert!(2.wrapping_pow(10) == 1024);
+    assert!(5.wrapping_pow(0) == 1);
+    assert!(2.wrapping_pow(63) == INT_MIN);
+    assert!(2.wrapping_pow(64) == 0);
+    assert!(neg(2).wrapping_pow(63) == INT_MIN);
+    assert!(3.wrapping_pow(40) == neg(6289078614652622815));
+    assert!(INT_MAX.wrapping_pow(2) == 1);
+    assert!(INT_MIN.wrapping_pow(2) == 0);
+    assert!(neg(1).wrapping_pow(INT_MAX) == neg(1));
+    assert!(1099511628211.wrapping_pow(3) == 624165263380053675);
+    assert!(neg(7046029254386353131).wrapping_pow(5) == 3326886199428185477);
+}
+
+test("saturating pow") {
+    assert!(2.saturating_pow(10) == 1024);
+    assert!(2.saturating_pow(63) == INT_MAX);
+    assert!(neg(2).saturating_pow(63) == INT_MIN);
+    assert!(neg(2).saturating_pow(64) == INT_MAX);
+    assert!(neg(3).saturating_pow(41) == INT_MIN);
+    assert!(10.saturating_pow(INT_MAX) == INT_MAX);
+    assert!(neg(1).saturating_pow(INT_MAX) == neg(1));
+}
+
+test("overflowing pow") {
+    let (a, o) = 2.overflowing_pow(62);
+    assert!(a == 4611686018427387904 && !o);
+    let (b, p) = 2.overflowing_pow(63);
+    assert!(b == INT_MIN && p);
+    let (c, q) = neg(2).overflowing_pow(63);
+    assert!(c == INT_MIN && !q);
+    let (d, r) = 3.overflowing_pow(40);
+    assert!(d == neg(6289078614652622815) && r);
+    let (f, s) = 2.overflowing_pow(64);
+    assert!(f == 0 && s);
+    let (g, t) = 7.overflowing_pow(0);
+    assert!(g == 1 && !t);
+}
+
+// A negative exponent panics with `negative exponent`, like `**`. Only
+// `should_panic` doc examples can observe a panic, so these carry them.
+
+/// ```should_panic
+/// # use arith::Wrapping;
+/// let e = 0 - 1;
+/// let _ = 2.wrapping_pow(e);
+/// ```
+fn wrapping_pow_negative_panics() {}
+
+/// ```should_panic
+/// # use arith::Saturating;
+/// let e = 0 - 1;
+/// let _ = 2.saturating_pow(e);
+/// ```
+fn saturating_pow_negative_panics() {}
+
+/// ```should_panic
+/// # use arith::Overflowing;
+/// let e = 0 - 1;
+/// let _ = 2.overflowing_pow(e);
+/// ```
+fn overflowing_pow_negative_panics() {}

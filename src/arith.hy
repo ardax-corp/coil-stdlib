@@ -11,6 +11,7 @@
 
 // Largest `int`. (`///` would bind to a following `fn`.)
 const INT_MAX = 9223372036854775807;
+
 // Smallest `int`.
 const INT_MIN = 0 - 9223372036854775807 - 1;
 
@@ -32,6 +33,9 @@ trait Checked<S> {
 
     /// `-a`, or `None` when it does not fit.
     fn checked_neg(S a) -> Option<S> {}
+
+    /// `a ** exp`, or `None` when it does not fit or `exp` is negative.
+    fn checked_pow(S a, int exp) -> Option<S> {}
 }
 
 trait Wrapping<S> {
@@ -46,6 +50,10 @@ trait Wrapping<S> {
 
     /// `-a` modulo 2^64 (`INT_MIN` stays `INT_MIN`).
     fn wrapping_neg(S a) -> S {}
+
+    /// `a ** exp` modulo 2^64. Panics with `negative exponent` when
+    /// `exp < 0`, like `**`.
+    fn wrapping_pow(S a, int exp) -> S {}
 }
 
 trait Saturating<S> {
@@ -57,6 +65,10 @@ trait Saturating<S> {
 
     /// `a * b` clamped to the type's range.
     fn saturating_mul(S a, S b) -> S {}
+
+    /// `a ** exp` clamped to the type's range. Panics with
+    /// `negative exponent` when `exp < 0`, like `**`.
+    fn saturating_pow(S a, int exp) -> S {}
 }
 
 trait Overflowing<S> {
@@ -71,6 +83,10 @@ trait Overflowing<S> {
 
     /// The wrapped `-a`, and whether it wrapped.
     fn overflowing_neg(S a) -> (S, bool) {}
+
+    /// The wrapped `a ** exp`, and whether it wrapped. Panics with
+    /// `negative exponent` when `exp < 0`, like `**`.
+    fn overflowing_pow(S a, int exp) -> (S, bool) {}
 }
 
 fn add_fits(int a, int b) -> bool {
@@ -148,6 +164,35 @@ fn wrap_mul(int a, int b) -> int {
     return wrap_add(lo, mid);
 }
 
+// `a ** exp` modulo 2^64 by square-and-multiply, and whether any step
+// overflowed. The base is squared only while bits of `exp` remain, so for
+// `|a| >= 2` an overflowing step means the exact power does not fit either
+// (`|a| <= 1` never overflows). `exp` must be `>= 0`.
+fn pow_wrapped(int a, int exp) -> (int, bool) {
+    let r = 1;
+    let b = a;
+    let e = exp;
+    let over = false;
+    while e > 0 {
+        if (e & 1) == 1 {
+            over = over || !mul_fits(r, b);
+            r = wrap_mul(r, b);
+        }
+        e = e >> 1;
+        if e > 0 {
+            over = over || !mul_fits(b, b);
+            b = wrap_mul(b, b);
+        }
+    }
+    return (r, over);
+}
+
+fn pow_exp_check(int exp) {
+    if exp < 0 {
+        panic "negative exponent";
+    }
+}
+
 impl Checked for int {
     pub fn checked_add(int a, int b) -> Option<int> {
         if add_fits(a, b) {
@@ -193,6 +238,17 @@ impl Checked for int {
         }
         return Some(0 - a);
     }
+
+    pub fn checked_pow(int a, int exp) -> Option<int> {
+        if exp < 0 {
+            return None;
+        }
+        let (r, over) = pow_wrapped(a, exp);
+        if over {
+            return None;
+        }
+        return Some(r);
+    }
 }
 
 impl Wrapping for int {
@@ -210,6 +266,12 @@ impl Wrapping for int {
 
     pub fn wrapping_neg(int a) -> int {
         return wrap_neg(a);
+    }
+
+    pub fn wrapping_pow(int a, int exp) -> int {
+        pow_exp_check(exp);
+        let (r, _) = pow_wrapped(a, exp);
+        return r;
     }
 }
 
@@ -243,6 +305,18 @@ impl Saturating for int {
         }
         return INT_MIN;
     }
+
+    pub fn saturating_pow(int a, int exp) -> int {
+        pow_exp_check(exp);
+        let (r, over) = pow_wrapped(a, exp);
+        if !over {
+            return r;
+        }
+        if a < 0 && (exp & 1) == 1 {
+            return INT_MIN;
+        }
+        return INT_MAX;
+    }
 }
 
 impl Overflowing for int {
@@ -260,5 +334,10 @@ impl Overflowing for int {
 
     pub fn overflowing_neg(int a) -> (int, bool) {
         return (wrap_neg(a), a == INT_MIN);
+    }
+
+    pub fn overflowing_pow(int a, int exp) -> (int, bool) {
+        pow_exp_check(exp);
+        return pow_wrapped(a, exp);
     }
 }
