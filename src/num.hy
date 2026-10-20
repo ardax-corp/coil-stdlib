@@ -3,14 +3,17 @@
 //
 // `abs` stays type-overloaded (numeric / negation, not Ord).
 // `min` / `max` / `clamp` are generic over `Ord` (int, float, and derived orders).
-// `pow` is userland: float is the `**` operator (IEEE `powf`); int is iterative.
+// Powers are the `**` operator (`int` and `float`); checked/wrapping/saturating
+// int powers are on the `arith` traits.
 // IEEE scalars (`sin`/`atan`/`log10`/`sinh`/…) stay on `prelude::math`
 // — auto-imported; this module does not re-export them.
 
 // Circle constant π (IEEE f64). `///` would bind to a following `fn`.
 const PI = 3.141592653589793;
+
 // Natural logarithm base e (IEEE f64).
 const E = 2.718281828459045;
+
 // Full turn τ = 2π (IEEE f64).
 const TAU = 6.283185307179586;
 
@@ -60,28 +63,6 @@ fn round(float x) -> float {
 /// Clamp `x` into the inclusive range `[lo, hi]`.
 fn clamp<T: Ord>(T x, T lo, T hi) -> T {
     return min(max(x, lo), hi);
-}
-
-/// Float power via libm (`base ** exp` IEEE semantics).
-fn pow(float a, float b) -> float {
-    return a ** b;
-}
-
-/// Integer power `base ** exp` for `exp >= 0`; `exp == 0` → `1`; `exp < 0` → `0`.
-fn pow(int base, int exp) -> int {
-    if exp < 0 {
-        return 0;
-    }
-    if exp == 0 {
-        return 1;
-    }
-    let r = 1;
-    let i = 0;
-    while i < exp {
-        r = r * base;
-        i = i + 1;
-    }
-    return r;
 }
 
 /// Sign of an integer (`-1`, `0`, or `1`).
