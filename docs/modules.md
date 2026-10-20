@@ -8,7 +8,7 @@ compiler — not this package: `sin`/`cos`/`tan`/`sqrt`/`floor`/`ceil`/
 `sinh`/`cosh`/`tanh`. `num` does not re-export those. Float power and
 remainder are the `**` and `%` operators; `num::pow` is the function form
 (int + float overload). Named float constants `PI`,
-`E`, and `TAU` live on `num` as compile-time `static const` (not HostInvoke).
+`E`, and `TAU` live on `num` as compile-time `const`s (not HostInvoke).
 
 HTTP lives in the separate [coil-http](https://github.com/ardax-corp/coil-http)
 package (`use http::client::{Client};`).

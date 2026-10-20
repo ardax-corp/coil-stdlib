@@ -10,9 +10,9 @@
 // intermediate result overflows. Shifts and bit ops never trap.
 
 // Largest `int`. (`///` would bind to a following `fn`.)
-static const INT_MAX = 9223372036854775807;
+const INT_MAX = 9223372036854775807;
 // Smallest `int`.
-static const INT_MIN = 0 - 9223372036854775807 - 1;
+const INT_MIN = 0 - 9223372036854775807 - 1;
 
 trait Checked<S> {
     /// `a + b`, or `None` when it does not fit.
