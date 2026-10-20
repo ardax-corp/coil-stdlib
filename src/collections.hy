@@ -48,6 +48,7 @@ fn min_int(int a, int b) -> int
 }
 
 /// Stable bottom-up mergesort for `Ord` elements (new vector; input unchanged).
+/// Strings sort by their UTF-8 bytes (`"B"` before `"a"`, a prefix first).
 fn sort<T: Ord>(Vec<T> arr) -> Vec<T>
     ensures result.len() == arr.len()
 {

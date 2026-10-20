@@ -29,7 +29,7 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
 | `text` | `use text::{trim, split, rfind, …};` | String helpers via UTF-8 bytes (virtual `string` owns `format` / `to_bytes`) |
 | `encoding` | `use encoding::{encode, decode};` | Standard Base64 encode/decode |
 | `fmt` | `use fmt::{Buf, pad_left, …};` | Incremental string builder (`Buf`) and padding helpers |
-| `collections` | `use collections::{sort, sort_by, reverse, …};` | Stable mergesort / `sort_by` (`T -> K` with `K: Ord`) / `reverse` / `collect_ints` |
+| `collections` | `use collections::{sort, sort_by, reverse, …};` | Stable mergesort / `sort_by` (`T -> K` with `K: Ord`) / `reverse` / `collect_ints`; strings sort by UTF-8 bytes |
 | `collections::vec` | `use collections::vec::{map, filter, chunks, windows, partition, …};` | `Vec<T>` helpers: `map` / `filter` / `chunks` / `windows` / `partition` / `first` / `contains` / … |
 | `collections::map` | `use collections::map::{HashMap};` | Chaining hash map (`Eq`+`Hash`); `get(k, fallback)` |
 | `collections::set` | `use collections::set::{HashSet};` | Unique-value set backed by `HashMap<T, bool>` |
