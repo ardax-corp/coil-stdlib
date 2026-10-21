@@ -1,5 +1,5 @@
 use tests::assert;
-use random::{Rng};
+use random::Rng;
 
 test("rng seeded deterministic") {
     let a = Rng::seeded(42);

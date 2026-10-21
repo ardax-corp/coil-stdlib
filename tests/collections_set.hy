@@ -1,5 +1,5 @@
 use tests::assert;
-use collections::set::{HashSet};
+use collections::set::HashSet;
 
 test("hashset insert contains remove") {
     let s = HashSet::new();

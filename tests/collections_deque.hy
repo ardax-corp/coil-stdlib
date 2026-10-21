@@ -1,5 +1,5 @@
 use tests::assert;
-use collections::deque::{VecDeque};
+use collections::deque::VecDeque;
 
 test("deque push pop both ends") {
     let xs = VecDeque::new();

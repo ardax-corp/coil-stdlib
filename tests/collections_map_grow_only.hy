@@ -1,5 +1,5 @@
 use tests::assert;
-use collections::map::{HashMap};
+use collections::map::HashMap;
 
 // Avoid rehash in the harness for now — grow works under `main` but the
 // test runner's tighter operand stack trips during bulk rehash + dict calls.

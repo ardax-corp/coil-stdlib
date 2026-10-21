@@ -3,16 +3,8 @@
 // Named `text` because virtual `string` already owns `format` / `to_bytes` / `from_bytes`.
 // The search and slice helpers use the `string` byte natives, which read the
 // string in place instead of copying it through `to_bytes` on every call.
-use string::{
-    to_bytes,
-    from_bytes,
-    byte_at,
-    slice_bytes,
-    find_from as str_find_from,
-    rfind as str_rfind,
-    match_at,
-};
-use ascii::{is_space};
+use string::{to_bytes, from_bytes, byte_at, slice_bytes, find_from as str_find_from, rfind as str_rfind, match_at};
+use ascii::is_space;
 
 fn utf8_ok(Vec<byte> b) -> Result<string, string> {
     return match from_bytes(b) {

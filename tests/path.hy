@@ -1,5 +1,5 @@
 use tests::assert;
-use path::{Path};
+use path::Path;
 
 test("join dirname basename extension") {
     let a = Path::from("a");

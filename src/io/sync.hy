@@ -1,15 +1,14 @@
 // Blocking IO adapters over L0 + `wait_readable` / `wait_writable` (userland; not host natives).
-use io::{
-    read,
-    write_from,
-    wait_readable,
-    wait_writable,
-    stdout,
-    stderr,
-};
+use io::read;
+use io::write_from;
+use io::wait_readable;
+use io::wait_writable;
+use io::stdout;
+use io::stderr;
 use io::net::tcp::accept;
-use io::net::udp::{recv_from, send_to};
-use io::fs::{copy as fs_copy};
+use io::net::udp::recv_from;
+use io::net::udp::send_to;
+use io::fs::copy as fs_copy;
 use string::{from_bytes as str_from_bytes, to_bytes as str_to_bytes};
 
 /// Write every byte of `buf` to `s`, parking on `WouldBlock` until done.
@@ -32,7 +31,7 @@ fn write_all(Stream s, Vec<byte> buf) -> Result<int, IoError> {
             Result::Err(e) => {
                 raise e;
             },
-        };
+        }
     }
     return 0;
 }
@@ -76,7 +75,7 @@ fn read_exact(Stream s, Vec<byte> buf) -> Result<Option<int>, IoError> {
             Result::Err(e) => {
                 raise e;
             },
-        };
+        }
     }
     return Option::Some(filled);
 }
@@ -115,7 +114,7 @@ fn read_to_end(Stream s) -> Result<Vec<byte>, IoError> {
             Result::Err(e) => {
                 raise e;
             },
-        };
+        }
     }
     return acc;
 }
@@ -136,7 +135,7 @@ fn accept_wait(Stream listener) -> Result<Stream, IoError> {
             Result::Err(e) => {
                 raise e;
             },
-        };
+        }
     }
     return out;
 }
@@ -161,7 +160,7 @@ fn recv_from_wait(Stream s, Vec<byte> buf) -> Result<(int, string, int), IoError
             Result::Err(e) => {
                 raise e;
             },
-        };
+        }
     }
     return (out_n, out_host, out_port);
 }
@@ -182,7 +181,7 @@ fn send_to_wait(Stream s, Vec<byte> buf, string host, int port) -> Result<int, I
             Result::Err(e) => {
                 raise e;
             },
-        };
+        }
     }
     return out_n;
 }
@@ -253,7 +252,7 @@ fn read_line(Stream s) -> Result<Option<string>, IoError> {
             Result::Err(e) => {
                 raise e;
             },
-        };
+        }
     }
     if !saw {
         return Option::None;

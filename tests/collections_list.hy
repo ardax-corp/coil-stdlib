@@ -1,5 +1,5 @@
 use tests::assert;
-use collections::list::{List};
+use collections::list::List;
 
 test("list push pop front back") {
     let xs = List::new();

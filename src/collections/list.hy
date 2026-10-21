@@ -60,9 +60,9 @@ impl List<T> {
                             Option::Some(next) => {
                                 cur = Option::Some(next);
                             },
-                        };
+                        }
                     },
-                };
+                }
             }
         }
         self.len = self.len + 1;
@@ -115,9 +115,9 @@ impl List<T> {
                             prev = cur;
                             cur = Option::Some(next);
                         },
-                    };
+                    }
                 },
-            };
+            }
         }
         return match cur {
             Option::None => Option::None,
@@ -130,7 +130,7 @@ impl List<T> {
                     Option::Some(p) => {
                         p.next = Option::None;
                     },
-                };
+                }
                 self.len = self.len - 1;
                 return Option::Some(v);
             },
@@ -159,7 +159,7 @@ impl List<T> {
                     out.push(n.value);
                     cur = n.next;
                 },
-            };
+            }
         }
         return out;
     }
