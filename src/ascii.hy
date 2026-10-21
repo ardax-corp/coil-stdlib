@@ -102,14 +102,32 @@ fn hex_digit(int n) -> byte {
 
 /// Decimal digit as a one-byte string. Callers must pass `0..=9`.
 fn digit_char(int d) -> string {
-    if d == 0 { return "0"; }
-    if d == 1 { return "1"; }
-    if d == 2 { return "2"; }
-    if d == 3 { return "3"; }
-    if d == 4 { return "4"; }
-    if d == 5 { return "5"; }
-    if d == 6 { return "6"; }
-    if d == 7 { return "7"; }
-    if d == 8 { return "8"; }
+    if d == 0 {
+        return "0";
+    }
+    if d == 1 {
+        return "1";
+    }
+    if d == 2 {
+        return "2";
+    }
+    if d == 3 {
+        return "3";
+    }
+    if d == 4 {
+        return "4";
+    }
+    if d == 5 {
+        return "5";
+    }
+    if d == 6 {
+        return "6";
+    }
+    if d == 7 {
+        return "7";
+    }
+    if d == 8 {
+        return "8";
+    }
     return "9";
 }

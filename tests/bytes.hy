@@ -1,9 +1,6 @@
 use tests::assert;
-use bytes::{
-    slice, concat, eq, find, find_from, rfind, contains, starts_with, ends_with,
-    replace, repeat, pad_left, pad_right,
-};
-use string::{to_bytes};
+use bytes::{slice, concat, eq, find, find_from, rfind, contains, starts_with, ends_with, replace, repeat, pad_left, pad_right};
+use string::to_bytes;
 
 test("slice concat eq") {
     let b = to_bytes("hello");
@@ -32,14 +29,8 @@ test("rfind and replace") {
     assert!(rfind(to_bytes("ababa"), to_bytes("ba")) == 3);
     assert!(rfind(to_bytes("abc"), to_bytes("z")) == -1);
     assert!(rfind(to_bytes("abc"), to_bytes("")) == 3);
-    assert!(eq(
-        replace(to_bytes("aaaa"), to_bytes("aa"), to_bytes("b")),
-        to_bytes("bb"),
-    ));
-    assert!(eq(
-        replace(to_bytes("abc"), to_bytes(""), to_bytes("x")),
-        to_bytes("abc"),
-    ));
+    assert!(eq(replace(to_bytes("aaaa"), to_bytes("aa"), to_bytes("b")), to_bytes("bb")));
+    assert!(eq(replace(to_bytes("abc"), to_bytes(""), to_bytes("x")), to_bytes("abc")));
 }
 
 test("repeat bytes") {
@@ -58,4 +49,3 @@ test("pad bytes right") {
 test("pad bytes preserves wide input") {
     assert!(eq(pad_left(to_bytes("wide"), 2, "0"), to_bytes("wide")));
 }
-

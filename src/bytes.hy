@@ -138,7 +138,8 @@ fn eq(Vec<byte> a, Vec<byte> b) -> bool
 fn find_from(Vec<byte> hay, Vec<byte> needle, int start) -> int
     ensures result >= -1 && result <= hay.len()
     ensures result < 0 || result >= start || (start > hay.len() && result == hay.len())
-    ensures result < 0 || (result + needle.len() <= hay.len() && region_eq(hay, result, needle, 0, needle.len()))
+    ensures result < 0 ||
+            (result + needle.len() <= hay.len() && region_eq(hay, result, needle, 0, needle.len()))
 {
     let hn = hay.len();
     let nn = needle.len();
@@ -170,7 +171,8 @@ fn find(Vec<byte> hay, Vec<byte> needle) -> int {
 
 fn rfind(Vec<byte> hay, Vec<byte> needle) -> int
     ensures result >= -1 && result <= hay.len()
-    ensures result < 0 || (result + needle.len() <= hay.len() && region_eq(hay, result, needle, 0, needle.len()))
+    ensures result < 0 ||
+            (result + needle.len() <= hay.len() && region_eq(hay, result, needle, 0, needle.len()))
 {
     let hn = hay.len();
     let nn = needle.len();

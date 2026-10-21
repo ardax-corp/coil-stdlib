@@ -1,7 +1,7 @@
 // Shared decimal parsing and formatting helpers (pure userland).
 use string::{to_bytes, from_bytes};
 use ascii::{is_digit, digit_val, digit_char, is_space, hex_digit, hex_val};
-use bytes::{slice as bytes_slice};
+use bytes::slice as bytes_slice;
 
 fn trim_ascii(string s) -> string {
     let b = to_bytes(s);

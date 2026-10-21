@@ -10,6 +10,18 @@ env:
   CI: "true"
 
 jobs:
+  fmt:
+    name: coil fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install coil (edge)
+        uses: ardax-corp/coil-lang/.github/actions/setup-coil@main
+
+      - name: coil fmt --check
+        run: coil-fmt --check src tests
+
   test:
     runs-on: ubuntu-latest
     steps:

@@ -1,6 +1,6 @@
 // HashSet — HashMap<T, bool> wrapper.
 
-use collections::map::{HashMap};
+use collections::map::HashMap;
 
 /// Set of unique values backed by `HashMap<T, bool>`.
 class HashSet<T> {

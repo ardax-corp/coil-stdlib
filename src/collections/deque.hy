@@ -159,7 +159,7 @@ impl VecDeque<T> {
                 Option::Some(v) => {
                     out.push(v);
                 },
-            };
+            }
             i = i + 1;
         }
         return out;

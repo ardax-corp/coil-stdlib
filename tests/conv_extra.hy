@@ -1,7 +1,7 @@
 use tests::assert;
 use conv::{int_to_hex, int_to_bin, parse_int_radix, parse_int};
 use bytes::{to_hex, from_hex, eq};
-use string::{to_bytes};
+use string::to_bytes;
 
 test("int to hex bin") {
     assert!(int_to_hex(255) == "ff");

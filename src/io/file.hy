@@ -1,6 +1,9 @@
 // Whole-file helpers over `io::open` + `io::sync` (userland).
-use io::{open, close, IoError};
-use io::sync::{read_to_end, write_all};
+use io::open;
+use io::close;
+use io::IoError;
+use io::sync::read_to_end;
+use io::sync::write_all;
 use string::{to_bytes, from_bytes};
 
 /// Read an entire file as bytes (`open` + `read_to_end` + `close`).
@@ -12,7 +15,7 @@ fn read_bytes(string path) -> Result<Vec<byte>, IoError> {
             match close(s) {
                 Result::Ok(_) => 0,
                 Result::Err(_) => 0,
-            };
+            }
             raise e;
         },
     };
@@ -29,10 +32,10 @@ fn write_bytes(string path, Vec<byte> buf) -> Result<int, IoError> {
             match close(s) {
                 Result::Ok(_) => 0,
                 Result::Err(_) => 0,
-            };
+            }
             raise e;
         },
-    };
+    }
     close(s)?;
     return 0;
 }
@@ -61,10 +64,10 @@ fn append_bytes(string path, Vec<byte> buf) -> Result<int, IoError> {
             match close(s) {
                 Result::Ok(_) => 0,
                 Result::Err(_) => 0,
-            };
+            }
             raise e;
         },
-    };
+    }
     close(s)?;
     return 0;
 }

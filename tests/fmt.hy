@@ -1,5 +1,5 @@
 use tests::assert;
-use fmt::{Buf};
+use fmt::Buf;
 
 test("buf push and pad") {
     let b = Buf::new();

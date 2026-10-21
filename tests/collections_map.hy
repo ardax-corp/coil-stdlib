@@ -1,5 +1,5 @@
 use tests::assert;
-use collections::map::{HashMap};
+use collections::map::HashMap;
 
 test("hashmap insert get update remove") {
     let m = HashMap::new();

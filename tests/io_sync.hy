@@ -1,7 +1,12 @@
 use tests::assert;
-use io::{open, close, write_from, IoError};
-use io::sync::{write_all, read_to_end, read_exact};
-use io::fs::{remove_file};
+use io::open;
+use io::close;
+use io::write_from;
+use io::IoError;
+use io::sync::write_all;
+use io::sync::read_to_end;
+use io::sync::read_exact;
+use io::fs::remove_file;
 use string::{to_bytes, from_bytes};
 
 test("write_from offset skips prefix") {
@@ -14,11 +19,11 @@ test("write_from offset skips prefix") {
     match write_from(s, buf, 3) {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "write_from",
-    };
+    }
     match close(s) {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "close w",
-    };
+    }
     let r = match open(path, "r") {
         Result::Ok(v) => v,
         Result::Err(_) => panic "open r",
@@ -30,7 +35,7 @@ test("write_from offset skips prefix") {
     match close(r) {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "close r",
-    };
+    }
     let text = match from_bytes(got) {
         Result::Ok(v) => v,
         Result::Err(_) => panic "from_bytes",
@@ -39,7 +44,7 @@ test("write_from offset skips prefix") {
     match remove_file(path) {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "remove",
-    };
+    }
 }
 
 test("write_from rejects bad offsets") {
@@ -53,26 +58,26 @@ test("write_from rejects bad offsets") {
         Result::Ok(_) => panic "neg offset",
         Result::Err(IoError::InvalidInput) => 0,
         Result::Err(_) => panic "neg tag",
-    };
+    }
     match write_from(s, buf, 5) {
         Result::Ok(_) => panic "past end",
         Result::Err(IoError::InvalidInput) => 0,
         Result::Err(_) => panic "past tag",
-    };
+    }
     match write_from(s, buf, 4) {
         Result::Ok(n) => {
             assert!(n == 0);
         },
         Result::Err(_) => panic "at len",
-    };
+    }
     match close(s) {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "close",
-    };
+    }
     match remove_file(path) {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "remove",
-    };
+    }
 }
 
 test("write_all roundtrip") {
@@ -85,11 +90,11 @@ test("write_all roundtrip") {
     match write_all(s, payload) {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "write_all",
-    };
+    }
     match close(s) {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "close w",
-    };
+    }
     let r = match open(path, "r") {
         Result::Ok(v) => v,
         Result::Err(_) => panic "open r",
@@ -101,7 +106,7 @@ test("write_all roundtrip") {
     match close(r) {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "close r",
-    };
+    }
     let text = match from_bytes(got) {
         Result::Ok(v) => v,
         Result::Err(_) => panic "from_bytes",
@@ -110,7 +115,7 @@ test("write_all roundtrip") {
     match remove_file(path) {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "remove",
-    };
+    }
 }
 
 test("read_exact fills buffer") {
@@ -123,11 +128,11 @@ test("read_exact fills buffer") {
     match write_all(s, payload) {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "write_all",
-    };
+    }
     match close(s) {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "close w",
-    };
+    }
     let r = match open(path, "r") {
         Result::Ok(v) => v,
         Result::Err(_) => panic "open r",
@@ -139,11 +144,11 @@ test("read_exact fills buffer") {
         },
         Result::Ok(Option::None) => panic "eof",
         Result::Err(_) => panic "read_exact",
-    };
+    }
     match close(r) {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "close r",
-    };
+    }
     let text = match from_bytes(buf) {
         Result::Ok(v) => v,
         Result::Err(_) => panic "from_bytes",
@@ -152,7 +157,7 @@ test("read_exact fills buffer") {
     match remove_file(path) {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "remove",
-    };
+    }
 }
 
 test("write_all empty buffer") {
@@ -165,11 +170,11 @@ test("write_all empty buffer") {
     match write_all(s, empty) {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "write_all",
-    };
+    }
     match close(s) {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "close w",
-    };
+    }
     let r = match open(path, "r") {
         Result::Ok(v) => v,
         Result::Err(_) => panic "open r",
@@ -181,10 +186,10 @@ test("write_all empty buffer") {
     match close(r) {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "close r",
-    };
+    }
     assert!(got.len() == 0);
     match remove_file(path) {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "remove",
-    };
+    }
 }
