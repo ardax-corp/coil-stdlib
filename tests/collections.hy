@@ -102,3 +102,25 @@ test("sort_by already grouped and singleton") {
     assert!(one.len() == 1);
     assert!(one[0] == 9);
 }
+
+test("sort strings byte-wise (#48)") {
+    let v: Vec<string> = ["b", "a"];
+    let s = sort(v);
+    assert!(s[0] == "a");
+    assert!(s[1] == "b");
+    let words = sort(Vec::from(["pear", "Apple", "fig", "", "figs", "apple"]));
+    assert!(words[0] == "");
+    assert!(words[1] == "Apple");
+    assert!(words[2] == "apple");
+    assert!(words[3] == "fig");
+    assert!(words[4] == "figs");
+    assert!(words[5] == "pear");
+}
+
+test("sort_by string key (#48)") {
+    let src = Vec::from(["cc", "a", "bbb"]);
+    let out = sort_by(src, fn (string s) => s + "!");
+    assert!(out[0] == "a");
+    assert!(out[1] == "bbb");
+    assert!(out[2] == "cc");
+}
