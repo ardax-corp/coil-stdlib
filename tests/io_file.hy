@@ -1,13 +1,17 @@
 use tests::assert;
-use io::file::{read_text, write_text, read_bytes, write_bytes};
-use io::fs::{exists, remove_file};
+use io::file::read_text;
+use io::file::write_text;
+use io::file::read_bytes;
+use io::file::write_bytes;
+use io::fs::exists;
+use io::fs::remove_file;
 
 test("read write text roundtrip") {
     let path = "/tmp/coil_stdlib_file_test.txt";
     match write_text(path, "hello") {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "write_text",
-    };
+    }
     let ex = match exists(path) {
         Result::Ok(v) => v,
         Result::Err(_) => panic "exists",
@@ -21,5 +25,5 @@ test("read write text roundtrip") {
     match remove_file(path) {
         Result::Ok(_) => 0,
         Result::Err(_) => panic "remove",
-    };
+    }
 }

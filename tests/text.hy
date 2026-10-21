@@ -1,8 +1,5 @@
 use tests::assert;
-use text::{
-    trim, starts_with, ends_with, contains, split, to_lower, to_upper,
-    replace, split_once, join, repeat, pad_left, pad_right, lines,
-};
+use text::{trim, starts_with, ends_with, contains, split, to_lower, to_upper, replace, split_once, join, repeat, pad_left, pad_right, lines};
 
 test("trim and affixes") {
     let t = match trim("  hi  ") {

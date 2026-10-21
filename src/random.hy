@@ -21,14 +21,14 @@ impl Rng {
                 a = ts.nanos();
             },
             Result::Err(_) => {},
-        };
+        }
         let b = 0;
         match timestamp() {
             Result::Ok(ts) => {
                 b = ts.nanos();
             },
             Result::Err(_) => {},
-        };
+        }
         return Rng::seeded(a ^ b ^ (b << 1));
     }
 

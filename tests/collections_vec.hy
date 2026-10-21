@@ -1,8 +1,5 @@
 use tests::assert;
-use collections::vec::{
-    map, filter, fold, first, last, contains, index_of, concat, dedup, binary_search, chunks,
-    windows, partition,
-};
+use collections::vec::{map, filter, fold, first, last, contains, index_of, concat, dedup, binary_search, chunks, windows, partition};
 
 test("map int") {
     let xs: Vec<int> = Vec::new();

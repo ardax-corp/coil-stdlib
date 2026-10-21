@@ -1,18 +1,21 @@
 // Path value and filesystem helpers (userland). Forward slashes preferred; also accepts `\`.
-use io::{IoError};
-use io::fs::{
-    exists as fs_exists,
-    is_file as fs_is_file,
-    is_dir as fs_is_dir,
-    metadata as fs_metadata,
-    list_dir as fs_list_dir,
-    create_dir as fs_create_dir,
-    create_dir_all as fs_create_dir_all,
-    remove_file as fs_remove_file,
-    rename as fs_rename,
-    copy as fs_copy,
-};
-use io::file::{read_text, write_text, read_bytes, write_bytes, append_text, append_bytes};
+use io::IoError;
+use io::fs::exists as fs_exists;
+use io::fs::is_file as fs_is_file;
+use io::fs::is_dir as fs_is_dir;
+use io::fs::metadata as fs_metadata;
+use io::fs::list_dir as fs_list_dir;
+use io::fs::create_dir as fs_create_dir;
+use io::fs::create_dir_all as fs_create_dir_all;
+use io::fs::remove_file as fs_remove_file;
+use io::fs::rename as fs_rename;
+use io::fs::copy as fs_copy;
+use io::file::read_text;
+use io::file::write_text;
+use io::file::read_bytes;
+use io::file::write_bytes;
+use io::file::append_text;
+use io::file::append_bytes;
 use string::{to_bytes, from_bytes};
 use bytes::{slice as bytes_slice, concat as bytes_concat};
 
@@ -226,7 +229,7 @@ impl Path {
                             match parts.pop() {
                                 Option::Some(_) => 0,
                                 Option::None => 0,
-                            };
+                            }
                         }
                     } else {
                         if piece != "." {
