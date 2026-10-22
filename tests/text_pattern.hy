@@ -1,5 +1,5 @@
 use tests::assert;
-use text::{Pattern, Searchable, Span, contains, split};
+use text::{Pattern, Searchable, Span};
 
 class Version {
     pub major: int,
@@ -74,12 +74,6 @@ test("empty matches step over whole characters") {
     assert!(parts[0] == "" && parts[1] == "a" && parts[2] == "b" && parts[3] == "");
     assert!("é!".replace_all("", "|") == "|é|!|");
     assert!("é".find_all("").len() == 2);
-}
-
-test("free functions keep their string-only behaviour") {
-    assert!(contains("foobar", "oba"));
-    let parts = split("ab", "") ?? Vec::new();
-    assert!(parts.len() == 1);
 }
 
 test("a custom pattern") {

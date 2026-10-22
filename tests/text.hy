@@ -1,5 +1,5 @@
 use tests::assert;
-use text::{trim, starts_with, ends_with, contains, split, to_lower, to_upper, replace, split_once, join, repeat, pad_left, pad_right, lines};
+use text::{Searchable, trim, to_lower, to_upper, join, repeat, pad_left, pad_right, lines};
 
 test("trim and affixes") {
     let t = match trim("  hi  ") {
@@ -7,16 +7,13 @@ test("trim and affixes") {
         Result::Err(_) => panic "trim",
     };
     assert!(t == "hi");
-    assert!(starts_with("hello", "he"));
-    assert!(ends_with("hello", "lo"));
-    assert!(contains("hello", "ell"));
+    assert!("hello".starts_with("he"));
+    assert!("hello".ends_with("lo"));
+    assert!("hello".contains("ell"));
 }
 
 test("split and case") {
-    let parts = match split("a,b,c", ",") {
-        Result::Ok(p) => p,
-        Result::Err(_) => panic "split",
-    };
+    let parts = "a,b,c".split(",");
     assert!(parts.len() == 3);
     assert!(parts[0] == "a");
     assert!(parts[2] == "c");
@@ -33,8 +30,8 @@ test("split and case") {
 }
 
 test("replace split once and join") {
-    assert!(replace("one two two", "two", "2")? == "one 2 2");
-    let pair = split_once("key=value=rest", "=")?;
+    assert!("one two two".replace_all("two", "2") == "one 2 2");
+    let pair = "key=value=rest".split_once("=") ?? ("", "");
     assert!(pair[0] == "key");
     assert!(pair[1] == "value=rest");
 
