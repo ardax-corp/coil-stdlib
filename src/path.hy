@@ -19,6 +19,24 @@ use io::file::append_bytes;
 use string::{to_bytes, from_bytes};
 use bytes::{slice as bytes_slice, concat as bytes_concat};
 
+/// A file-system path, with helpers to take it apart and to use it.
+///
+/// `Path` is plain text: building one never touches the disk. Both `/` and `\\`
+/// separate components; `join` and `normalize` write `/`. The file-system methods
+/// (`exists`, `read_text`, `mkdir`, …) call `io::fs` and `io::file`, so they need
+/// the same `--allow-read` / `--allow-write` grants.
+///
+/// # Examples
+///
+/// ```
+/// use path::{Path};
+/// # use tests::assert;
+/// let p = Path::from("/srv/app/../data/report.csv").normalize() ?? Path::from("");
+/// assert!(p.as_str() == "/srv/data/report.csv");
+/// assert!((p.basename() ?? "") == "report.csv");
+/// assert!((p.extension() ?? "") == "csv");
+/// assert!((p.dirname() ?? p).as_str() == "/srv/data");
+/// ```
 class Path {
     raw: string,
 }
@@ -36,14 +54,30 @@ impl Path {
         return false;
     }
 
+/// Creates a path from `s` as written.
     pub static fn from(string s) -> Path {
         return new Path(s);
     }
 
+/// Returns the path as a string.
     pub fn as_str() -> string {
         return self.raw;
     }
 
+/// Returns this path followed by `other`, with exactly one separator between them.
+///
+/// An empty side returns the other one unchanged. `other` is appended even when
+/// it is absolute.
+///
+/// # Examples
+///
+/// ```
+/// use path::{Path};
+/// # use tests::assert;
+/// let p = Path::from("logs/").join(Path::from("/today.txt")) ?? Path::from("");
+/// assert!(p.as_str() == "logs/today.txt");
+/// assert!((Path::from("a").join(Path::from("b")) ?? Path::from("")).as_str() == "a/b");
+/// ```
     pub fn join(Path other) -> Result<Path, IoError> {
         let a = self.raw;
         let b = other.raw;
@@ -83,6 +117,20 @@ impl Path {
         };
     }
 
+/// Returns the path without its last component.
+///
+/// Trailing separators are ignored. A path with no separator gives `.`; a
+/// path directly under the root gives `/`.
+///
+/// # Examples
+///
+/// ```
+/// use path::{Path};
+/// # use tests::assert;
+/// assert!((Path::from("a/b/c.txt").dirname() ?? Path::from("")).as_str() == "a/b");
+/// assert!((Path::from("/top").dirname() ?? Path::from("")).as_str() == "/");
+/// assert!((Path::from("file").dirname() ?? Path::from("")).as_str() == ".");
+/// ```
     pub fn dirname() -> Result<Path, IoError> {
         let path = self.raw;
         let b = to_bytes(path);
@@ -123,6 +171,16 @@ impl Path {
         return new Path(".");
     }
 
+/// Returns the last component, ignoring trailing separators (`""` for an empty path or `/`).
+///
+/// # Examples
+///
+/// ```
+/// use path::{Path};
+/// # use tests::assert;
+/// assert!((Path::from("a/b/c.txt").basename() ?? "") == "c.txt");
+/// assert!((Path::from("a/b/").basename() ?? "") == "b");
+/// ```
     pub fn basename() -> Result<string, IoError> {
         let path = self.raw;
         let b = to_bytes(path);
@@ -157,6 +215,16 @@ impl Path {
         return from_bytes(bytes_slice(b, 0, end))?;
     }
 
+/// Returns the text after the last `.` of the last component, or `""` when there is none.
+///
+/// # Examples
+///
+/// ```
+/// use path::{Path};
+/// # use tests::assert;
+/// assert!((Path::from("archive.tar.gz").extension() ?? "") == "gz");
+/// assert!((Path::from("Makefile").extension() ?? "") == "");
+/// ```
     pub fn extension() -> Result<string, IoError> {
         let base = self.basename()?;
         let b = to_bytes(base);
@@ -174,6 +242,17 @@ impl Path {
         return "";
     }
 
+/// Returns `true` when the path starts with a separator or a Windows drive letter (`C:`).
+///
+/// # Examples
+///
+/// ```
+/// use path::{Path};
+/// # use tests::assert;
+/// assert!(Path::from("/etc").is_absolute());
+/// assert!(Path::from("C:\\data").is_absolute());
+/// assert!(!Path::from("src/main.hy").is_absolute());
+/// ```
     pub fn is_absolute() -> bool {
         let path = self.raw;
         let b = to_bytes(path);
@@ -202,6 +281,19 @@ impl Path {
         return false;
     }
 
+/// Removes `.` components, resolves `..` against the component before it, and collapses repeated separators.
+///
+/// Purely textual: symlinks are not followed (use `io::fs::realpath` for that),
+/// and a `..` with nothing before it is dropped. An empty result is `.`.
+///
+/// # Examples
+///
+/// ```
+/// use path::{Path};
+/// # use tests::assert;
+/// assert!((Path::from("a/./b//../c").normalize() ?? Path::from("")).as_str() == "a/c");
+/// assert!((Path::from("/../x").normalize() ?? Path::from("")).as_str() == "/x");
+/// ```
     pub fn normalize() -> Result<Path, IoError> {
         let b = to_bytes(self.raw);
         let n = b.len();
@@ -270,6 +362,17 @@ impl Path {
         };
     }
 
+/// Returns the components of the normalized path, without separators.
+///
+/// # Examples
+///
+/// ```
+/// use path::{Path};
+/// # use tests::assert;
+/// let parts = Path::from("/usr/local/../bin").components() ?? Vec::new();
+/// assert!(parts.len() == 2);
+/// assert!(parts[0] == "usr" && parts[1] == "bin");
+/// ```
     pub fn components() -> Result<Vec<string>, IoError> {
         let norm = self.normalize()?;
         let b = to_bytes(norm.raw);
@@ -304,71 +407,87 @@ impl Path {
         return out;
     }
 
+/// Returns whether something exists at this path. See `io::fs::exists`.
     pub fn exists() -> Result<bool, IoError> {
         return fs_exists(self.raw)?;
     }
 
+/// Returns whether this path is a regular file. See `io::fs::is_file`.
     pub fn is_file() -> Result<bool, IoError> {
         return fs_is_file(self.raw)?;
     }
 
+/// Returns whether this path is a directory. See `io::fs::is_dir`.
     pub fn is_dir() -> Result<bool, IoError> {
         return fs_is_dir(self.raw)?;
     }
 
+/// Returns the file's metadata. See `io::fs::metadata`.
     pub fn metadata() {
         return fs_metadata(self.raw)?;
     }
 
+/// Returns the names of the entries in this directory. See `io::fs::list_dir`.
     pub fn list_dir() -> Result<Vec<string>, IoError> {
         return fs_list_dir(self.raw)?;
     }
 
+/// Creates this directory; its parent must exist. See `io::fs::create_dir`.
     pub fn mkdir() -> Result<int, IoError> {
         fs_create_dir(self.raw)?;
         return 0;
     }
 
+/// Creates this directory and any missing parents. See `io::fs::create_dir_all`.
     pub fn mkdir_all() -> Result<int, IoError> {
         fs_create_dir_all(self.raw)?;
         return 0;
     }
 
+/// Deletes the file at this path. See `io::fs::remove_file`.
     pub fn remove_file() -> Result<int, IoError> {
         fs_remove_file(self.raw)?;
         return 0;
     }
 
+/// Moves this file or directory to `dst`. See `io::fs::rename`.
     pub fn rename(Path dst) -> Result<int, IoError> {
         fs_rename(self.raw, dst.raw)?;
         return 0;
     }
 
+/// Copies this file to `dst`, replacing it. See `io::fs::copy`.
     pub fn copy_to(Path dst) -> Result<int, IoError> {
         fs_copy(self.raw, dst.raw)?;
         return 0;
     }
 
+/// Reads the whole file as UTF-8 text. See `io::file::read_text`.
     pub fn read_text() -> Result<string, IoError> {
         return read_text(self.raw)?;
     }
 
+/// Replaces the file's contents with `text` and returns the number of bytes written. See `io::file::write_text`.
     pub fn write_text(string text) -> Result<int, IoError> {
         return write_text(self.raw, text)?;
     }
 
+/// Reads the whole file. See `io::file::read_bytes`.
     pub fn read_bytes() -> Result<Vec<byte>, IoError> {
         return read_bytes(self.raw)?;
     }
 
+/// Replaces the file's contents with `buf`. See `io::file::write_bytes`.
     pub fn write_bytes(Vec<byte> buf) -> Result<int, IoError> {
         return write_bytes(self.raw, buf)?;
     }
 
+/// Appends `text` to the file, creating it if needed. See `io::file::append_text`.
     pub fn append_text(string text) -> Result<int, IoError> {
         return append_text(self.raw, text)?;
     }
 
+/// Appends `buf` to the file, creating it if needed. See `io::file::append_bytes`.
     pub fn append_bytes(Vec<byte> buf) -> Result<int, IoError> {
         return append_bytes(self.raw, buf)?;
     }
