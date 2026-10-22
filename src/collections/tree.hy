@@ -125,7 +125,7 @@ impl TreeMap<K: Ord + Eq, V> {
     /// let m: TreeMap<string, int> = TreeMap::new();
     /// assert!(m.insert("a", 1));
     /// assert!(!m.insert("a", 2));
-    /// assert!(m.get("a", 0) == 2);
+    /// assert!(m.get_or("a", 0) == 2);
     /// assert!(m.size() == 1);
     /// ```
     pub fn insert(K k, V v) -> bool
@@ -203,9 +203,28 @@ impl TreeMap<K: Ord + Eq, V> {
     /// # use tests::assert;
     /// let m: TreeMap<int, string> = TreeMap::new();
     /// m.insert(1, "one");
-    /// assert!(m.get(1, "?") == "one");
-    /// assert!(m.get(2, "?") == "?");
+    /// assert!(m.get_or(1, "?") == "one");
+    /// assert!(m.get_or(2, "?") == "?");
     /// ```
+    pub fn get_or(K k, V fallback) -> V {
+        let cur = self.root;
+        while cur >= 0 {
+            if k == self.keys[cur] {
+                return self.vals[cur];
+            }
+            if k < self.keys[cur] {
+                cur = self.left[cur];
+            } else {
+                cur = self.right[cur];
+            }
+        }
+        return fallback;
+    }
+
+    /// Returns the value stored under `k`, or `fallback` when there is none.
+    ///
+    /// Deprecated spelling of [`TreeMap::get_or`]: `get` will return
+    /// `Option<V>`.
     pub fn get(K k, V fallback) -> V {
         let cur = self.root;
         while cur >= 0 {
