@@ -11,12 +11,12 @@ class Bytes {
 }
 
 impl Bytes {
-/// Wraps `buf` without copying it.
+    /// Wraps `buf` without copying it.
     pub static fn from_vec(Vec<byte> buf) -> Bytes {
         return new Bytes(buf);
     }
 
-/// Returns the wrapped buffer.
+    /// Returns the wrapped buffer.
     pub static fn to_vec(Bytes b) -> Vec<byte> {
         return b.buf;
     }

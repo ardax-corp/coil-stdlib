@@ -333,12 +333,12 @@ class Partitioned<T> {
 }
 
 impl Partitioned<T> {
-/// The elements for which the predicate was `true`.
+    /// The elements for which the predicate was `true`.
     pub fn matched() -> Vec<T> {
         return self.matched;
     }
 
-/// The elements for which the predicate was `false`.
+    /// The elements for which the predicate was `false`.
     pub fn rest() -> Vec<T> {
         return self.rest;
     }

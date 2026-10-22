@@ -37,7 +37,7 @@ impl HashSet<T> {
         return self.inner.size();
     }
 
-/// Returns `true` when the set has no values.
+    /// Returns `true` when the set has no values.
     pub fn is_empty() -> bool {
         return self.inner.is_empty();
     }

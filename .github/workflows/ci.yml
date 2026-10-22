@@ -39,6 +39,9 @@ jobs:
       - name: Install coil (edge)
         uses: ardax-corp/coil-lang/.github/actions/setup-coil@main
 
+      - name: Doc examples (`///` code blocks in src)
+        run: coil test --doc-tests-only -A --root src --root .ci/coil-time/src src
+
       - name: Language harness (`coil test`)
         run: |
           set -euo pipefail

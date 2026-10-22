@@ -20,55 +20,55 @@ class Buf {
 }
 
 impl Buf {
-/// Creates an empty builder.
+    /// Creates an empty builder.
     pub static fn new() -> Buf {
         return new Buf("");
     }
 
-/// Appends `s`.
+    /// Appends `s`.
     pub fn push_str(string s) {
         self.text = self.text + s;
     }
 
-/// Appends `n` in decimal.
-///
-/// # Examples
-///
-/// ```
-/// use fmt::{Buf};
-/// # use tests::assert;
-/// let b = Buf::new();
-/// b.push_int(-7);
-/// assert!(b.to_string() == "-7");
-/// ```
+    /// Appends `n` in decimal.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use fmt::{Buf};
+    /// # use tests::assert;
+    /// let b = Buf::new();
+    /// b.push_int(-7);
+    /// assert!(b.to_string() == "-7");
+    /// ```
     pub fn push_int(int n) {
         self.text = self.text + int_to_dec(n);
     }
 
-/// Appends `n` in lowercase hexadecimal, without a `0x` prefix.
+    /// Appends `n` in lowercase hexadecimal, without a `0x` prefix.
     pub fn push_hex(int n) {
         self.text = self.text + int_to_hex(n);
     }
 
-/// Returns the text built so far.
+    /// Returns the text built so far.
     pub fn to_string() -> string {
         return self.text;
     }
 
-/// Pads the text on the left with `fill` until it is at least `width` bytes long, and returns the builder.
-///
-/// `fill` is repeated whole, so a multi-byte `fill` can overshoot `width`. Text
-/// already at least `width` long is unchanged.
-///
-/// # Examples
-///
-/// ```
-/// use fmt::{Buf};
-/// # use tests::assert;
-/// let b = Buf::new();
-/// b.push_int(7);
-/// assert!(b.pad_left(3, "0").to_string() == "007");
-/// ```
+    /// Pads the text on the left with `fill` until it is at least `width` bytes long, and returns the builder.
+    ///
+    /// `fill` is repeated whole, so a multi-byte `fill` can overshoot `width`. Text
+    /// already at least `width` long is unchanged.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use fmt::{Buf};
+    /// # use tests::assert;
+    /// let b = Buf::new();
+    /// b.push_int(7);
+    /// assert!(b.pad_left(3, "0").to_string() == "007");
+    /// ```
     pub fn pad_left(int width, string fill) -> Buf {
         let need = width - self.text.len();
         let pad = "";
@@ -81,17 +81,17 @@ impl Buf {
         return self;
     }
 
-/// Pads the text on the right with `fill` until it is at least `width` bytes long, and returns the builder.
-///
-/// # Examples
-///
-/// ```
-/// use fmt::{Buf};
-/// # use tests::assert;
-/// let b = Buf::new();
-/// b.push_str("ab");
-/// assert!(b.pad_right(4, ".").to_string() == "ab..");
-/// ```
+    /// Pads the text on the right with `fill` until it is at least `width` bytes long, and returns the builder.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use fmt::{Buf};
+    /// # use tests::assert;
+    /// let b = Buf::new();
+    /// b.push_str("ab");
+    /// assert!(b.pad_right(4, ".").to_string() == "ab..");
+    /// ```
     pub fn pad_right(int width, string fill) -> Buf {
         let need = width - self.text.len();
         let i = 0;

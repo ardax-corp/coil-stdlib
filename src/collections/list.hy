@@ -2,9 +2,9 @@
 
 /// One cell of a `List`: a value and the rest of the list.
 class Node<T> {
-/// The value held in this cell.
+    /// The value held in this cell.
     pub value: T,
-/// The following cell, or `None` at the end.
+    /// The following cell, or `None` at the end.
     pub next: Option<Node<T>>,
 }
 
@@ -44,33 +44,33 @@ class ListIter<T> {
 }
 
 impl List<T> {
-/// Creates an empty list.
+    /// Creates an empty list.
     pub static fn new() -> List<T> {
         return new List(Option::None, 0);
     }
 
-/// Returns the number of values.
+    /// Returns the number of values.
     pub fn size() -> int {
         return self.len;
     }
 
-/// Returns `true` when the list has no values.
+    /// Returns `true` when the list has no values.
     pub fn is_empty() -> bool {
         return self.len == 0;
     }
 
-/// Adds `v` at the front. Constant time.
-///
-/// # Examples
-///
-/// ```
-/// use collections::list::{List};
-/// # use tests::assert;
-/// let xs: List<string> = List::new();
-/// xs.push_front("b");
-/// xs.push_front("a");
-/// assert!((xs.peek_front() ?? "") == "a");
-/// ```
+    /// Adds `v` at the front. Constant time.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::list::{List};
+    /// # use tests::assert;
+    /// let xs: List<string> = List::new();
+    /// xs.push_front("b");
+    /// xs.push_front("a");
+    /// assert!((xs.peek_front() ?? "") == "a");
+    /// ```
     pub fn push_front(T v)
         ensures self.len == old(self.len) + 1
     {
@@ -79,19 +79,19 @@ impl List<T> {
         self.len = self.len + 1;
     }
 
-/// Adds `v` at the back. Walks the list, so it takes time proportional to its length.
-///
-/// # Examples
-///
-/// ```
-/// use collections::list::{List};
-/// # use tests::assert;
-/// let xs: List<int> = List::new();
-/// xs.push_back(1);
-/// xs.push_back(2);
-/// let v = xs.to_vec();
-/// assert!(v[1] == 2);
-/// ```
+    /// Adds `v` at the back. Walks the list, so it takes time proportional to its length.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::list::{List};
+    /// # use tests::assert;
+    /// let xs: List<int> = List::new();
+    /// xs.push_back(1);
+    /// xs.push_back(2);
+    /// let v = xs.to_vec();
+    /// assert!(v[1] == 2);
+    /// ```
     pub fn push_back(T v)
         ensures self.len == old(self.len) + 1
     {
@@ -123,7 +123,7 @@ impl List<T> {
         self.len = self.len + 1;
     }
 
-/// Returns the front value without removing it, or `None` when the list is empty.
+    /// Returns the front value without removing it, or `None` when the list is empty.
     pub fn peek_front() -> Option<T> {
         return match self.head {
             Option::None => Option::None,
@@ -131,18 +131,18 @@ impl List<T> {
         };
     }
 
-/// Removes and returns the front value, or `None` when the list is empty. Constant time.
-///
-/// # Examples
-///
-/// ```
-/// use collections::list::{List};
-/// # use tests::assert;
-/// let xs: List<int> = List::new();
-/// xs.push_front(7);
-/// assert!((xs.pop_front() ?? 0) == 7);
-/// assert!(xs.pop_front().is_none());
-/// ```
+    /// Removes and returns the front value, or `None` when the list is empty. Constant time.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::list::{List};
+    /// # use tests::assert;
+    /// let xs: List<int> = List::new();
+    /// xs.push_front(7);
+    /// assert!((xs.pop_front() ?? 0) == 7);
+    /// assert!(xs.pop_front().is_none());
+    /// ```
     pub fn pop_front() -> Option<T>
         ensures self.len == old(self.len) - 1 || (old(self.len) == 0 && self.len == 0)
     {
@@ -157,9 +157,9 @@ impl List<T> {
         };
     }
 
-/// Removes and returns the back value, or `None` when the list is empty.
-///
-/// Walks the list, so it takes time proportional to its length.
+    /// Removes and returns the back value, or `None` when the list is empty.
+    ///
+    /// Walks the list, so it takes time proportional to its length.
     pub fn pop_back() -> Option<T>
         ensures self.len == old(self.len) - 1 || (old(self.len) == 0 && self.len == 0)
     {
@@ -208,7 +208,7 @@ impl List<T> {
         };
     }
 
-/// Removes every value.
+    /// Removes every value.
     pub fn clear()
         ensures self.len == 0
     {
@@ -216,7 +216,7 @@ impl List<T> {
         self.len = 0;
     }
 
-/// Returns the values front to back as a new `Vec`.
+    /// Returns the values front to back as a new `Vec`.
     pub fn to_vec() -> Vec<T>
         ensures result.len() == self.len
     {
@@ -237,14 +237,14 @@ impl List<T> {
         return out;
     }
 
-/// Returns an iterator over the values, front to back.
+    /// Returns an iterator over the values, front to back.
     pub fn iter() -> ListIter<T> {
         return new ListIter(self.head);
     }
 }
 
 impl ListIter<T> {
-/// Returns the next value, or `None` at the end.
+    /// Returns the next value, or `None` at the end.
     pub fn next() -> Option<T> {
         return match self.node {
             Option::None => Option::None,

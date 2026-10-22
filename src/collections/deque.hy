@@ -53,17 +53,17 @@ impl VecDeque<T> {
         return VecDeque::with_capacity(8);
     }
 
-/// Returns the number of values.
+    /// Returns the number of values.
     pub fn size() -> int {
         return self.len;
     }
 
-/// Returns `true` when the deque has no values.
+    /// Returns `true` when the deque has no values.
     pub fn is_empty() -> bool {
         return self.len == 0;
     }
 
-/// Returns how many values fit before the ring buffer grows.
+    /// Returns how many values fit before the ring buffer grows.
     pub fn capacity() -> int {
         return self.cap;
     }
@@ -92,18 +92,18 @@ impl VecDeque<T> {
         self.cap = new_cap;
     }
 
-/// Adds `v` at the back.
-///
-/// # Examples
-///
-/// ```
-/// use collections::deque::{VecDeque};
-/// # use tests::assert;
-/// let q: VecDeque<int> = VecDeque::new();
-/// q.push_back(1);
-/// q.push_back(2);
-/// assert!((q.peek_back() ?? 0) == 2);
-/// ```
+    /// Adds `v` at the back.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::deque::{VecDeque};
+    /// # use tests::assert;
+    /// let q: VecDeque<int> = VecDeque::new();
+    /// q.push_back(1);
+    /// q.push_back(2);
+    /// assert!((q.peek_back() ?? 0) == 2);
+    /// ```
     pub fn push_back(T v)
         ensures self.len == old(self.len) + 1
     {
@@ -114,18 +114,18 @@ impl VecDeque<T> {
         self.len = self.len + 1;
     }
 
-/// Adds `v` at the front.
-///
-/// # Examples
-///
-/// ```
-/// use collections::deque::{VecDeque};
-/// # use tests::assert;
-/// let q: VecDeque<int> = VecDeque::new();
-/// q.push_front(1);
-/// q.push_front(2);
-/// assert!((q.peek_front() ?? 0) == 2);
-/// ```
+    /// Adds `v` at the front.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::deque::{VecDeque};
+    /// # use tests::assert;
+    /// let q: VecDeque<int> = VecDeque::new();
+    /// q.push_front(1);
+    /// q.push_front(2);
+    /// assert!((q.peek_front() ?? 0) == 2);
+    /// ```
     pub fn push_front(T v)
         ensures self.len == old(self.len) + 1
     {
@@ -141,7 +141,7 @@ impl VecDeque<T> {
         self.len = self.len + 1;
     }
 
-/// Returns the front value without removing it, or `None` when the deque is empty.
+    /// Returns the front value without removing it, or `None` when the deque is empty.
     pub fn peek_front() -> Option<T> {
         if self.len == 0 {
             return Option::None;
@@ -149,7 +149,7 @@ impl VecDeque<T> {
         return self.buf[self.head];
     }
 
-/// Returns the back value without removing it, or `None` when the deque is empty.
+    /// Returns the back value without removing it, or `None` when the deque is empty.
     pub fn peek_back() -> Option<T> {
         if self.len == 0 {
             return Option::None;
@@ -157,20 +157,20 @@ impl VecDeque<T> {
         return self.buf[self.slot(self.len - 1)];
     }
 
-/// Removes and returns the front value, or `None` when the deque is empty.
-///
-/// # Examples
-///
-/// ```
-/// use collections::deque::{VecDeque};
-/// # use tests::assert;
-/// let q: VecDeque<int> = VecDeque::new();
-/// q.push_back(1);
-/// q.push_back(2);
-/// assert!((q.pop_front() ?? 0) == 1);
-/// assert!((q.pop_front() ?? 0) == 2);
-/// assert!(q.pop_front().is_none());
-/// ```
+    /// Removes and returns the front value, or `None` when the deque is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::deque::{VecDeque};
+    /// # use tests::assert;
+    /// let q: VecDeque<int> = VecDeque::new();
+    /// q.push_back(1);
+    /// q.push_back(2);
+    /// assert!((q.pop_front() ?? 0) == 1);
+    /// assert!((q.pop_front() ?? 0) == 2);
+    /// assert!(q.pop_front().is_none());
+    /// ```
     pub fn pop_front() -> Option<T>
         ensures self.len == old(self.len) - 1 || (old(self.len) == 0 && self.len == 0)
     {
@@ -184,7 +184,7 @@ impl VecDeque<T> {
         return v;
     }
 
-/// Removes and returns the back value, or `None` when the deque is empty.
+    /// Removes and returns the back value, or `None` when the deque is empty.
     pub fn pop_back() -> Option<T>
         ensures self.len == old(self.len) - 1 || (old(self.len) == 0 && self.len == 0)
     {
@@ -198,7 +198,7 @@ impl VecDeque<T> {
         return v;
     }
 
-/// Removes every value, keeping the capacity.
+    /// Removes every value, keeping the capacity.
     pub fn clear()
         ensures self.len == 0
     {
@@ -211,19 +211,19 @@ impl VecDeque<T> {
         self.len = 0;
     }
 
-/// Returns the values front to back as a new `Vec`.
-///
-/// # Examples
-///
-/// ```
-/// use collections::deque::{VecDeque};
-/// # use tests::assert;
-/// let q: VecDeque<int> = VecDeque::new();
-/// q.push_back(2);
-/// q.push_front(1);
-/// let v = q.to_vec();
-/// assert!(v[0] == 1 && v[1] == 2);
-/// ```
+    /// Returns the values front to back as a new `Vec`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::deque::{VecDeque};
+    /// # use tests::assert;
+    /// let q: VecDeque<int> = VecDeque::new();
+    /// q.push_back(2);
+    /// q.push_front(1);
+    /// let v = q.to_vec();
+    /// assert!(v[0] == 1 && v[1] == 2);
+    /// ```
     pub fn to_vec() -> Vec<T>
         ensures result.len() == self.len
     {

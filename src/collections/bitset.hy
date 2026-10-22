@@ -77,7 +77,7 @@ impl BitSet {
         return self.count;
     }
 
-/// Returns `true` when no bit is set.
+    /// Returns `true` when no bit is set.
     pub fn is_empty() -> bool {
         return self.count == 0;
     }
