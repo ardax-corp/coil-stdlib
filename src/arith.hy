@@ -11,12 +11,26 @@
 // (coil-lang#1076); the `*_shl` / `*_shr` methods take any count. Within
 // range, shifts and bit ops never trap.
 
-// Largest `int`. (`///` would bind to a following `fn`.)
+// The largest `int`, `9223372036854775807`.
 const INT_MAX = 9223372036854775807;
 
-// Smallest `int`.
+// The smallest `int`, `-9223372036854775808`.
 const INT_MIN = 0 - 9223372036854775807 - 1;
 
+/// Integer arithmetic that returns `None` instead of panicking when the result does not fit.
+///
+/// Implemented for `int`. Call the methods on a value: `a.checked_add(b)`.
+///
+/// # Examples
+///
+/// ```
+/// use arith::{Checked, INT_MAX};
+/// # use tests::assert;
+/// assert!((5.checked_add(3) ?? 0) == 8);
+/// assert!(INT_MAX.checked_add(1).is_none());
+/// assert!(7.checked_div(0).is_none());
+/// assert!(3.checked_pow(40).is_none());
+/// ```
 trait Checked<S> {
     /// `a + b`, or `None` when it does not fit.
     fn checked_add(S a, S b) -> Option<S> {}
@@ -46,6 +60,18 @@ trait Checked<S> {
     fn checked_shr(S a, int n) -> Option<S> {}
 }
 
+/// Integer arithmetic that wraps around modulo 2^64 instead of panicking.
+///
+/// Useful for hashes and checksums. Implemented for `int`.
+///
+/// # Examples
+///
+/// ```
+/// use arith::{Wrapping, INT_MAX, INT_MIN};
+/// # use tests::assert;
+/// assert!(INT_MAX.wrapping_add(1) == INT_MIN);
+/// assert!(1.wrapping_shl(65) == 2);
+/// ```
 trait Wrapping<S> {
     /// `a + b` modulo 2^64.
     fn wrapping_add(S a, S b) -> S {}
@@ -70,6 +96,19 @@ trait Wrapping<S> {
     fn wrapping_shr(S a, int n) -> S {}
 }
 
+/// Integer arithmetic that clamps to `INT_MIN` / `INT_MAX` instead of panicking.
+///
+/// Implemented for `int`.
+///
+/// # Examples
+///
+/// ```
+/// use arith::{Saturating, INT_MAX, INT_MIN};
+/// # use tests::assert;
+/// assert!(INT_MAX.saturating_add(10) == INT_MAX);
+/// assert!(INT_MIN.saturating_sub(1) == INT_MIN);
+/// assert!(4.saturating_mul(5) == 20);
+/// ```
 trait Saturating<S> {
     /// `a + b` clamped to the type's range.
     fn saturating_add(S a, S b) -> S {}
@@ -85,6 +124,20 @@ trait Saturating<S> {
     fn saturating_pow(S a, int exp) -> S {}
 }
 
+/// Integer arithmetic that returns the wrapped result together with whether it wrapped.
+///
+/// Implemented for `int`.
+///
+/// # Examples
+///
+/// ```
+/// use arith::{Overflowing, INT_MAX, INT_MIN};
+/// # use tests::assert;
+/// let (v, wrapped) = INT_MAX.overflowing_add(1);
+/// assert!(v == INT_MIN && wrapped);
+/// let (w, again) = 2.overflowing_mul(3);
+/// assert!(w == 6 && !again);
+/// ```
 trait Overflowing<S> {
     /// The wrapped `a + b`, and whether it wrapped.
     fn overflowing_add(S a, S b) -> (S, bool) {}
