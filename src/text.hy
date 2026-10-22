@@ -20,7 +20,7 @@ fn sub(string s, int start, int end) -> Result<string, string> {
     };
 }
 
-/// Length of an `Ok` string, `-1` for an `Err` (for contracts).
+// Length of an `Ok` string, `-1` for an `Err` (for contracts).
 fn ok_len(Result<string, string> r) -> int {
     return match r {
         Result::Ok(x) => x.len(),
@@ -39,17 +39,37 @@ fn space_at(string s, int i) -> bool {
     return is_space(byte_at(s, i) as byte);
 }
 
-/// Byte length of UTF-8 `s` (same as `to_bytes(s).len()`).
+/// Returns the length of `s` in bytes; the same as `s.len()`.
 fn byte_len(string s) -> int {
     return s.len();
 }
 
-/// Slice by byte offsets; returns `Err` if the slice is not valid UTF-8.
+/// Returns the part of `s` from byte offset `start` up to (not including) `end`.
+///
+/// # Errors
+///
+/// Returns `Err("utf8")` when an offset falls inside a multi-byte character.
+///
+/// # Examples
+///
+/// ```
+/// use text::{slice};
+/// # use tests::assert;
+/// assert!((slice("hello", 1, 4) ?? "") == "ell");
+/// ```
 fn slice(string s, int start, int end) -> Result<string, string> {
     return sub(s, start, end)?;
 }
 
-/// Trim ASCII whitespace from the start.
+/// Returns `s` without leading ASCII whitespace (space, tab, CR, LF).
+///
+/// # Examples
+///
+/// ```
+/// use text::{trim_start};
+/// # use tests::assert;
+/// assert!((trim_start("  hi ") ?? "") == "hi ");
+/// ```
 fn trim_start(string s) -> Result<string, string>
     ensures ok_len(result) >= 0 && ok_len(result) <= s.len()
 {
@@ -61,7 +81,15 @@ fn trim_start(string s) -> Result<string, string>
     return sub(s, lo, hi)?;
 }
 
-/// Trim ASCII whitespace from the end.
+/// Returns `s` without trailing ASCII whitespace (space, tab, CR, LF).
+///
+/// # Examples
+///
+/// ```
+/// use text::{trim_end};
+/// # use tests::assert;
+/// assert!((trim_end(" hi \n") ?? "") == " hi");
+/// ```
 fn trim_end(string s) -> Result<string, string>
     ensures ok_len(result) >= 0 && ok_len(result) <= s.len()
 {
@@ -72,7 +100,18 @@ fn trim_end(string s) -> Result<string, string>
     return sub(s, 0, hi)?;
 }
 
-/// Trim ASCII whitespace (space/tab/CR/LF) from both ends.
+/// Returns `s` without leading and trailing ASCII whitespace (space, tab, CR, LF).
+///
+/// Other Unicode whitespace is kept. The `Result` never holds an error for valid
+/// input; it exists because trimming works on bytes.
+///
+/// # Examples
+///
+/// ```
+/// use text::{trim};
+/// # use tests::assert;
+/// assert!((trim("\t  key = value \r\n") ?? "") == "key = value");
+/// ```
 fn trim(string s) -> Result<string, string>
     ensures ok_len(result) >= 0 && ok_len(result) <= s.len()
 {
@@ -87,28 +126,62 @@ fn trim(string s) -> Result<string, string>
     return sub(s, lo, hi)?;
 }
 
-/// True when `hay` contains `needle` as a byte-exact substring.
+/// Returns `true` when `needle` occurs in `hay`. An empty `needle` is always found.
+///
+/// # Examples
+///
+/// ```
+/// use text::{contains};
+/// # use tests::assert;
+/// assert!(contains("haystack", "st"));
+/// assert!(!contains("haystack", "x"));
+/// ```
 fn contains(string hay, string needle) -> bool
     ensures !result || needle.len() <= hay.len()
 {
     return str_find_from(hay, needle, 0) >= 0;
 }
 
-/// True when `s` begins with `prefix` (byte identity).
+/// Returns `true` when `s` begins with `prefix`.
+///
+/// # Examples
+///
+/// ```
+/// use text::{starts_with};
+/// # use tests::assert;
+/// assert!(starts_with("--verbose", "--"));
+/// ```
 fn starts_with(string s, string prefix) -> bool
     ensures !result || prefix.len() <= s.len()
 {
     return match_at(s, prefix, 0);
 }
 
-/// True when `s` ends with `suffix` (byte identity).
+/// Returns `true` when `s` ends with `suffix`.
+///
+/// # Examples
+///
+/// ```
+/// use text::{ends_with};
+/// # use tests::assert;
+/// assert!(ends_with("main.hy", ".hy"));
+/// ```
 fn ends_with(string s, string suffix) -> bool
     ensures !result || suffix.len() <= s.len()
 {
     return match_at(s, suffix, s.len() - suffix.len());
 }
 
-/// First byte offset of `needle` in `hay`, or `-1`. Empty needle → `0`.
+/// Returns the byte offset of the first `needle` in `hay`, or `-1`. An empty `needle` matches at `0`.
+///
+/// # Examples
+///
+/// ```
+/// use text::{find};
+/// # use tests::assert;
+/// assert!(find("a=b=c", "=") == 1);
+/// assert!(find("abc", "z") == -1);
+/// ```
 fn find(string hay, string needle) -> int
     ensures result >= -1 && result <= hay.len()
     ensures result < 0 || match_at(hay, needle, result)
@@ -117,7 +190,15 @@ fn find(string hay, string needle) -> int
     return str_find_from(hay, needle, 0);
 }
 
-/// Last byte offset of `needle` in `hay`, or `-1`.
+/// Returns the byte offset of the last `needle` in `hay`, or `-1`.
+///
+/// # Examples
+///
+/// ```
+/// use text::{rfind};
+/// # use tests::assert;
+/// assert!(rfind("a=b=c", "=") == 3);
+/// ```
 fn rfind(string hay, string needle) -> int
     ensures result >= -1 && result <= hay.len()
     ensures result < 0 || match_at(hay, needle, result)
@@ -125,7 +206,20 @@ fn rfind(string hay, string needle) -> int
     return str_rfind(hay, needle);
 }
 
-/// Split at byte offset `at` into `(left, right)`.
+/// Splits `s` at byte offset `at` into the part before and the part from `at` on.
+///
+/// # Errors
+///
+/// Returns `Err("utf8")` when `at` falls inside a multi-byte character.
+///
+/// # Examples
+///
+/// ```
+/// use text::{split_at};
+/// # use tests::assert;
+/// let (a, b) = split_at("hello", 2) ?? ("", "");
+/// assert!(a == "he" && b == "llo");
+/// ```
 fn split_at(string s, int at) -> Result<(string, string), string> {
     if at < 0 {
         at = 0;
@@ -138,7 +232,20 @@ fn split_at(string s, int at) -> Result<(string, string), string> {
     return (left, right);
 }
 
-/// Split `s` on every occurrence of `sep` (byte-exact). Empty sep → `[s]`.
+/// Splits `s` at every `sep`, returning the pieces between them.
+///
+/// Adjacent separators give empty pieces, and so does a separator at either end.
+/// An empty `sep` returns `[s]`.
+///
+/// # Examples
+///
+/// ```
+/// use text::{split};
+/// # use tests::assert;
+/// let parts = split("a,b,,c", ",") ?? Vec::new();
+/// assert!(parts.len() == 4);
+/// assert!(parts[2] == "");
+/// ```
 fn split(string s, string sep) -> Result<Vec<string>, string> {
     let out: Vec<string> = Vec::new();
     let nn = sep.len();
@@ -159,7 +266,21 @@ fn split(string s, string sep) -> Result<Vec<string>, string> {
     return out;
 }
 
-/// Split at the first occurrence of `sep`, excluding the separator.
+/// Splits `s` at the first `sep` into the parts before and after it.
+///
+/// # Errors
+///
+/// Returns `Err` when `sep` does not occur in `s`.
+///
+/// # Examples
+///
+/// ```
+/// use text::{split_once};
+/// # use tests::assert;
+/// let (k, v) = split_once("name=coil=lang", "=") ?? ("", "");
+/// assert!(k == "name" && v == "coil=lang");
+/// assert!(split_once("plain", "=").is_err());
+/// ```
 fn split_once(string s, string sep) -> Result<(string, string), string> {
     let at = str_find_from(s, sep, 0);
     if at < 0 {
@@ -170,7 +291,15 @@ fn split_once(string s, string sep) -> Result<(string, string), string> {
     return (left, right);
 }
 
-/// Replace every non-overlapping occurrence of `old` with `new`.
+/// Returns `s` with every non-overlapping `old` replaced by `new`, scanning left to right.
+///
+/// # Examples
+///
+/// ```
+/// use text::{replace};
+/// # use tests::assert;
+/// assert!((replace("a-b-c", "-", ", ") ?? "") == "a, b, c");
+/// ```
 fn replace(string s, string old, string new) -> Result<string, string> {
     let nn = old.len();
     if nn == 0 {
@@ -187,7 +316,16 @@ fn replace(string s, string old, string new) -> Result<string, string> {
     return out + sub(s, start, s.len())?;
 }
 
-/// Join strings with `sep` between adjacent parts.
+/// Returns the `parts` concatenated with `sep` between each pair.
+///
+/// # Examples
+///
+/// ```
+/// use text::{join};
+/// # use tests::assert;
+/// let parts: Vec<string> = ["usr", "local", "bin"];
+/// assert!(join(parts, "/") == "usr/local/bin");
+/// ```
 fn join(Vec<string> parts, string sep) -> string
     ensures parts.len() > 0 || result == ""
     ensures parts.len() != 1 || result == parts[0]
@@ -204,7 +342,15 @@ fn join(Vec<string> parts, string sep) -> string
     return out;
 }
 
-/// Repeat `s` `n` times. Non-positive counts produce an empty string.
+/// Returns `s` repeated `n` times; empty when `n <= 0`.
+///
+/// # Examples
+///
+/// ```
+/// use text::{repeat};
+/// # use tests::assert;
+/// assert!(repeat("ab", 3) == "ababab");
+/// ```
 fn repeat(string s, int n) -> string
     ensures n > 0 || result == ""
     ensures n <= 0 || result.len() == s.len() * n
@@ -218,7 +364,15 @@ fn repeat(string s, int n) -> string
     return out;
 }
 
-/// Pad on the left to a byte width using a one-byte `fill` string.
+/// Returns `s` with `fill` added in front until it is `width` bytes long. `fill` should be one byte; longer text is returned unchanged.
+///
+/// # Examples
+///
+/// ```
+/// use text::{pad_left};
+/// # use tests::assert;
+/// assert!((pad_left("7", 3, "0") ?? "") == "007");
+/// ```
 fn pad_left(string s, int width, string fill) -> Result<string, string>
     ensures fill.len() != 1 || ok_len(result) == max_int(width, s.len())
     ensures fill.len() == 1 || ok_len(result) == -1
@@ -229,7 +383,15 @@ fn pad_left(string s, int width, string fill) -> Result<string, string>
     return repeat(fill, width - s.len()) + s;
 }
 
-/// Pad on the right to a byte width using a one-byte `fill` string.
+/// Returns `s` with `fill` added at the end until it is `width` bytes long. `fill` should be one byte; longer text is returned unchanged.
+///
+/// # Examples
+///
+/// ```
+/// use text::{pad_right};
+/// # use tests::assert;
+/// assert!((pad_right("ab", 4, ".") ?? "") == "ab..");
+/// ```
 fn pad_right(string s, int width, string fill) -> Result<string, string>
     ensures fill.len() != 1 || ok_len(result) == max_int(width, s.len())
     ensures fill.len() == 1 || ok_len(result) == -1
@@ -247,7 +409,17 @@ fn line_piece(string s, int start, int end) -> Result<string, string> {
     return sub(s, start, end)?;
 }
 
-/// Split on LF and strip one optional CR from each resulting line.
+/// Splits `s` into lines at each LF, dropping one CR before it (so CRLF works too).
+///
+/// # Examples
+///
+/// ```
+/// use text::{lines};
+/// # use tests::assert;
+/// let ls = lines("one\r\ntwo\nthree") ?? Vec::new();
+/// assert!(ls.len() == 3);
+/// assert!(ls[0] == "one");
+/// ```
 fn lines(string s) -> Result<Vec<string>, string> {
     let out: Vec<string> = Vec::new();
     let start = 0;
@@ -263,19 +435,27 @@ fn lines(string s) -> Result<Vec<string>, string> {
     return out;
 }
 
-/// Concatenate two strings.
+/// Returns `a` followed by `b`; the same as `a + b`.
 fn concat(string a, string b) -> string
     ensures result.len() == a.len() + b.len()
 {
     return a + b;
 }
 
-/// True when strings are equal (byte identity).
+/// Returns `true` when `a` and `b` hold the same bytes; the same as `a == b`.
 fn eq(string a, string b) -> bool {
     return a == b;
 }
 
-/// ASCII lower-case A..=Z only; other bytes unchanged.
+/// Returns `s` with ASCII `A`-`Z` turned into `a`-`z`; other characters are unchanged.
+///
+/// # Examples
+///
+/// ```
+/// use text::{to_lower};
+/// # use tests::assert;
+/// assert!((to_lower("Hello, WORLD") ?? "") == "hello, world");
+/// ```
 fn to_lower(string s) -> Result<string, string>
     ensures ok_len(result) == s.len()
 {
@@ -304,7 +484,15 @@ fn to_lower(string s) -> Result<string, string>
     return utf8_ok(out)?;
 }
 
-/// ASCII upper-case a..=z only; other bytes unchanged.
+/// Returns `s` with ASCII `a`-`z` turned into `A`-`Z`; other characters are unchanged.
+///
+/// # Examples
+///
+/// ```
+/// use text::{to_upper};
+/// # use tests::assert;
+/// assert!((to_upper("coil") ?? "") == "COIL");
+/// ```
 fn to_upper(string s) -> Result<string, string>
     ensures ok_len(result) == s.len()
 {
