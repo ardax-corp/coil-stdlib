@@ -2,15 +2,21 @@
 use string::{to_bytes, from_bytes};
 use ascii::{hex_digit, hex_val};
 
+/// A wrapper around a `Vec<byte>`, for APIs that want a distinct byte-buffer type.
+///
+/// The functions in this module work on plain `Vec<byte>`; convert with
+/// `Bytes::from_vec` and `Bytes::to_vec`.
 class Bytes {
     buf: Vec<byte>,
 }
 
 impl Bytes {
+    /// Wraps `buf` without copying it.
     pub static fn from_vec(Vec<byte> buf) -> Bytes {
         return new Bytes(buf);
     }
 
+    /// Returns the wrapped buffer.
     pub static fn to_vec(Bytes b) -> Vec<byte> {
         return b.buf;
     }
@@ -44,7 +50,15 @@ fn hex_nibble(int n) -> string {
     };
 }
 
-/// Hex-encode a byte buffer (lowercase).
+/// Encodes `buf` as lowercase hexadecimal, two digits per byte.
+///
+/// # Examples
+///
+/// ```
+/// use bytes::{to_hex};
+/// # use tests::assert;
+/// assert!(to_hex(Vec::from([0 as byte, 171 as byte, 255 as byte])) == "00abff");
+/// ```
 fn to_hex(Vec<byte> buf) -> string
     ensures result.len() == 2 * buf.len()
 {
@@ -59,7 +73,21 @@ fn to_hex(Vec<byte> buf) -> string
     return out;
 }
 
-/// Decode a lowercase/uppercase hex string into bytes.
+/// Decodes hexadecimal text (either case) into bytes.
+///
+/// # Errors
+///
+/// Returns `Err` when `s` has an odd length or a character that is not a hex digit.
+///
+/// # Examples
+///
+/// ```
+/// use bytes::{from_hex};
+/// # use tests::assert;
+/// let b = from_hex("00AbfF") ?? Vec::new();
+/// assert!(b.len() == 3 && b[1] == 171 as byte);
+/// assert!(from_hex("abc").is_err());
+/// ```
 fn from_hex(string s) -> Result<Vec<byte>, string> {
     let b = to_bytes(s);
     let n = b.len();
@@ -86,7 +114,17 @@ fn from_hex(string s) -> Result<Vec<byte>, string> {
     return out;
 }
 
-/// Copy `src[start..end)` into a new buffer (clamped to `src` bounds).
+/// Returns a copy of `src[start..end]` (end exclusive), with both offsets clamped to the buffer.
+///
+/// # Examples
+///
+/// ```
+/// use bytes::{slice};
+/// # use tests::assert;
+/// let b: Vec<byte> = "hello";
+/// assert!(slice(b, 1, 3).len() == 2);
+/// assert!(slice(b, 3, 99).len() == 2);
+/// ```
 fn slice(Vec<byte> src, int start, int end) -> Vec<byte>
     ensures result.len() <= src.len()
     ensures start < end || result.len() == 0
@@ -105,7 +143,7 @@ fn slice(Vec<byte> src, int start, int end) -> Vec<byte>
     return out;
 }
 
-/// Append `b` after `a` into a new buffer.
+/// Returns a new buffer holding `a` followed by `b`.
 fn concat(Vec<byte> a, Vec<byte> b) -> Vec<byte>
     ensures result.len() == a.len() + b.len()
     ensures starts_with(result, a) && ends_with(result, b)
@@ -124,7 +162,7 @@ fn concat(Vec<byte> a, Vec<byte> b) -> Vec<byte>
     return out;
 }
 
-/// True when `a` and `b` have equal length and equal bytes.
+/// Returns `true` when `a` and `b` have the same length and the same bytes.
 fn eq(Vec<byte> a, Vec<byte> b) -> bool
     ensures !result || a.len() == b.len()
 {
@@ -134,7 +172,7 @@ fn eq(Vec<byte> a, Vec<byte> b) -> bool
     return region_eq(a, 0, b, 0, a.len());
 }
 
-/// First index of `needle` in `hay` at or after `start`, or `-1`.
+/// Returns the offset of the first `needle` in `hay` at or after `start`, or `-1`.
 fn find_from(Vec<byte> hay, Vec<byte> needle, int start) -> int
     ensures result >= -1 && result <= hay.len()
     ensures result < 0 || result >= start || (start > hay.len() && result == hay.len())
@@ -165,10 +203,29 @@ fn find_from(Vec<byte> hay, Vec<byte> needle, int start) -> int
     return -1;
 }
 
+/// Returns the offset of the first `needle` in `hay`, or `-1`. An empty `needle` matches at `0`.
+///
+/// # Examples
+///
+/// ```
+/// use bytes::{find};
+/// # use tests::assert;
+/// assert!(find("a,b,c", ",") == 1);
+/// assert!(find("abc", "x") == -1);
+/// ```
 fn find(Vec<byte> hay, Vec<byte> needle) -> int {
     return find_from(hay, needle, 0);
 }
 
+/// Returns the offset of the last `needle` in `hay`, or `-1`. An empty `needle` matches at `hay.len()`.
+///
+/// # Examples
+///
+/// ```
+/// use bytes::{rfind};
+/// # use tests::assert;
+/// assert!(rfind("a,b,c", ",") == 3);
+/// ```
 fn rfind(Vec<byte> hay, Vec<byte> needle) -> int
     ensures result >= -1 && result <= hay.len()
     ensures result < 0 ||
@@ -192,12 +249,23 @@ fn rfind(Vec<byte> hay, Vec<byte> needle) -> int
     return -1;
 }
 
+/// Returns `true` when `needle` occurs in `hay`.
 fn contains(Vec<byte> hay, Vec<byte> needle) -> bool
     ensures !result || needle.len() <= hay.len()
 {
     return find(hay, needle) >= 0;
 }
 
+/// Returns `true` when `buf` begins with `prefix`.
+///
+/// # Examples
+///
+/// ```
+/// use bytes::{starts_with};
+/// # use tests::assert;
+/// assert!(starts_with("GET /", "GET"));
+/// assert!(!starts_with("GE", "GET"));
+/// ```
 fn starts_with(Vec<byte> buf, Vec<byte> prefix) -> bool
     ensures !result || prefix.len() <= buf.len()
 {
@@ -208,6 +276,7 @@ fn starts_with(Vec<byte> buf, Vec<byte> prefix) -> bool
     return region_eq(buf, 0, prefix, 0, n);
 }
 
+/// Returns `true` when `buf` ends with `suffix`.
 fn ends_with(Vec<byte> buf, Vec<byte> suffix) -> bool
     ensures !result || suffix.len() <= buf.len()
 {
@@ -219,6 +288,7 @@ fn ends_with(Vec<byte> buf, Vec<byte> suffix) -> bool
     return region_eq(buf, m - n, suffix, 0, n);
 }
 
+/// Returns a new buffer with the same bytes as `src`.
 fn copy(Vec<byte> src) -> Vec<byte>
     ensures eq(result, src)
 {
@@ -231,6 +301,18 @@ fn copy(Vec<byte> src) -> Vec<byte>
     return out;
 }
 
+/// Returns a copy of `hay` with every non-overlapping `old` replaced by `new`, left to right.
+///
+/// An empty `old` replaces nothing.
+///
+/// # Examples
+///
+/// ```
+/// use bytes::{replace, to_string};
+/// # use tests::assert;
+/// let out = replace("a-b-c", "-", "+");
+/// assert!((to_string(out) ?? "") == "a+b+c");
+/// ```
 fn replace(Vec<byte> hay, Vec<byte> old, Vec<byte> new) -> Vec<byte>
     ensures old.len() > 0 || eq(result, hay)
     ensures old.len() == 0 || contains(hay, old) || eq(result, hay)
@@ -261,6 +343,7 @@ fn replace(Vec<byte> hay, Vec<byte> old, Vec<byte> new) -> Vec<byte>
     return out;
 }
 
+/// Returns `src` repeated `n` times (empty when `n <= 0`).
 fn repeat(Vec<byte> src, int n) -> Vec<byte>
     ensures n > 0 || result.len() == 0
     ensures n <= 0 || result.len() == src.len() * n
@@ -278,6 +361,16 @@ fn repeat(Vec<byte> src, int n) -> Vec<byte>
     return out;
 }
 
+/// Returns `src` with `fill` bytes added in front until it is `width` long; a longer `src` is returned unchanged.
+///
+/// # Examples
+///
+/// ```
+/// use bytes::{pad_left, to_string};
+/// # use tests::assert;
+/// let zero: byte = "0";
+/// assert!((to_string(pad_left("42", 5, zero)) ?? "") == "00042");
+/// ```
 fn pad_left(Vec<byte> src, int width, byte fill) -> Vec<byte>
     ensures result.len() >= src.len() && result.len() >= width
     ensures result.len() == src.len() || result.len() == width
@@ -298,6 +391,7 @@ fn pad_left(Vec<byte> src, int width, byte fill) -> Vec<byte>
     return out;
 }
 
+/// Returns `src` with `fill` bytes added at the end until it is `width` long; a longer `src` is returned unchanged.
 fn pad_right(Vec<byte> src, int width, byte fill) -> Vec<byte>
     ensures result.len() >= src.len() && result.len() >= width
     ensures result.len() == src.len() || result.len() == width
@@ -319,6 +413,12 @@ fn pad_right(Vec<byte> src, int width, byte fill) -> Vec<byte>
     return out;
 }
 
+/// Decodes `b` as UTF-8.
+///
+/// # Errors
+///
+/// Returns `Err("utf8")` when `b` is not valid UTF-8. `string::from_bytes` does
+/// the same with an `IoError`.
 fn to_string(Vec<byte> b) -> Result<string, string> {
     return match from_bytes(b) {
         Result::Ok(s) => s,
@@ -326,6 +426,7 @@ fn to_string(Vec<byte> b) -> Result<string, string> {
     };
 }
 
+/// Returns the UTF-8 bytes of `s`; the same as `string::to_bytes`.
 fn from_string(string s) -> Vec<byte>
     ensures result.len() == s.len()
 {

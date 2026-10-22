@@ -1,10 +1,42 @@
 // HashMap — separate chaining over parallel Vecs (no Default on K/V).
 
+/// One key-value pair, as `HashMap` iteration yields it.
 class Entry<K, V> {
+    /// The key.
     pub key: K,
+    /// The value stored under `key`.
     pub value: V,
 }
 
+/// A hash map from keys of type `K` to values of type `V`.
+///
+/// Keys need `Eq` and `Hash` (the primitive types have both; `#[derive(Eq, Hash)]`
+/// adds them to your own types). Inserting an existing key replaces its value.
+/// Iteration (`for e in m`, `m.keys()`, `m.values()`) visits entries in
+/// insertion order, skipping removed ones.
+///
+/// `get` takes a fallback instead of returning an `Option`; use `contains` first
+/// when the fallback could be a real value.
+///
+/// # Examples
+///
+/// ```
+/// use collections::map::{HashMap};
+/// # use tests::assert;
+/// let ages: HashMap<string, int> = HashMap::new();
+/// ages.insert("ada", 36);
+/// ages.insert("alan", 41);
+/// ages.insert("ada", 37);
+/// assert!(ages.size() == 2);
+/// assert!(ages.get("ada", 0) == 37);
+/// assert!(ages.get("grace", -1) == -1);
+///
+/// let total = 0;
+/// for e in ages {
+///     total = total + e.value;
+/// }
+/// assert!(total == 78);
+/// ```
 class HashMap<K, V>
     invariant self.len >= 0 && self.len <= self.keys.len()
     invariant self.cap >= 8 && self.heads.len() == self.cap
@@ -12,20 +44,37 @@ class HashMap<K, V>
     invariant self.live.len() == self.keys.len()
 {
     heads: Vec<int>,
+    /// Key slots, including removed ones (see `live`). Prefer `keys()`.
     pub keys: Vec<K>,
+    /// Value slots parallel to `keys`. Prefer `values()`.
     pub vals: Vec<V>,
     next: Vec<int>,
+    /// `1` where the slot holds an entry, `0` where it was removed.
     pub live: Vec<int>,
     len: int,
     cap: int,
 }
 
+/// An iterator over the entries of a `HashMap`, from `HashMap::iter`.
 class HashMapIter<K, V> {
     map: HashMap<K, V>,
     slot: int,
 }
 
 impl HashMap<K, V> {
+    /// Creates an empty map with room for about `cap` buckets before it grows.
+    ///
+    /// The bucket count is rounded up to a power of two, at least 8.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::map::{HashMap};
+    /// # use tests::assert;
+    /// let m: HashMap<int, string> = HashMap::with_capacity(100);
+    /// assert!(m.is_empty());
+    /// assert!(m.capacity() >= 100);
+    /// ```
     pub static fn with_capacity(int cap) -> HashMap<K, V> {
         let n = 1;
         while n < cap {
@@ -47,22 +96,62 @@ impl HashMap<K, V> {
         return new HashMap(heads, keys, vals, next, live, 0, n);
     }
 
+    /// Creates an empty map.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::map::{HashMap};
+    /// # use tests::assert;
+    /// let m: HashMap<string, int> = HashMap::new();
+    /// assert!(m.size() == 0);
+    /// ```
     pub static fn new() -> HashMap<K, V> {
         return HashMap::with_capacity(8);
     }
 
+    /// Returns the number of entries.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::map::{HashMap};
+    /// # use tests::assert;
+    /// let m: HashMap<string, int> = HashMap::new();
+    /// m.insert("a", 1);
+    /// m.insert("b", 2);
+    /// m.remove("a");
+    /// assert!(m.size() == 1);
+    /// ```
     pub fn size() -> int {
         return self.len;
     }
 
+    /// Returns `true` when the map has no entries.
     pub fn is_empty() -> bool {
         return self.len == 0;
     }
 
+    /// Returns the number of buckets.
+    ///
+    /// The map doubles it when it is half full.
     pub fn capacity() -> int {
         return self.cap;
     }
 
+    /// Removes every entry, keeping the bucket count.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::map::{HashMap};
+    /// # use tests::assert;
+    /// let m: HashMap<int, int> = HashMap::new();
+    /// m.insert(1, 10);
+    /// m.clear();
+    /// assert!(m.is_empty());
+    /// assert!(!m.contains(1));
+    /// ```
     pub fn clear()
         ensures self.len == 0
     {
@@ -80,6 +169,20 @@ impl HashMap<K, V> {
         self.len = 0;
     }
 
+    /// Returns the keys, in insertion order.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::map::{HashMap};
+    /// # use tests::assert;
+    /// let m: HashMap<string, int> = HashMap::new();
+    /// m.insert("x", 1);
+    /// m.insert("y", 2);
+    /// let ks = m.keys();
+    /// assert!(ks.len() == 2);
+    /// assert!(ks[0] == "x");
+    /// ```
     pub fn keys() -> Vec<K>
         ensures result.len() == self.len
     {
@@ -94,6 +197,19 @@ impl HashMap<K, V> {
         return out;
     }
 
+    /// Returns the values, in the insertion order of their keys.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::map::{HashMap};
+    /// # use tests::assert;
+    /// let m: HashMap<string, int> = HashMap::new();
+    /// m.insert("x", 1);
+    /// m.insert("y", 2);
+    /// let vs = m.values();
+    /// assert!(vs[0] + vs[1] == 3);
+    /// ```
     pub fn values() -> Vec<V>
         ensures result.len() == self.len
     {
@@ -108,6 +224,24 @@ impl HashMap<K, V> {
         return out;
     }
 
+    /// Returns an iterator over the entries, in insertion order.
+    ///
+    /// `for e in m` does the same; each item is an `Entry` with `key` and `value`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::map::{HashMap};
+    /// # use tests::assert;
+    /// let m: HashMap<string, int> = HashMap::new();
+    /// m.insert("a", 1);
+    /// let it = m.iter();
+    /// let first = match it.next() {
+    ///     Option::Some(e) => e.key,
+    ///     Option::None => "",
+    /// };
+    /// assert!(first == "a");
+    /// ```
     pub fn iter() -> HashMapIter<K, V> {
         return new HashMapIter(self, 0);
     }
@@ -175,6 +309,20 @@ impl HashMap<K: Eq + Hash, V> {
         self.cap = new_cap;
     }
 
+    /// Stores `v` under `k`, replacing any value already there.
+    ///
+    /// Returns `true` when `k` is new and `false` when an existing value was replaced.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::map::{HashMap};
+    /// # use tests::assert;
+    /// let m: HashMap<string, int> = HashMap::new();
+    /// assert!(m.insert("a", 1));
+    /// assert!(!m.insert("a", 2));
+    /// assert!(m.get("a", 0) == 2);
+    /// ```
     pub fn insert(K k, V v) -> bool
         ensures !result || self.len == old(self.len) + 1
         ensures result || self.len == old(self.len)
@@ -198,10 +346,34 @@ impl HashMap<K: Eq + Hash, V> {
         return true;
     }
 
+    /// Returns `true` when the map has an entry for `k`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::map::{HashMap};
+    /// # use tests::assert;
+    /// let m: HashMap<int, bool> = HashMap::new();
+    /// m.insert(7, false);
+    /// assert!(m.contains(7));
+    /// assert!(!m.contains(8));
+    /// ```
     pub fn contains(K k) -> bool {
         return self.find(k) >= 0;
     }
 
+    /// Returns the value stored under `k`, or `fallback` when there is none.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::map::{HashMap};
+    /// # use tests::assert;
+    /// let m: HashMap<string, int> = HashMap::new();
+    /// m.insert("a", 1);
+    /// assert!(m.get("a", 0) == 1);
+    /// assert!(m.get("b", 0) == 0);
+    /// ```
     pub fn get(K k, V fallback) -> V {
         let found = self.find(k);
         if found >= 0 {
@@ -210,6 +382,21 @@ impl HashMap<K: Eq + Hash, V> {
         return fallback;
     }
 
+    /// Removes the entry for `k`.
+    ///
+    /// Returns `true` when there was one.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::map::{HashMap};
+    /// # use tests::assert;
+    /// let m: HashMap<string, int> = HashMap::new();
+    /// m.insert("a", 1);
+    /// assert!(m.remove("a"));
+    /// assert!(!m.remove("a"));
+    /// assert!(m.is_empty());
+    /// ```
     pub fn remove(K k) -> bool
         ensures !result || self.len == old(self.len) - 1
         ensures result || self.len == old(self.len)
@@ -238,6 +425,7 @@ impl HashMap<K: Eq + Hash, V> {
 }
 
 impl HashMapIter<K, V> {
+    /// Returns the next entry, or `None` after the last one.
     pub fn next() -> Option<Entry<K, V>> {
         let n = self.map.keys.len();
         while self.slot < n {

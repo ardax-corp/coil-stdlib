@@ -11,7 +11,21 @@ use io::net::udp::send_to;
 use io::fs::copy as fs_copy;
 use string::{from_bytes as str_from_bytes, to_bytes as str_to_bytes};
 
-/// Write every byte of `buf` to `s`, parking on `WouldBlock` until done.
+/// Writes all of `buf` to `s`, waiting whenever the stream is not ready.
+///
+/// `io::write` may write only part of a buffer; this keeps going until every
+/// byte is out, then returns `Ok(0)`. Inside a task, the waits let other
+/// tasks run.
+/// # Examples
+///
+/// ```
+/// use io::sync::{write_all};
+/// # use tests::assert;
+/// use io::{stdout};
+/// use string::{to_bytes};
+/// let written = write_all(stdout(), to_bytes("hi\n"));
+/// assert!(written.is_ok());
+/// ```
 fn write_all(Stream s, Vec<byte> buf) -> Result<int, IoError> {
     let offset = 0;
     let total = buf.len();
@@ -36,7 +50,10 @@ fn write_all(Stream s, Vec<byte> buf) -> Result<int, IoError> {
     return 0;
 }
 
-/// Fill `buf` from `s`, parking on `WouldBlock`; `None` on EOF before fill.
+/// Fills all of `buf` from `s`, waiting whenever no data is ready.
+///
+/// Returns `Some(n)`: `n` is `buf.len()` once `buf` is full, or fewer when the
+/// stream ends part way. Returns `None` when the stream ends before any byte.
 fn read_exact(Stream s, Vec<byte> buf) -> Result<Option<int>, IoError> {
     let need = buf.len();
     let filled = 0;
@@ -80,7 +97,7 @@ fn read_exact(Stream s, Vec<byte> buf) -> Result<Option<int>, IoError> {
     return Option::Some(filled);
 }
 
-/// Read from `s` until EOF into a new `Vec<byte>`, parking on `WouldBlock`.
+/// Reads from `s` until it ends and returns everything read.
 fn read_to_end(Stream s) -> Result<Vec<byte>, IoError> {
     let acc: Vec<byte> = Vec::new();
     let chunk_size = 4096;
@@ -119,7 +136,7 @@ fn read_to_end(Stream s) -> Result<Vec<byte>, IoError> {
     return acc;
 }
 
-/// Blocking `accept` on `listener`, parking on `WouldBlock`.
+/// Waits for the next connection on a TCP `listener` and returns its stream.
 fn accept_wait(Stream listener) -> Result<Stream, IoError> {
     let done = false;
     let out = listener;
@@ -140,7 +157,7 @@ fn accept_wait(Stream listener) -> Result<Stream, IoError> {
     return out;
 }
 
-/// Blocking UDP `recv_from`, parking on `WouldBlock`; returns `(n, host, port)`.
+/// Waits for a UDP datagram, reads it into `buf`, and returns `(bytes, sender host, sender port)`.
 fn recv_from_wait(Stream s, Vec<byte> buf) -> Result<(int, string, int), IoError> {
     let done = false;
     let out_n = 0;
@@ -165,7 +182,7 @@ fn recv_from_wait(Stream s, Vec<byte> buf) -> Result<(int, string, int), IoError
     return (out_n, out_host, out_port);
 }
 
-/// Blocking UDP `send_to`, parking on `WouldBlock`.
+/// Sends `buf` as one UDP datagram to `host`:`port`, waiting while the socket is not ready.
 fn send_to_wait(Stream s, Vec<byte> buf, string host, int port) -> Result<int, IoError> {
     let done = false;
     let out_n = 0;
@@ -186,7 +203,7 @@ fn send_to_wait(Stream s, Vec<byte> buf, string host, int port) -> Result<int, I
     return out_n;
 }
 
-/// Copy file contents from `src` to `dst` via virtual `io::fs::copy`.
+/// Copies the file `src` to `dst`. Note the argument order: destination first. See `io::fs::copy`.
 fn copy(string dst, string src) -> Result<int, IoError> {
     fs_copy(src, dst)?;
     return 0;
@@ -198,25 +215,78 @@ fn newline_bytes() -> Vec<byte> {
     return nl;
 }
 
-/// Write UTF-8 bytes of `s` to stdout (no trailing newline).
+/// Writes `s` to standard output, without a newline.
+///
+/// # Errors
+///
+/// Returns `Err` when standard output cannot be written (for example, a closed pipe).
+/// # Examples
+///
+/// ```
+/// use io::sync::{print};
+/// # use tests::assert;
+/// print("no newline")?;
+/// ```
 fn print(string s) -> Result<int, IoError> {
     return write_all(stdout(), str_to_bytes(s))?;
 }
 
-/// Write `s` plus a trailing LF to stdout.
+/// Writes `s` and a newline to standard output.
+///
+/// The usual way to print. It returns a `Result` like all IO, so write
+/// `println(…)?;` in a function that can return the error (`main` can).
+/// Build the text with `string::format`.
+///
+/// # Errors
+///
+/// Returns `Err` when standard output cannot be written (for example, a closed pipe).
+///
+/// # Examples
+///
+/// ```
+/// use io::sync::{println};
+/// use string::{format};
+///
+/// fn main() {
+///     println("Hello, Coil!")?;
+///     println(format("%i + %i = %i", 2, 2, 2 + 2))?;
+/// }
+/// ```
 fn println(string s) -> Result<int, IoError> {
     write_all(stdout(), str_to_bytes(s))?;
     return write_all(stdout(), newline_bytes())?;
 }
 
-/// Write `s` plus a trailing LF to stderr.
+/// Writes `s` and a newline to standard error. Use it for diagnostics, so they stay out of the program's output.
+/// # Examples
+///
+/// ```
+/// use io::sync::{eprintln};
+/// # use tests::assert;
+/// eprintln("warning: no config file, using defaults")?;
+/// ```
 fn eprintln(string s) -> Result<int, IoError> {
     write_all(stderr(), str_to_bytes(s))?;
     return write_all(stderr(), newline_bytes())?;
 }
 
-/// Read until LF (10) or EOF. Returns `None` on EOF with no bytes read.
-/// The trailing LF is not included; a lone CR before LF is stripped.
+/// Reads one line from `s`, without its line ending (LF or CRLF).
+///
+/// Returns `None` at the end of the stream. A last line without a newline is
+/// still returned.
+///
+/// # Examples
+///
+/// ```no_run
+/// use io::{stdin};
+/// use io::sync::{read_line, println};
+///
+/// fn main() {
+///     while let Option::Some(line) = read_line(stdin())? {
+///         println(line)?;
+///     }
+/// }
+/// ```
 fn read_line(Stream s) -> Result<Option<string>, IoError> {
     let acc: Vec<byte> = Vec::new();
     // One-byte reads: a larger scratch would consume past LF without pushback.

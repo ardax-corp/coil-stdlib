@@ -24,6 +24,24 @@ fn bits_per_word() -> int {
     return WORD_BITS;
 }
 
+/// A set of non-negative `int`s stored as bits.
+///
+/// Much smaller than a `HashSet<int>` when the values are dense, such as indices
+/// or flags. Storage grows to fit the largest value inserted; capacities are
+/// counted in bits. Each `int` word holds 63 bits.
+///
+/// # Examples
+///
+/// ```
+/// use collections::bitset::{BitSet};
+/// # use tests::assert;
+/// let seen = BitSet::new();
+/// seen.insert(3);
+/// seen.insert(200);
+/// assert!(seen.contains(200));
+/// assert!(!seen.contains(4));
+/// assert!(seen.size() == 2);
+/// ```
 class BitSet
     invariant self.count >= 0 && self.count <= self.words.len() * WORD_BITS
 {
@@ -59,6 +77,7 @@ impl BitSet {
         return self.count;
     }
 
+    /// Returns `true` when no bit is set.
     pub fn is_empty() -> bool {
         return self.count == 0;
     }
