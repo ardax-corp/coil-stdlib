@@ -382,16 +382,24 @@ impl HashMap<K: Eq + Hash, V> {
         return fallback;
     }
 
-    /// Returns the value stored under `k`, or `fallback` when there is none.
+    /// Returns the value stored under `k`, or `None` when there is none.
     ///
-    /// Deprecated spelling of [`HashMap::get_or`]: `get` will return
-    /// `Option<V>`.
-    pub fn get(K k, V fallback) -> V {
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::map::{HashMap};
+    /// # use tests::assert;
+    /// let m: HashMap<string, int> = HashMap::new();
+    /// m.insert("a", 1);
+    /// assert!((m.get("a") ?? 0) == 1);
+    /// assert!(m.get("b").is_none());
+    /// ```
+    pub fn get(K k) -> Option<V> {
         let found = self.find(k);
         if found >= 0 {
-            return self.vals[found];
+            return Some(self.vals[found]);
         }
-        return fallback;
+        return None;
     }
 
     /// Removes the entry for `k`.
