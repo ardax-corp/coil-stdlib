@@ -8,16 +8,26 @@
 // IEEE scalars (`sin`/`atan`/`log10`/`sinh`/…) stay on `prelude::math`
 // — auto-imported; this module does not re-export them.
 
-// Circle constant π (IEEE f64). `///` would bind to a following `fn`.
+// The circle constant π, as a `float`.
 const PI = 3.141592653589793;
 
-// Natural logarithm base e (IEEE f64).
+// Euler's number e, the base of `ln`, as a `float`.
 const E = 2.718281828459045;
 
-// Full turn τ = 2π (IEEE f64).
+// A full turn τ = 2π, as a `float`.
 const TAU = 6.283185307179586;
 
-/// Absolute value of an integer.
+/// Returns the absolute value of `x`.
+///
+/// Panics with `integer overflow` for the smallest `int`, whose absolute value does not fit.
+/// # Examples
+///
+/// ```
+/// use num::{abs};
+/// # use tests::assert;
+/// assert!(abs(-5) == 5);
+/// assert!(abs(2.5) == 2.5);
+/// ```
 fn abs(int x) -> int {
     if x < 0 {
         return 0 - x;
@@ -25,7 +35,7 @@ fn abs(int x) -> int {
     return x;
 }
 
-/// Absolute value of a float (preserves signed zero).
+/// Returns the absolute value of `x`; `-0.0` becomes `0.0`.
 fn abs(float x) -> float {
     if x > 0.0 {
         return x;
@@ -36,7 +46,15 @@ fn abs(float x) -> float {
     return 0.0 - x;
 }
 
-/// Smaller of two `Ord` values.
+/// Returns the smaller of `a` and `b` (`a` when they are equal).
+/// # Examples
+///
+/// ```
+/// use num::{min};
+/// # use tests::assert;
+/// assert!(min(3, 7) == 3);
+/// assert!(min("pear", "apple") == "apple");
+/// ```
 fn min<T: Ord>(T a, T b) -> T {
     if a < b {
         return a;
@@ -44,7 +62,14 @@ fn min<T: Ord>(T a, T b) -> T {
     return b;
 }
 
-/// Larger of two `Ord` values.
+/// Returns the larger of `a` and `b` (`a` when they are equal).
+/// # Examples
+///
+/// ```
+/// use num::{max};
+/// # use tests::assert;
+/// assert!(max(3, 7) == 7);
+/// ```
 fn max<T: Ord>(T a, T b) -> T {
     if a > b {
         return a;
@@ -52,7 +77,16 @@ fn max<T: Ord>(T a, T b) -> T {
     return b;
 }
 
-/// Nearest int as float; halves round away from zero (via trunc bias).
+/// Rounds `x` to the nearest whole number; halves round away from zero.
+/// # Examples
+///
+/// ```
+/// use num::{round};
+/// # use tests::assert;
+/// assert!(round(2.5) == 3.0);
+/// assert!(round(-2.5) == -3.0);
+/// assert!(round(2.4) == 2.0);
+/// ```
 fn round(float x) -> float {
     if x >= 0.0 {
         return floor(x + 0.5);
@@ -60,12 +94,29 @@ fn round(float x) -> float {
     return ceil(x - 0.5);
 }
 
-/// Clamp `x` into the inclusive range `[lo, hi]`.
+/// Returns `x` limited to the range `lo..=hi`.
+/// # Examples
+///
+/// ```
+/// use num::{clamp};
+/// # use tests::assert;
+/// assert!(clamp(15, 0, 10) == 10);
+/// assert!(clamp(-3, 0, 10) == 0);
+/// assert!(clamp(4, 0, 10) == 4);
+/// ```
 fn clamp<T: Ord>(T x, T lo, T hi) -> T {
     return min(max(x, lo), hi);
 }
 
-/// Sign of an integer (`-1`, `0`, or `1`).
+/// Returns `-1`, `0` or `1` by the sign of `x`.
+/// # Examples
+///
+/// ```
+/// use num::{signum};
+/// # use tests::assert;
+/// assert!(signum(-8) == -1);
+/// assert!(signum(0) == 0);
+/// ```
 fn signum(int x) -> int {
     if x < 0 {
         return 0 - 1;
@@ -76,7 +127,7 @@ fn signum(int x) -> int {
     return 0;
 }
 
-/// Sign of a float (`-1.0`, `0.0`, or `1.0`; preserves signed zero).
+/// Returns `-1.0`, `0.0` or `1.0` by the sign of `x`; a zero keeps its sign.
 fn signum(float x) -> float {
     if x > 0.0 {
         return 1.0;
@@ -87,7 +138,14 @@ fn signum(float x) -> float {
     return 0.0;
 }
 
-/// Greatest common divisor for non-negative integers.
+/// Returns the greatest common divisor of `a` and `b`, which should be non-negative. `gcd(0, 0)` is `0`.
+/// # Examples
+///
+/// ```
+/// use num::{gcd};
+/// # use tests::assert;
+/// assert!(gcd(12, 18) == 6);
+/// ```
 fn gcd(int a, int b) -> int {
     if b == 0 {
         let x = a;
@@ -100,7 +158,14 @@ fn gcd(int a, int b) -> int {
     return gcd(b, r);
 }
 
-/// Least common multiple for non-negative integers (`0` if either operand is `0`).
+/// Returns the least common multiple of `a` and `b`, which should be non-negative; `0` when either is `0`.
+/// # Examples
+///
+/// ```
+/// use num::{lcm};
+/// # use tests::assert;
+/// assert!(lcm(4, 6) == 12);
+/// ```
 fn lcm(int a, int b) -> int {
     if a == 0 {
         return 0;
@@ -116,7 +181,14 @@ fn lcm(int a, int b) -> int {
     return p / g;
 }
 
-/// Truncate toward zero.
+/// Removes the fractional part of `x`, rounding toward zero.
+/// # Examples
+///
+/// ```
+/// use num::{trunc};
+/// # use tests::assert;
+/// assert!(trunc(-2.7) == -2.0);
+/// ```
 fn trunc(float x) -> float {
     if x >= 0.0 {
         return floor(x);
@@ -124,17 +196,17 @@ fn trunc(float x) -> float {
     return ceil(x);
 }
 
-/// Fractional part (`x - trunc(x)`).
+/// Returns the fractional part of `x`, `x - trunc(x)`; it has the sign of `x`.
 fn fract(float x) -> float {
     return x - trunc(x);
 }
 
-/// True when `x` is NaN.
+/// Returns `true` when `x` is NaN (`0.0 / 0.0`, `sqrt(-1.0)`, …).
 fn is_nan(float x) -> bool {
     return x != x;
 }
 
-/// True when `x` is infinite (not NaN).
+/// Returns `true` when `x` is positive or negative infinity.
 fn is_infinite(float x) -> bool {
     if is_nan(x) {
         return false;
@@ -148,12 +220,22 @@ fn is_infinite(float x) -> bool {
     return x == big || x == 0.0 - big;
 }
 
-/// True when `x` is neither NaN nor infinite.
+/// Returns `true` when `x` is neither NaN nor infinite.
 fn is_finite(float x) -> bool {
     return !is_nan(x) && !is_infinite(x);
 }
 
-/// Euclidean remainder (`0 <= rem < abs(b)` when `b != 0`).
+/// Returns the remainder of `a / b` that is never negative: `0 <= r < abs(b)`.
+///
+/// Unlike `%`, whose result takes the sign of `a`. Panics with `division by zero` when `b` is `0`.
+/// # Examples
+///
+/// ```
+/// use num::{rem_euclid};
+/// # use tests::assert;
+/// assert!(rem_euclid(-7, 3) == 2);
+/// assert!(-7 % 3 == -1);
+/// ```
 fn rem_euclid(int a, int b) -> int {
     let r = a % b;
     if r < 0 {
@@ -162,13 +244,27 @@ fn rem_euclid(int a, int b) -> int {
     return r;
 }
 
-/// Euclidean division quotient.
+/// Returns the quotient that goes with `rem_euclid`: `a == div_euclid(a, b) * b + rem_euclid(a, b)`.
+/// # Examples
+///
+/// ```
+/// use num::{div_euclid};
+/// # use tests::assert;
+/// assert!(div_euclid(-7, 3) == -3);
+/// ```
 fn div_euclid(int a, int b) -> int {
     let r = rem_euclid(a, b);
     return (a - r) / b;
 }
 
-/// Hypotenuse `sqrt(a*a + b*b)`.
+/// Returns `sqrt(a * a + b * b)`, the length of the hypotenuse.
+/// # Examples
+///
+/// ```
+/// use num::{hypot};
+/// # use tests::assert;
+/// assert!(hypot(3.0, 4.0) == 5.0);
+/// ```
 fn hypot(float a, float b) -> float {
     return sqrt(a * a + b * b);
 }

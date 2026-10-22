@@ -38,7 +38,14 @@ fn b64_char(int n) -> byte {
     return "/" as byte;
 }
 
-/// Encode bytes as standard Base64.
+/// Encodes `data` as standard Base64 (RFC 4648 alphabet, with `=` padding).
+/// # Examples
+///
+/// ```
+/// use encoding::{encode};
+/// # use tests::assert;
+/// assert!(encode("hello") == "aGVsbG8=");
+/// ```
 fn encode(Vec<byte> data) -> string {
     let out: Vec<byte> = Vec::new();
     let i = 0;
@@ -77,7 +84,20 @@ fn encode(Vec<byte> data) -> string {
     };
 }
 
-/// Decode standard Base64 into bytes.
+/// Decodes standard Base64 text into bytes.
+///
+/// # Errors
+///
+/// Returns `Err` when `s` has a character outside the Base64 alphabet or a length that is not a multiple of 4.
+/// # Examples
+///
+/// ```
+/// use encoding::{decode, encode};
+/// # use tests::assert;
+/// let bytes = decode("aGVsbG8=") ?? Vec::new();
+/// assert!(bytes.len() == 5);
+/// assert!(encode(bytes) == "aGVsbG8=");
+/// ```
 fn decode(string s) -> Result<Vec<byte>, string> {
     let b = to_bytes(s);
     let out: Vec<byte> = Vec::new();

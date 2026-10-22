@@ -37,7 +37,14 @@ fn hex_nibble_char(int n) -> string {
     };
 }
 
-/// Format an integer in base 10.
+/// Formats `n` in decimal; the same as `format("%i", n)`.
+/// # Examples
+///
+/// ```
+/// use conv::{int_to_dec};
+/// # use tests::assert;
+/// assert!(int_to_dec(-42) == "-42");
+/// ```
 fn int_to_dec(int n) -> string {
     if n == 0 {
         return "0";
@@ -59,7 +66,14 @@ fn int_to_dec(int n) -> string {
     return out;
 }
 
-/// Format an integer in base 16 (lowercase, no prefix).
+/// Formats `n` in lowercase hexadecimal without a prefix; a negative `n` gets a leading `-`.
+/// # Examples
+///
+/// ```
+/// use conv::{int_to_hex};
+/// # use tests::assert;
+/// assert!(int_to_hex(255) == "ff");
+/// ```
 fn int_to_hex(int n) -> string {
     if n == 0 {
         return "0";
@@ -81,7 +95,14 @@ fn int_to_hex(int n) -> string {
     return out;
 }
 
-/// Format an integer in base 2 (no prefix).
+/// Formats `n` in binary without a prefix; a negative `n` gets a leading `-`.
+/// # Examples
+///
+/// ```
+/// use conv::{int_to_bin};
+/// # use tests::assert;
+/// assert!(int_to_bin(5) == "101");
+/// ```
 fn int_to_bin(int n) -> string {
     if n == 0 {
         return "0";
@@ -103,7 +124,25 @@ fn int_to_bin(int n) -> string {
     return out;
 }
 
-/// Parse an optionally signed integer in base `radix` (10 or 16).
+/// Parses an integer written in base `radix`, which must be 10 or 16.
+///
+/// Surrounding ASCII whitespace and one leading `+` or `-` are accepted. Hex
+/// digits may be either case; there is no `0x` prefix.
+///
+/// # Errors
+///
+/// `Err("invalid integer")` for empty or non-digit text and `Err("invalid radix")`
+/// for any other `radix`. A value that does not fit in an `int` currently panics
+/// instead of returning an error (coil-stdlib#53).
+/// # Examples
+///
+/// ```
+/// use conv::{parse_int_radix};
+/// # use tests::assert;
+/// assert!((parse_int_radix("ff", 16) ?? 0) == 255);
+/// assert!((parse_int_radix("-10", 10) ?? 0) == -10);
+/// assert!(parse_int_radix("12", 8).is_err());
+/// ```
 fn parse_int_radix(string s, int radix) -> Result<int, string> {
     let trimmed = trim_ascii(s);
     let b = to_bytes(trimmed);
@@ -147,12 +186,44 @@ fn parse_int_radix(string s, int radix) -> Result<int, string> {
     return value;
 }
 
-/// Parse an optionally signed base-10 integer (surrounding ASCII space skipped).
+/// Parses a decimal integer, such as `"42"`, `" -7 "` or `"+3"`.
+///
+/// # Errors
+///
+/// `Err("invalid integer")` when `s` is empty or has a character that is not a
+/// digit. See `parse_int_radix` for the overflow caveat.
+/// # Examples
+///
+/// ```
+/// use conv::{parse_int};
+/// # use tests::assert;
+/// assert!((parse_int(" 42 ") ?? 0) == 42);
+/// let bad = match parse_int("4x2") {
+///     Result::Err(e) => e,
+///     Result::Ok(_) => "",
+/// };
+/// assert!(bad == "invalid integer");
+/// ```
 fn parse_int(string s) -> Result<int, string> {
     return parse_int_radix(s, 10)?;
 }
 
-/// Parse an optionally signed decimal float with an optional exponent.
+/// Parses a decimal float such as `"3.5"`, `"-0.25"`, `"1e3"` or `"42"`.
+///
+/// Surrounding ASCII whitespace, a sign and an exponent (`e` or `E`) are accepted.
+///
+/// # Errors
+///
+/// `Err("invalid float")` when `s` is not a number.
+/// # Examples
+///
+/// ```
+/// use conv::{parse_float};
+/// # use tests::assert;
+/// assert!((parse_float("2.5") ?? 0.0) == 2.5);
+/// assert!((parse_float("1e3") ?? 0.0) == 1000.0);
+/// assert!(parse_float("abc").is_err());
+/// ```
 fn parse_float(string s) -> Result<float, string> {
     let b = to_bytes(trim_ascii(s));
     if b.len() == 0 {
