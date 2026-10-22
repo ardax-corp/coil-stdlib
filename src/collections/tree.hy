@@ -1,24 +1,56 @@
 // Mutable BST over Ord+Eq keys, index-linked nodes.
 
+/// One key-value pair, as `TreeMap` iteration yields it.
 class Entry<K, V> {
+/// The key.
     pub key: K,
+/// The value stored under `key`.
     pub value: V,
 }
 
+/// An ordered map from keys of type `K` to values of type `V`.
+///
+/// Keys need `Ord` and `Eq`. Iteration visits entries in ascending key order,
+/// and `min_key` / `max_key` give the ends. The tree is not rebalanced: inserting
+/// keys that are already sorted makes lookups linear, so prefer `HashMap` when you
+/// do not need the order.
+///
+/// # Examples
+///
+/// ```
+/// use collections::tree::{TreeMap};
+/// # use tests::assert;
+/// let m: TreeMap<int, string> = TreeMap::new();
+/// m.insert(30, "c");
+/// m.insert(10, "a");
+/// m.insert(20, "b");
+/// let order = "";
+/// for e in m {
+///     order = order + e.value;
+/// }
+/// assert!(order == "abc");
+/// assert!(m.min_key(0) == 10);
+/// ```
 class TreeMap<K, V>
     invariant self.len >= 0 && self.len <= self.keys.len()
     invariant self.vals.len() == self.keys.len()
     invariant self.left.len() == self.keys.len() && self.right.len() == self.keys.len()
     invariant (self.root < 0) == (self.len == 0)
 {
+/// Node keys, including removed nodes. Prefer iteration.
     pub keys: Vec<K>,
+/// Node values parallel to `keys`.
     pub vals: Vec<V>,
+/// Index of each node's left child, or `-1`.
     pub left: Vec<int>,
+/// Index of each node's right child, or `-1`.
     pub right: Vec<int>,
+/// Index of the root node, or `-1` when the map is empty.
     pub root: int,
     len: int,
 }
 
+/// An in-order iterator over a `TreeMap`, from `TreeMap::iter`.
 class TreeMapIter<K, V> {
     map: TreeMap<K, V>,
     stack: Vec<int>,
@@ -26,6 +58,16 @@ class TreeMapIter<K, V> {
 }
 
 impl TreeMap<K, V> {
+/// Creates an empty map.
+///
+/// # Examples
+///
+/// ```
+/// use collections::tree::{TreeMap};
+/// # use tests::assert;
+/// let m: TreeMap<string, int> = TreeMap::new();
+/// assert!(m.is_empty());
+/// ```
     pub static fn new() -> TreeMap<K, V> {
         let keys: Vec<K> = Vec::new();
         let vals: Vec<V> = Vec::new();
@@ -34,18 +76,22 @@ impl TreeMap<K, V> {
         return new TreeMap(keys, vals, left, right, 0 - 1, 0);
     }
 
+/// Creates an empty map; the same as `TreeMap::new`.
     pub static fn empty() -> TreeMap<K, V> {
         return TreeMap::new();
     }
 
+/// Returns the number of entries.
     pub fn size() -> int {
         return self.len;
     }
 
+/// Returns `true` when the map has no entries.
     pub fn is_empty() -> bool {
         return self.len == 0;
     }
 
+/// Removes every entry.
     pub fn clear()
         ensures self.len == 0
     {
@@ -57,6 +103,9 @@ impl TreeMap<K, V> {
         self.len = 0;
     }
 
+/// Returns an iterator over the entries in ascending key order.
+///
+/// `for e in m` does the same; each item is an `Entry` with `key` and `value`.
     pub fn iter() -> TreeMapIter<K, V> {
         let stack: Vec<int> = Vec::new();
         return new TreeMapIter(self, stack, 0);
@@ -64,6 +113,21 @@ impl TreeMap<K, V> {
 }
 
 impl TreeMap<K: Ord + Eq, V> {
+/// Stores `v` under `k`, replacing any value already there.
+///
+/// Returns `true` when `k` is new and `false` when an existing value was replaced.
+///
+/// # Examples
+///
+/// ```
+/// use collections::tree::{TreeMap};
+/// # use tests::assert;
+/// let m: TreeMap<string, int> = TreeMap::new();
+/// assert!(m.insert("a", 1));
+/// assert!(!m.insert("a", 2));
+/// assert!(m.get("a", 0) == 2);
+/// assert!(m.size() == 1);
+/// ```
     pub fn insert(K k, V v) -> bool
         ensures !result || self.len == old(self.len) + 1
         ensures result || self.len == old(self.len)
@@ -114,6 +178,7 @@ impl TreeMap<K: Ord + Eq, V> {
         }
     }
 
+/// Returns `true` when the map has an entry for `k`.
     pub fn contains(K k) -> bool {
         let cur = self.root;
         while cur >= 0 {
@@ -129,6 +194,18 @@ impl TreeMap<K: Ord + Eq, V> {
         return false;
     }
 
+/// Returns the value stored under `k`, or `fallback` when there is none.
+///
+/// # Examples
+///
+/// ```
+/// use collections::tree::{TreeMap};
+/// # use tests::assert;
+/// let m: TreeMap<int, string> = TreeMap::new();
+/// m.insert(1, "one");
+/// assert!(m.get(1, "?") == "one");
+/// assert!(m.get(2, "?") == "?");
+/// ```
     pub fn get(K k, V fallback) -> V {
         let cur = self.root;
         while cur >= 0 {
@@ -190,6 +267,22 @@ impl TreeMap<K: Ord + Eq, V> {
         return cur;
     }
 
+/// Removes the entry for `k`.
+///
+/// Returns `true` when there was one.
+///
+/// # Examples
+///
+/// ```
+/// use collections::tree::{TreeMap};
+/// # use tests::assert;
+/// let m: TreeMap<int, int> = TreeMap::new();
+/// m.insert(5, 50);
+/// m.insert(3, 30);
+/// assert!(m.remove(5));
+/// assert!(!m.contains(5));
+/// assert!(m.min_key(-1) == 3);
+/// ```
     pub fn remove(K k) -> bool
         ensures !result || self.len == old(self.len) - 1
         ensures result || self.len == old(self.len)
@@ -235,6 +328,19 @@ impl TreeMap<K: Ord + Eq, V> {
         return true;
     }
 
+/// Returns the smallest key, or `fallback` when the map is empty.
+///
+/// # Examples
+///
+/// ```
+/// use collections::tree::{TreeMap};
+/// # use tests::assert;
+/// let m: TreeMap<int, bool> = TreeMap::new();
+/// assert!(m.min_key(-1) == -1);
+/// m.insert(4, true);
+/// m.insert(2, true);
+/// assert!(m.min_key(-1) == 2);
+/// ```
     pub fn min_key(K fallback) -> K {
         if self.root < 0 {
             return fallback;
@@ -243,6 +349,18 @@ impl TreeMap<K: Ord + Eq, V> {
         return self.keys[n];
     }
 
+/// Returns the largest key, or `fallback` when the map is empty.
+///
+/// # Examples
+///
+/// ```
+/// use collections::tree::{TreeMap};
+/// # use tests::assert;
+/// let m: TreeMap<int, bool> = TreeMap::new();
+/// m.insert(4, true);
+/// m.insert(9, true);
+/// assert!(m.max_key(-1) == 9);
+/// ```
     pub fn max_key(K fallback) -> K {
         if self.root < 0 {
             return fallback;
@@ -253,6 +371,7 @@ impl TreeMap<K: Ord + Eq, V> {
 }
 
 impl TreeMapIter<K, V> {
+/// Returns the entry with the next larger key, or `None` after the last one.
     pub fn next() -> Option<Entry<K, V>> {
         if self.phase == 0 {
             let cur = self.map.root;
