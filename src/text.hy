@@ -126,70 +126,6 @@ fn trim(string s) -> Result<string, string>
     return sub(s, lo, hi)?;
 }
 
-/// Returns `true` when `needle` occurs in `hay`. An empty `needle` is always found.
-///
-/// # Examples
-///
-/// ```
-/// use text::{contains};
-/// # use tests::assert;
-/// assert!(contains("haystack", "st"));
-/// assert!(!contains("haystack", "x"));
-/// ```
-fn contains(string hay, string needle) -> bool
-    ensures !result || needle.len() <= hay.len()
-{
-    return str_find_from(hay, needle, 0) >= 0;
-}
-
-/// Returns `true` when `s` begins with `prefix`.
-///
-/// # Examples
-///
-/// ```
-/// use text::{starts_with};
-/// # use tests::assert;
-/// assert!(starts_with("--verbose", "--"));
-/// ```
-fn starts_with(string s, string prefix) -> bool
-    ensures !result || prefix.len() <= s.len()
-{
-    return match_at(s, prefix, 0);
-}
-
-/// Returns `true` when `s` ends with `suffix`.
-///
-/// # Examples
-///
-/// ```
-/// use text::{ends_with};
-/// # use tests::assert;
-/// assert!(ends_with("main.hy", ".hy"));
-/// ```
-fn ends_with(string s, string suffix) -> bool
-    ensures !result || suffix.len() <= s.len()
-{
-    return match_at(s, suffix, s.len() - suffix.len());
-}
-
-/// Returns the byte offset of the first `needle` in `hay`, or `-1`. An empty `needle` matches at `0`.
-///
-/// # Examples
-///
-/// ```
-/// use text::{find};
-/// # use tests::assert;
-/// assert!(find("a=b=c", "=") == 1);
-/// assert!(find("abc", "z") == -1);
-/// ```
-fn find(string hay, string needle) -> int
-    ensures result >= -1 && result <= hay.len()
-    ensures result < 0 || match_at(hay, needle, result)
-    ensures needle.len() > 0 || result == 0
-{
-    return str_find_from(hay, needle, 0);
-}
-
 /// Returns the byte offset of the last `needle` in `hay`, or `-1`.
 ///
 /// # Examples
@@ -230,90 +166,6 @@ fn split_at(string s, int at) -> Result<(string, string), string> {
     let left = sub(s, 0, at)?;
     let right = sub(s, at, s.len())?;
     return (left, right);
-}
-
-/// Splits `s` at every `sep`, returning the pieces between them.
-///
-/// Adjacent separators give empty pieces, and so does a separator at either end.
-/// An empty `sep` returns `[s]`.
-///
-/// # Examples
-///
-/// ```
-/// use text::{split};
-/// # use tests::assert;
-/// let parts = split("a,b,,c", ",") ?? Vec::new();
-/// assert!(parts.len() == 4);
-/// assert!(parts[2] == "");
-/// ```
-fn split(string s, string sep) -> Result<Vec<string>, string> {
-    let out: Vec<string> = Vec::new();
-    let nn = sep.len();
-    if nn == 0 {
-        out.push(s);
-        return out;
-    }
-    let start = 0;
-    let at = str_find_from(s, sep, 0);
-    while at >= 0 {
-        let part = sub(s, start, at)?;
-        out.push(part);
-        start = at + nn;
-        at = str_find_from(s, sep, start);
-    }
-    let last = sub(s, start, s.len())?;
-    out.push(last);
-    return out;
-}
-
-/// Splits `s` at the first `sep` into the parts before and after it.
-///
-/// # Errors
-///
-/// Returns `Err` when `sep` does not occur in `s`.
-///
-/// # Examples
-///
-/// ```
-/// use text::{split_once};
-/// # use tests::assert;
-/// let (k, v) = split_once("name=coil=lang", "=") ?? ("", "");
-/// assert!(k == "name" && v == "coil=lang");
-/// assert!(split_once("plain", "=").is_err());
-/// ```
-fn split_once(string s, string sep) -> Result<(string, string), string> {
-    let at = str_find_from(s, sep, 0);
-    if at < 0 {
-        raise "separator not found";
-    }
-    let left = sub(s, 0, at)?;
-    let right = sub(s, at + sep.len(), s.len())?;
-    return (left, right);
-}
-
-/// Returns `s` with every non-overlapping `old` replaced by `new`, scanning left to right.
-///
-/// # Examples
-///
-/// ```
-/// use text::{replace};
-/// # use tests::assert;
-/// assert!((replace("a-b-c", "-", ", ") ?? "") == "a, b, c");
-/// ```
-fn replace(string s, string old, string new) -> Result<string, string> {
-    let nn = old.len();
-    if nn == 0 {
-        return s;
-    }
-    let out = "";
-    let start = 0;
-    let at = str_find_from(s, old, 0);
-    while at >= 0 {
-        out = out + sub(s, start, at)? + new;
-        start = at + nn;
-        at = str_find_from(s, old, start);
-    }
-    return out + sub(s, start, s.len())?;
 }
 
 /// Returns the `parts` concatenated with `sep` between each pair.
@@ -636,8 +488,6 @@ impl Pattern for string {
 ///
 /// Empty matches step over one character, so an empty pattern matches
 /// between every pair of characters (`"ab".split("")` is `["", "a", "b", ""]`).
-/// The free functions (`text::split`, `text::replace`, …) keep their own
-/// string-only behaviour.
 ///
 /// # Examples
 ///
