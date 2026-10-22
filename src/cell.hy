@@ -4,6 +4,23 @@
 // captured local changes only the copy. A `Ref<T>` is a heap object, so every
 // holder of the same `Ref` sees each `set`.
 
+/// A shared, mutable box holding one `T`.
+///
+/// Captured locals are copies: a lambda, `defer` block or task that assigns to a
+/// captured variable changes only its own copy. Capture a `Ref` instead, and
+/// every holder sees each `set`.
+///
+/// # Examples
+///
+/// ```
+/// use cell::{Ref};
+/// # use tests::assert;
+/// let count = Ref::new(0);
+/// let bump = fn () use (count) => count.update(fn (int n) => n + 1);
+/// bump();
+/// bump();
+/// assert!(count.get() == 2);
+/// ```
 class Ref<T> {
     value: T,
 }

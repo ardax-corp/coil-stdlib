@@ -2,7 +2,21 @@
 
 use collections::map::HashMap;
 
-/// Set of unique values backed by `HashMap<T, bool>`.
+/// A set of unique values.
+///
+/// Values need `Eq` and `Hash`. Backed by a `HashMap<T, bool>`.
+///
+/// # Examples
+///
+/// ```
+/// use collections::set::{HashSet};
+/// # use tests::assert;
+/// let tags: HashSet<string> = HashSet::new();
+/// assert!(tags.insert("red"));
+/// assert!(!tags.insert("red"));
+/// assert!(tags.contains("red"));
+/// assert!(tags.size() == 1);
+/// ```
 class HashSet<T> {
     inner: HashMap<T, bool>,
 }
@@ -23,6 +37,7 @@ impl HashSet<T> {
         return self.inner.size();
     }
 
+/// Returns `true` when the set has no values.
     pub fn is_empty() -> bool {
         return self.inner.is_empty();
     }
