@@ -520,3 +520,253 @@ fn to_upper(string s) -> Result<string, string>
     }
     return utf8_ok(out)?;
 }
+
+// Byte offset of the character after the one starting at `i`, so a search
+// that steps over an empty match never lands inside a UTF-8 sequence.
+fn next_char(string s, int i) -> int {
+    let n = s.len();
+    let j = i + 1;
+    while j < n && (byte_at(s, j) & 192) == 128 {
+        j = j + 1;
+    }
+    return j;
+}
+
+// Byte slice at offsets a `Pattern` reported; those sit on character
+// boundaries, so a decode error is a broken `Pattern` instance.
+fn span_text(string s, int start, int end) -> string {
+    return match slice_bytes(s, start, end) {
+        Result::Ok(x) => x,
+        Result::Err(_) => panic "text: pattern span splits a character",
+    };
+}
+
+/// A match: the byte offsets `start..end` of the matched text.
+#[derive(Show, Eq)]
+class Span {
+    pub start: int,
+    pub end: int,
+}
+
+/// Something a [`Searchable`] value can be searched for: a plain `string`
+/// (matched literally), or a type such as coil-regex's `Regex`.
+///
+/// Spans are byte offsets into the searched string, on
+/// character boundaries. Searching from `from` finds the leftmost match that
+/// starts at or after `from`.
+///
+/// # Examples
+///
+/// ```
+/// use text::{Pattern, Span};
+/// # use tests::assert;
+/// let at = "-".find_in("a-b-c", 2) ?? new Span(0, 0);
+/// assert!(at.start == 3 && at.end == 4);
+/// ```
+trait Pattern<P> {
+    /// Returns the span of the leftmost match in `hay` at or after byte `from`.
+    fn find_in(P pat, string hay, int from) -> Option<Span> {}
+
+    /// Returns `true` when a match starts at the beginning of `hay`.
+    fn is_prefix_of(P pat, string hay) -> bool {}
+
+    /// Returns `true` when a match ends at the end of `hay`.
+    fn is_suffix_of(P pat, string hay) -> bool {}
+
+    /// Returns the replacement text for the match `find_in` just returned.
+    ///
+    /// The default is `template` itself. A regex substitutes its captures
+    /// (`$1`, `${name}`).
+    fn expand(P pat, string template) -> string {
+        return template;
+    }
+}
+
+impl Pattern for string {
+    pub fn find_in(string pat, string hay, int from) -> Option<Span> {
+        let at = str_find_from(hay, pat, from);
+        if at < 0 {
+            return Option::None;
+        }
+        return Option::Some(new Span(at, at + pat.len()));
+    }
+
+    pub fn is_prefix_of(string pat, string hay) -> bool {
+        return match_at(hay, pat, 0);
+    }
+
+    pub fn is_suffix_of(string pat, string hay) -> bool {
+        return match_at(hay, pat, hay.len() - pat.len());
+    }
+
+    pub fn expand(string pat, string template) -> string {
+        return template;
+    }
+}
+
+/// Pattern search methods (`contains`, `find`, `split`, `replace_all`, …) on
+/// any [`Show`] type, which search its display form. `string` has them built
+/// in, so `"foobar".contains("oba")` works with a `string` or any other
+/// [`Pattern`] (such as a compiled `Regex`).
+///
+/// Give your own type the methods with an empty instance; they search
+/// `value.show()`:
+///
+/// ```
+/// use text::{Searchable};
+/// # use tests::assert;
+///
+/// class Version {
+///     pub major: int,
+///     pub minor: int,
+/// }
+///
+/// impl Show for Version {
+///     pub fn show(Version v) -> string {
+///         return string::format("%i.%i", v.major, v.minor);
+///     }
+/// }
+///
+/// impl Searchable for Version {}
+///
+/// fn main() {
+///     assert!(new Version(1, 12).starts_with("1."));
+/// }
+/// ```
+///
+/// Empty matches step over one character, so an empty pattern matches
+/// between every pair of characters (`"ab".split("")` is `["", "a", "b", ""]`).
+/// The free functions (`text::split`, `text::replace`, …) keep their own
+/// string-only behaviour.
+///
+/// # Examples
+///
+/// ```
+/// use text::{Searchable};
+/// # use tests::assert;
+/// assert!("foobar".contains("oba"));
+/// assert!("a,b,,c".split(",").len() == 4);
+/// assert!("a-b-c".replace_all("-", "+") == "a+b+c");
+/// ```
+trait Searchable<T: Show> {
+    /// Returns `true` when `pat` matches anywhere in `hay`.
+    fn contains<P: Pattern>(T hay, P pat) -> bool {
+        return pat.find_in(hay.show(), 0).is_some();
+    }
+
+    /// Returns `true` when a match of `pat` starts at the beginning of `hay`.
+    fn starts_with<P: Pattern>(T hay, P pat) -> bool {
+        return pat.is_prefix_of(hay.show());
+    }
+
+    /// Returns `true` when a match of `pat` ends at the end of `hay`.
+    fn ends_with<P: Pattern>(T hay, P pat) -> bool {
+        return pat.is_suffix_of(hay.show());
+    }
+
+    /// Returns the byte span of the first match of `pat`, or `None`.
+    fn find<P: Pattern>(T hay, P pat) -> Option<Span> {
+        return pat.find_in(hay.show(), 0);
+    }
+
+    /// Returns the byte spans of every non-overlapping match, left to right.
+    fn find_all<P: Pattern>(T hay, P pat) -> Vec<Span> {
+        let s = hay.show();
+        let out: Vec<Span> = Vec::new();
+        let from = 0;
+        while from <= s.len() {
+            let span = pat.find_in(s, from) ?? new Span(-1, -1);
+            if span.start < 0 {
+                break;
+            }
+            let start = span.start;
+            let end = span.end;
+            out.push(span);
+            from = end;
+            if end == start {
+                from = next_char(s, end);
+            }
+        }
+        return out;
+    }
+
+    /// Returns the pieces of `hay` between the matches of `pat`.
+    ///
+    /// A match at either end gives an empty first or last piece.
+    fn split<P: Pattern>(T hay, P pat) -> Vec<string> {
+        let s = hay.show();
+        let out: Vec<string> = Vec::new();
+        let piece = 0;
+        let from = 0;
+        while from <= s.len() {
+            let span = pat.find_in(s, from) ?? new Span(-1, -1);
+            if span.start < 0 {
+                break;
+            }
+            let start = span.start;
+            let end = span.end;
+            out.push(span_text(s, piece, start));
+            piece = end;
+            from = end;
+            if end == start {
+                from = next_char(s, end);
+            }
+        }
+        out.push(span_text(s, piece, s.len()));
+        return out;
+    }
+
+    /// Splits `hay` at the first match of `pat` into the parts before and after it.
+    fn split_once<P: Pattern>(T hay, P pat) -> Option<(string, string)> {
+        let s = hay.show();
+        let span = match pat.find_in(s, 0) {
+            Option::Some(found) => found,
+            Option::None => {
+                return Option::None;
+            },
+        };
+        return Option::Some((span_text(s, 0, span.start), span_text(s, span.end, s.len())));
+    }
+
+    /// Returns `hay` with its first match of `pat` replaced by `with`.
+    ///
+    /// A regex pattern expands `$1` / `${name}` in `with`.
+    fn replace_first<P: Pattern>(T hay, P pat, string with) -> string {
+        let s = hay.show();
+        let span = match pat.find_in(s, 0) {
+            Option::Some(found) => found,
+            Option::None => {
+                return s;
+            },
+        };
+        return span_text(s, 0, span.start) + pat.expand(with) + span_text(s, span.end, s.len());
+    }
+
+    /// Returns `hay` with every non-overlapping match of `pat` replaced by `with`.
+    ///
+    /// A regex pattern expands `$1` / `${name}` in `with`.
+    fn replace_all<P: Pattern>(T hay, P pat, string with) -> string {
+        let s = hay.show();
+        let out = "";
+        let piece = 0;
+        let from = 0;
+        while from <= s.len() {
+            let span = pat.find_in(s, from) ?? new Span(-1, -1);
+            if span.start < 0 {
+                break;
+            }
+            let start = span.start;
+            let end = span.end;
+            out = out + span_text(s, piece, start) + pat.expand(with);
+            piece = end;
+            from = end;
+            if end == start {
+                from = next_char(s, end);
+            }
+        }
+        return out + span_text(s, piece, s.len());
+    }
+}
+
+impl Searchable for string {
+}
