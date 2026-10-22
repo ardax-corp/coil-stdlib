@@ -28,8 +28,8 @@ class Entry<K, V> {
 /// ages.insert("alan", 41);
 /// ages.insert("ada", 37);
 /// assert!(ages.size() == 2);
-/// assert!(ages.get("ada", 0) == 37);
-/// assert!(ages.get("grace", -1) == -1);
+/// assert!(ages.get_or("ada", 0) == 37);
+/// assert!(ages.get_or("grace", -1) == -1);
 ///
 /// let total = 0;
 /// for e in ages {
@@ -321,7 +321,7 @@ impl HashMap<K: Eq + Hash, V> {
     /// let m: HashMap<string, int> = HashMap::new();
     /// assert!(m.insert("a", 1));
     /// assert!(!m.insert("a", 2));
-    /// assert!(m.get("a", 0) == 2);
+    /// assert!(m.get_or("a", 0) == 2);
     /// ```
     pub fn insert(K k, V v) -> bool
         ensures !result || self.len == old(self.len) + 1
@@ -371,9 +371,21 @@ impl HashMap<K: Eq + Hash, V> {
     /// # use tests::assert;
     /// let m: HashMap<string, int> = HashMap::new();
     /// m.insert("a", 1);
-    /// assert!(m.get("a", 0) == 1);
-    /// assert!(m.get("b", 0) == 0);
+    /// assert!(m.get_or("a", 0) == 1);
+    /// assert!(m.get_or("b", 0) == 0);
     /// ```
+    pub fn get_or(K k, V fallback) -> V {
+        let found = self.find(k);
+        if found >= 0 {
+            return self.vals[found];
+        }
+        return fallback;
+    }
+
+    /// Returns the value stored under `k`, or `fallback` when there is none.
+    ///
+    /// Deprecated spelling of [`HashMap::get_or`]: `get` will return
+    /// `Option<V>`.
     pub fn get(K k, V fallback) -> V {
         let found = self.find(k);
         if found >= 0 {
