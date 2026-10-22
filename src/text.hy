@@ -3,7 +3,7 @@
 // Named `text` because virtual `string` already owns `format` / `to_bytes` / `from_bytes`.
 // The search and slice helpers use the `string` byte natives, which read the
 // string in place instead of copying it through `to_bytes` on every call.
-use string::{to_bytes, from_bytes, byte_at, slice_bytes, find_from as str_find_from, rfind as str_rfind, match_at};
+use string::{to_bytes, from_bytes, byte_at, slice_bytes, find_from as str_find_from, rfind as str_rfind, match_at, find_all as str_find_all, split as str_split, replace_all as str_replace_all};
 use ascii::is_space;
 
 fn utf8_ok(Vec<byte> b) -> Result<string, string> {
@@ -432,6 +432,66 @@ trait Pattern<P> {
     fn expand(P pat, string template) -> string {
         return template;
     }
+
+    /// Returns the spans of every non-overlapping match in `hay`, left to right.
+    ///
+    /// The default steps through `find_in`; `string` finds them all in one
+    /// native call.
+    fn find_all_in(P pat, string hay) -> Vec<Span> {
+        let out: Vec<Span> = Vec::new();
+        let from = 0;
+        while from <= hay.len() {
+            let span = pat.find_in(hay, from) ?? new Span(-1, -1);
+            if span.start < 0 {
+                break;
+            }
+            let start = span.start;
+            let end = span.end;
+            out.push(span);
+            from = end;
+            if end == start {
+                from = next_char(hay, end);
+            }
+        }
+        return out;
+    }
+
+    /// Returns the pieces of `hay` between the matches.
+    fn split_in(P pat, string hay) -> Vec<string> {
+        let out: Vec<string> = Vec::new();
+        let piece = 0;
+        for span in pat.find_all_in(hay) {
+            out.push(span_text(hay, piece, span.start));
+            piece = span.end;
+        }
+        out.push(span_text(hay, piece, hay.len()));
+        return out;
+    }
+
+    /// Returns `hay` with every match replaced by `expand(with)`.
+    ///
+    /// The default calls `expand` right after each `find_in`, so a regex
+    /// expands the captures of that match.
+    fn replace_all_in(P pat, string hay, string with) -> string {
+        let out = "";
+        let piece = 0;
+        let from = 0;
+        while from <= hay.len() {
+            let span = pat.find_in(hay, from) ?? new Span(-1, -1);
+            if span.start < 0 {
+                break;
+            }
+            let start = span.start;
+            let end = span.end;
+            out = out + span_text(hay, piece, start) + pat.expand(with);
+            piece = end;
+            from = end;
+            if end == start {
+                from = next_char(hay, end);
+            }
+        }
+        return out + span_text(hay, piece, hay.len());
+    }
 }
 
 impl Pattern for string {
@@ -453,6 +513,22 @@ impl Pattern for string {
 
     pub fn expand(string pat, string template) -> string {
         return template;
+    }
+
+    pub fn find_all_in(string pat, string hay) -> Vec<Span> {
+        let out: Vec<Span> = Vec::new();
+        for at in str_find_all(hay, pat) {
+            out.push(new Span(at, at + pat.len()));
+        }
+        return out;
+    }
+
+    pub fn split_in(string pat, string hay) -> Vec<string> {
+        return str_split(hay, pat);
+    }
+
+    pub fn replace_all_in(string pat, string hay, string with) -> string {
+        return str_replace_all(hay, pat, with);
     }
 }
 
@@ -521,49 +597,14 @@ trait Searchable<T: Show> {
 
     /// Returns the byte spans of every non-overlapping match, left to right.
     fn find_all<P: Pattern>(T hay, P pat) -> Vec<Span> {
-        let s = hay.show();
-        let out: Vec<Span> = Vec::new();
-        let from = 0;
-        while from <= s.len() {
-            let span = pat.find_in(s, from) ?? new Span(-1, -1);
-            if span.start < 0 {
-                break;
-            }
-            let start = span.start;
-            let end = span.end;
-            out.push(span);
-            from = end;
-            if end == start {
-                from = next_char(s, end);
-            }
-        }
-        return out;
+        return pat.find_all_in(hay.show());
     }
 
     /// Returns the pieces of `hay` between the matches of `pat`.
     ///
     /// A match at either end gives an empty first or last piece.
     fn split<P: Pattern>(T hay, P pat) -> Vec<string> {
-        let s = hay.show();
-        let out: Vec<string> = Vec::new();
-        let piece = 0;
-        let from = 0;
-        while from <= s.len() {
-            let span = pat.find_in(s, from) ?? new Span(-1, -1);
-            if span.start < 0 {
-                break;
-            }
-            let start = span.start;
-            let end = span.end;
-            out.push(span_text(s, piece, start));
-            piece = end;
-            from = end;
-            if end == start {
-                from = next_char(s, end);
-            }
-        }
-        out.push(span_text(s, piece, s.len()));
-        return out;
+        return pat.split_in(hay.show());
     }
 
     /// Splits `hay` at the first match of `pat` into the parts before and after it.
@@ -596,25 +637,7 @@ trait Searchable<T: Show> {
     ///
     /// A regex pattern expands `$1` / `${name}` in `with`.
     fn replace_all<P: Pattern>(T hay, P pat, string with) -> string {
-        let s = hay.show();
-        let out = "";
-        let piece = 0;
-        let from = 0;
-        while from <= s.len() {
-            let span = pat.find_in(s, from) ?? new Span(-1, -1);
-            if span.start < 0 {
-                break;
-            }
-            let start = span.start;
-            let end = span.end;
-            out = out + span_text(s, piece, start) + pat.expand(with);
-            piece = end;
-            from = end;
-            if end == start {
-                from = next_char(s, end);
-            }
-        }
-        return out + span_text(s, piece, s.len());
+        return pat.replace_all_in(hay.show(), with);
     }
 }
 
