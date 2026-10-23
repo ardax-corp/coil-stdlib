@@ -22,7 +22,7 @@ impl Pattern for Digit {
     pub fn find_in(Digit d, string hay, int from) -> Option<Span> {
         let i = from;
         while i < hay.len() {
-            let c = string::byte_at(hay, i);
+            let c = hay[i] as int;
             if c >= 48 && c <= 57 {
                 return Option::Some(new Span(i, i + 1));
             }
@@ -32,12 +32,12 @@ impl Pattern for Digit {
     }
 
     pub fn is_prefix_of(Digit d, string hay) -> bool {
-        return hay.len() > 0 && string::byte_at(hay, 0) >= 48 && string::byte_at(hay, 0) <= 57;
+        return hay.len() > 0 && (hay[0] as int) >= 48 && (hay[0] as int) <= 57;
     }
 
     pub fn is_suffix_of(Digit d, string hay) -> bool {
         let n = hay.len();
-        return n > 0 && string::byte_at(hay, n - 1) >= 48 && string::byte_at(hay, n - 1) <= 57;
+        return n > 0 && (hay[n - 1] as int) >= 48 && (hay[n - 1] as int) <= 57;
     }
 }
 
