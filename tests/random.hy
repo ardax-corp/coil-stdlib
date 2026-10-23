@@ -28,3 +28,22 @@ test("rng from_time") {
     let z = r2.next_u64();
     assert!(z != 0 || z == 0);
 }
+
+test("rng float spreads over 0..1 and next_u64 uses all 64 bits (#54)") {
+    let r = Rng::seeded(42);
+    let sum = 0.0;
+    let high = false;
+    let i = 0;
+    while i < 1000 {
+        let f = r.float();
+        assert!(f >= 0.0 && f < 1.0);
+        sum = sum + f;
+        let x = r.next_u64();
+        if x < 0 || x > 4294967296 {
+            high = true;
+        }
+        i = i + 1;
+    }
+    assert!(sum / 1000.0 > 0.4 && sum / 1000.0 < 0.6);
+    assert!(high);
+}

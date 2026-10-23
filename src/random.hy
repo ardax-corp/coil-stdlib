@@ -1,5 +1,11 @@
 // Seeded PRNG (`Rng`). `from_time` mixes coil-time timestamps as ints.
 use time::{epoch, timestamp};
+use arith::{Wrapping, INT_MAX};
+
+// `x` shifted right by `n` (1..63) with zeros shifted in; `>>` keeps the sign.
+fn shr_logical(int x, int n) -> int {
+    return (x >> n) & (INT_MAX >> (n - 1));
+}
 
 /// A seeded pseudo-random number generator.
 ///
@@ -52,19 +58,19 @@ impl Rng {
         return Rng::seeded(a ^ b ^ (b << 1));
     }
 
-    /// Returns the next raw value from the generator, a non-negative `int`.
+    /// Returns the next 64 raw bits from the generator as an `int`, so about
+    /// half the values are negative (splitmix64).
     pub fn next_u64() -> int {
-        let s = self.state % 1000000;
-        self.state = s * 1009 + 17;
-        return self.state;
+        self.state = self.state.wrapping_add(-7046029254386353131);
+        let z = self.state;
+        z = (z ^ shr_logical(z, 30)).wrapping_mul(-4658895280553007687);
+        z = (z ^ shr_logical(z, 27)).wrapping_mul(-7723592293110705685);
+        return z ^ shr_logical(z, 31);
     }
 
-    fn u64_abs() -> int {
-        let x = self.next_u64();
-        if x < 0 {
-            return 0 - x;
-        }
-        return x;
+    // The next 63 bits, a non-negative `int`.
+    fn next_63() -> int {
+        return self.next_u64() & INT_MAX;
     }
 
     /// Returns a value in `lo..hi` (including `lo`, excluding `hi`), or `lo` when `hi <= lo`.
@@ -88,10 +94,9 @@ impl Rng {
             return lo;
         }
         let span = hi - lo;
-        let max = 9223372036854775807;
-        let limit = max - (max % span);
+        let limit = INT_MAX - (INT_MAX % span);
         while true {
-            let x = self.u64_abs();
+            let x = self.next_63();
             if x < limit {
                 return lo + (x % span);
             }
@@ -100,8 +105,8 @@ impl Rng {
 
     /// Returns a `float` in `0.0..1.0`.
     pub fn float() -> float {
-        let x = self.u64_abs();
-        let r = x % 9007199254740992;
+        // The top 53 bits, the precision a `float` holds exactly.
+        let r = shr_logical(self.next_u64(), 11);
         return (r as float) / (9007199254740992 as float);
     }
 
