@@ -2,6 +2,7 @@
 use string::{to_bytes, from_bytes};
 use ascii::{is_digit, digit_val, digit_char, is_space, hex_digit, hex_val};
 use bytes::slice as bytes_slice;
+use arith::INT_MIN;
 
 fn trim_ascii(string s) -> string {
     let b = to_bytes(s);
@@ -132,8 +133,8 @@ fn int_to_bin(int n) -> string {
 /// # Errors
 ///
 /// `Err("invalid integer")` for empty or non-digit text and `Err("invalid radix")`
-/// for any other `radix`. A value that does not fit in an `int` currently panics
-/// instead of returning an error (coil-stdlib#53).
+/// for any other `radix`; `Err("overflow")` when the value does not fit in an
+/// `int`.
 /// # Examples
 ///
 /// ```
@@ -173,17 +174,22 @@ fn parse_int_radix(string s, int radix) -> Result<int, string> {
         if digit < 0 {
             raise "invalid integer";
         }
-        let next = value * radix + digit;
-        if next < value {
+        // Accumulated as a negative number so `INT_MIN`, whose magnitude
+        // has no positive `int`, parses too. Checked before the arithmetic,
+        // which traps on overflow.
+        if value < (INT_MIN + digit) / radix {
             raise "overflow";
         }
-        value = next;
+        value = value * radix - digit;
         i = i + 1;
     }
     if negative {
-        return 0 - value;
+        return value;
     }
-    return value;
+    if value == INT_MIN {
+        raise "overflow";
+    }
+    return 0 - value;
 }
 
 /// Parses a decimal integer, such as `"42"`, `" -7 "` or `"+3"`.
@@ -191,7 +197,7 @@ fn parse_int_radix(string s, int radix) -> Result<int, string> {
 /// # Errors
 ///
 /// `Err("invalid integer")` when `s` is empty or has a character that is not a
-/// digit. See `parse_int_radix` for the overflow caveat.
+/// digit, and `Err("overflow")` when the value does not fit in an `int`.
 /// # Examples
 ///
 /// ```
