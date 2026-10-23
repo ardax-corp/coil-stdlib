@@ -330,6 +330,8 @@ fn line_piece(string s, int start, int end) -> Result<string, string> {
 }
 
 /// Splits `s` into lines at each LF, dropping one CR before it (so CRLF works too).
+/// A final LF ends the last line rather than starting an empty one, so
+/// `"a\nb\n"` and `"a\nb"` both give two lines, and `""` gives none.
 ///
 /// # Examples
 ///
@@ -350,8 +352,10 @@ fn lines(string s) -> Result<Vec<string>, string> {
         start = at + 1;
         at = find_at(s, "\n", start);
     }
-    let last = line_piece(s, start, s.len())?;
-    out.push(last);
+    // A final LF ends the last line; it does not start an empty one.
+    if start < s.len() {
+        out.push(line_piece(s, start, s.len())?);
+    }
     return out;
 }
 

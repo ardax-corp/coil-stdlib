@@ -66,10 +66,26 @@ test("lines handles crlf") {
     assert!(rows[1] == "b");
 }
 
-test("lines preserves trailing empty line") {
+test("a final newline ends the last line rather than starting a new one (#74)") {
     let rows = lines("a\r\nb\n")?;
-    assert!(rows.len() == 3);
+    assert!(rows.len() == 2);
     assert!(rows[0] == "a");
     assert!(rows[1] == "b");
-    assert!(rows[2] == "");
+    let one = lines("a\r\n")?;
+    assert!(one.len() == 1);
+}
+
+test("lines keeps empty lines in the middle and at the end") {
+    let rows = lines("a\n\nb\n\n")?;
+    assert!(rows.len() == 4);
+    assert!(rows[1] == "");
+    assert!(rows[3] == "");
+}
+
+test("lines of empty text is empty") {
+    let none = lines("")?;
+    assert!(none.len() == 0);
+    let blank = lines("\n")?;
+    assert!(blank.len() == 1);
+    assert!(blank[0] == "");
 }
