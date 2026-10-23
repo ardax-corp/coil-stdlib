@@ -80,14 +80,17 @@ fn find_at(string hay, string needle, int from) -> int {
         }
         return -1;
     }
-    let second = needle[1];
+    // A candidate needs the needle's first and last bytes; checking both
+    // skips the false starts a common first pair (or prefix) leaves.
+    let k = m - 1;
+    let tail = needle[k];
     while i <= last {
-        if hay[i] == first && hay[i + 1] == second {
-            let j = 2;
-            while j < m && hay[i + j] == needle[j] {
+        if hay[i] == first && hay[i + k] == tail {
+            let j = 1;
+            while j < k && hay[i + j] == needle[j] {
                 j = j + 1;
             }
-            if j == m {
+            if j >= k {
                 return i;
             }
         }
