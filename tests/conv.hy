@@ -35,3 +35,11 @@ test("decimal float parse negative exponent") {
     assert!(value > 0.19);
     assert!(value < 0.21);
 }
+
+test("parse_int reports overflow instead of panicking (#53)") {
+    assert!(parse_int("99999999999999999999").is_err());
+    assert!(parse_int("9223372036854775808").is_err());
+    assert!(parse_int("-9223372036854775809").is_err());
+    assert!(parse_int("9223372036854775807")? == 9223372036854775807);
+    assert!(parse_int("-9223372036854775808")? == 0 - 9223372036854775807 - 1);
+}
