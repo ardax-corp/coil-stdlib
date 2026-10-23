@@ -1,9 +1,10 @@
 // String helpers on byte offsets (userland).
 // Byte-oriented offsets — slicing mid-codepoint yields UTF-8 errors.
 // Named `text` because virtual `string` already owns `format` / `to_bytes` / `from_bytes`.
-// The search and slice helpers use the `string` byte natives, which read the
-// string in place instead of copying it through `to_bytes` on every call.
-use string::{to_bytes, from_bytes, byte_at, slice_bytes, find_from as str_find_from, rfind as str_rfind, match_at};
+// Search is plain loops over `s[i]`, which reads the string in place; the
+// compiler runs the no-match stretches 64 bytes at a time
+// (coil-lang `docs/internals/byte-simd.md`).
+use string::{to_bytes, from_bytes, slice_bytes};
 use ascii::is_space;
 
 fn utf8_ok(Vec<byte> b) -> Result<string, string> {
@@ -36,7 +37,63 @@ fn max_int(int a, int b) -> int {
 }
 
 fn space_at(string s, int i) -> bool {
-    return is_space(byte_at(s, i) as byte);
+    return is_space(s[i]);
+}
+
+// `needle` at byte offset `at` of `s`.
+fn match_at(string s, string needle, int at) -> bool {
+    let m = needle.len();
+    if at < 0 || at > s.len() - m {
+        return false;
+    }
+    let j = 0;
+    while j < m && s[at + j] == needle[j] {
+        j = j + 1;
+    }
+    return j == m;
+}
+
+// Byte offset of the first `needle` in `hay` at or after `from` (clamped
+// to `0 ..= hay.len()`), or `-1`. An empty needle matches at `from`.
+// Candidates are filtered on the needle's first two bytes.
+fn find_at(string hay, string needle, int from) -> int {
+    let n = hay.len();
+    let m = needle.len();
+    let i = from;
+    if i < 0 {
+        i = 0;
+    }
+    if i > n {
+        i = n;
+    }
+    if m == 0 {
+        return i;
+    }
+    let last = n - m;
+    let first = needle[0];
+    if m == 1 {
+        while i <= last {
+            if hay[i] == first {
+                return i;
+            }
+            i = i + 1;
+        }
+        return -1;
+    }
+    let second = needle[1];
+    while i <= last {
+        if hay[i] == first && hay[i + 1] == second {
+            let j = 2;
+            while j < m && hay[i + j] == needle[j] {
+                j = j + 1;
+            }
+            if j == m {
+                return i;
+            }
+        }
+        i = i + 1;
+    }
+    return -1;
 }
 
 /// Returns the length of `s` in bytes; the same as `s.len()`.
@@ -139,7 +196,15 @@ fn rfind(string hay, string needle) -> int
     ensures result >= -1 && result <= hay.len()
     ensures result < 0 || match_at(hay, needle, result)
 {
-    return str_rfind(hay, needle);
+    let m = needle.len();
+    let i = hay.len() - m;
+    while i >= 0 {
+        if match_at(hay, needle, i) {
+            return i;
+        }
+        i = i - 1;
+    }
+    return -1;
 }
 
 /// Splits `s` at byte offset `at` into the part before and the part from `at` on.
@@ -275,12 +340,12 @@ fn line_piece(string s, int start, int end) -> Result<string, string> {
 fn lines(string s) -> Result<Vec<string>, string> {
     let out: Vec<string> = Vec::new();
     let start = 0;
-    let at = str_find_from(s, "\n", 0);
+    let at = find_at(s, "\n", 0);
     while at >= 0 {
         let piece = line_piece(s, start, at)?;
         out.push(piece);
         start = at + 1;
-        at = str_find_from(s, "\n", start);
+        at = find_at(s, "\n", start);
     }
     let last = line_piece(s, start, s.len())?;
     out.push(last);
@@ -378,7 +443,7 @@ fn to_upper(string s) -> Result<string, string>
 fn next_char(string s, int i) -> int {
     let n = s.len();
     let j = i + 1;
-    while j < n && (byte_at(s, j) & 192) == 128 {
+    while j < n && s[j] as int >= 128 && s[j] as int < 192 {
         j = j + 1;
     }
     return j;
@@ -436,7 +501,7 @@ trait Pattern<P> {
 
 impl Pattern for string {
     pub fn find_in(string pat, string hay, int from) -> Option<Span> {
-        let at = str_find_from(hay, pat, from);
+        let at = find_at(hay, pat, from);
         if at < 0 {
             return Option::None;
         }
