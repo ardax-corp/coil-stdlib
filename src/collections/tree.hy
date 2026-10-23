@@ -221,15 +221,23 @@ impl TreeMap<K: Ord + Eq, V> {
         return fallback;
     }
 
-    /// Returns the value stored under `k`, or `fallback` when there is none.
+    /// Returns the value stored under `k`, or `None` when there is none.
     ///
-    /// Deprecated spelling of [`TreeMap::get_or`]: `get` will return
-    /// `Option<V>`.
-    pub fn get(K k, V fallback) -> V {
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::tree::{TreeMap};
+    /// # use tests::assert;
+    /// let m: TreeMap<string, int> = TreeMap::new();
+    /// m.insert("a", 1);
+    /// assert!((m.get("a") ?? 0) == 1);
+    /// assert!(m.get("b").is_none());
+    /// ```
+    pub fn get(K k) -> Option<V> {
         let cur = self.root;
         while cur >= 0 {
             if k == self.keys[cur] {
-                return self.vals[cur];
+                return Some(self.vals[cur]);
             }
             if k < self.keys[cur] {
                 cur = self.left[cur];
@@ -237,7 +245,7 @@ impl TreeMap<K: Ord + Eq, V> {
                 cur = self.right[cur];
             }
         }
-        return fallback;
+        return None;
     }
 
     fn find_parent(int idx) -> int {
