@@ -40,8 +40,8 @@ test("first last contains index") {
     assert!((first(xs) ?? 0) == 10);
     assert!((last(xs) ?? 0) == 20);
     assert!(contains(xs, 20));
-    assert!(index_of(xs, 20) == 1);
-    assert!(index_of(xs, 99) < 0);
+    assert!(index_of(xs, 20) == Option::Some(1));
+    assert!(index_of(xs, 99).is_none());
 }
 
 test("concat dedup chunks") {

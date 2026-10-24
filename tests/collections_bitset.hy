@@ -7,12 +7,12 @@ test("bitset insert contains remove") {
     assert!(s.insert(1));
     assert!(s.insert(2));
     assert!(s.insert(1) == false);
-    assert!(s.size() == 2);
+    assert!(s.len() == 2);
     assert!(s.contains(1));
     assert!(s.contains(3) == false);
     assert!(s.remove(1));
     assert!(s.contains(1) == false);
-    assert!(s.size() == 1);
+    assert!(s.len() == 1);
     s.clear();
     assert!(s.is_empty());
 }
@@ -24,7 +24,7 @@ test("bitset remove missing and reuse") {
     assert!(s.remove(5));
     assert!(s.insert(5));
     assert!(s.contains(5));
-    assert!(s.size() == 1);
+    assert!(s.len() == 1);
 }
 
 test("bitset grow across words") {
@@ -38,7 +38,7 @@ test("bitset grow across words") {
     assert!(s.insert(w));
     assert!(s.capacity() == w + w);
     assert!(s.insert(w + w));
-    assert!(s.size() == 4);
+    assert!(s.len() == 4);
     assert!(s.contains(0));
     assert!(s.contains(w - 1));
     assert!(s.contains(w));
@@ -46,7 +46,7 @@ test("bitset grow across words") {
     assert!(s.contains(w + 1) == false);
     assert!(s.remove(w));
     assert!(s.contains(w) == false);
-    assert!(s.size() == 3);
+    assert!(s.len() == 3);
 }
 
 test("bitset with_capacity in bits") {
@@ -58,7 +58,7 @@ test("bitset with_capacity in bits") {
     assert!(b.capacity() == w + w);
     assert!(b.insert(w));
     assert!(b.contains(w));
-    assert!(b.size() == 1);
+    assert!(b.len() == 1);
 }
 
 test("bitset clear keeps capacity") {
@@ -66,14 +66,14 @@ test("bitset clear keeps capacity") {
     let cap = s.capacity();
     assert!(s.insert(0));
     assert!(s.insert(99));
-    assert!(s.size() == 2);
+    assert!(s.len() == 2);
     s.clear();
     assert!(s.is_empty());
     assert!(s.contains(0) == false);
     assert!(s.contains(99) == false);
     assert!(s.capacity() == cap);
     assert!(s.insert(3));
-    assert!(s.size() == 1);
+    assert!(s.len() == 1);
 }
 
 test("bitset negative indices") {
@@ -90,18 +90,18 @@ test("bitset word edges and remove cardinality") {
     assert!(s.insert(w - 1));
     assert!(s.insert(w));
     assert!(s.insert(w + 1));
-    assert!(s.size() == 3);
+    assert!(s.len() == 3);
     assert!(s.contains(w - 1));
     assert!(s.contains(w));
     assert!(s.contains(w + 1));
     assert!(s.remove(w));
-    assert!(s.size() == 2);
+    assert!(s.len() == 2);
     assert!(s.contains(w) == false);
     assert!(s.contains(w - 1));
     assert!(s.contains(w + 1));
     assert!(s.remove(w - 1));
     assert!(s.remove(w + 1));
-    assert!(s.size() == 0);
+    assert!(s.len() == 0);
     assert!(s.is_empty());
 }
 
@@ -117,7 +117,7 @@ test("bitset with_capacity zero and exact word") {
     assert!(exact.insert(w - 1));
     assert!(exact.insert(w));
     assert!(exact.capacity() == w + w);
-    assert!(exact.size() == 2);
+    assert!(exact.len() == 2);
 }
 
 test("bitset grow skip words then remove") {
@@ -126,10 +126,10 @@ test("bitset grow skip words then remove") {
     assert!(s.insert(w * 4));
     assert!(s.contains(w * 4));
     assert!(s.contains(0) == false);
-    assert!(s.size() == 1);
+    assert!(s.len() == 1);
     assert!(s.capacity() == w * 8);
     assert!(s.remove(w * 4));
-    assert!(s.size() == 0);
+    assert!(s.len() == 0);
     assert!(s.remove(w * 4) == false);
 }
 
@@ -139,6 +139,6 @@ test("bitset negative after populated") {
     assert!(s.insert(0 - 5) == false);
     assert!(s.contains(0 - 5) == false);
     assert!(s.remove(0 - 5) == false);
-    assert!(s.size() == 1);
+    assert!(s.len() == 1);
     assert!(s.contains(2));
 }

@@ -6,7 +6,7 @@ test("hashmap insert get update remove") {
     assert!(m.insert(1, "a"));
     assert!(m.insert(2, "b"));
     assert!(m.insert(1, "A") == false);
-    assert!(m.size() == 2);
+    assert!(m.len() == 2);
     assert!(m.get_or(1, "?") == "A");
     assert!(m.get_or(2, "?") == "b");
     assert!(m.get_or(3, "?") == "?");
@@ -14,7 +14,7 @@ test("hashmap insert get update remove") {
     assert!(m.contains(9) == false);
     assert!(m.remove(2));
     assert!(m.contains(2) == false);
-    assert!(m.size() == 1);
+    assert!(m.len() == 1);
     m.clear();
     assert!(m.is_empty());
 }
@@ -31,7 +31,7 @@ test("hashmap reinsert after remove") {
     assert!(m.remove(1));
     assert!(m.insert(1, 20));
     assert!(m.get_or(1, -1) == 20);
-    assert!(m.size() == 1);
+    assert!(m.len() == 1);
 }
 
 test("hashmap clear then insert") {
@@ -40,7 +40,7 @@ test("hashmap clear then insert") {
     m.clear();
     assert!(m.is_empty());
     assert!(m.insert(2, 30));
-    assert!(m.size() == 1);
+    assert!(m.len() == 1);
     assert!(m.get_or(2, -1) == 30);
     assert!(m.contains(1) == false);
 }
@@ -61,7 +61,7 @@ test("hashmap single grow preserves entries") {
         i = i + 1;
     }
     assert!(m.capacity() == 16);
-    assert!(m.size() == 5);
+    assert!(m.len() == 5);
     assert!(m.get_or(0, -1) == 100);
     assert!(m.get_or(4, -1) == 104);
     assert!(m.contains(3));

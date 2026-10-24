@@ -15,9 +15,9 @@ test("ascii classification") {
 }
 
 test("ascii decimal digits") {
-    assert!(digit_val("0") == 0);
-    assert!(digit_val("7") == 7);
-    assert!(digit_val("x") == -1);
+    assert!(digit_val("0") == Option::Some(0));
+    assert!(digit_val("7") == Option::Some(7));
+    assert!(digit_val("x").is_none());
     assert!(digit_char(0) == "0");
     assert!(digit_char(9) == "9");
 }
@@ -26,9 +26,9 @@ test("ascii hex digits") {
     assert!(is_hex("a"));
     assert!(is_hex("F"));
     assert!(!is_hex("g"));
-    assert!(hex_val("a") == 10);
-    assert!(hex_val("F") == 15);
-    assert!(hex_val("g") == -1);
+    assert!(hex_val("a") == Option::Some(10));
+    assert!(hex_val("F") == Option::Some(15));
+    assert!(hex_val("g").is_none());
     assert!(hex_digit(10) == "a");
     assert!(hex_digit(0) == "0");
 }
