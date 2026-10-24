@@ -7,25 +7,10 @@
 use string::{to_bytes, from_bytes, slice_bytes};
 use ascii::is_space;
 
-fn utf8_ok(Vec<byte> b) -> Result<string, string> {
-    return match from_bytes(b) {
-        Result::Ok(s) => s,
-        Result::Err(_) => raise "utf8",
-    };
-}
-
 fn sub(string s, int start, int end) -> Result<string, string> {
     return match slice_bytes(s, start, end) {
         Result::Ok(x) => x,
         Result::Err(_) => raise "utf8",
-    };
-}
-
-// Length of an `Ok` string, `-1` for an `Err` (for contracts).
-fn ok_len(Result<string, string> r) -> int {
-    return match r {
-        Result::Ok(x) => x.len(),
-        Result::Err(_) => -1,
     };
 }
 
@@ -99,93 +84,6 @@ fn find_at(string hay, string needle, int from) -> int {
     return -1;
 }
 
-/// Returns the length of `s` in bytes; the same as `s.len()`.
-fn byte_len(string s) -> int {
-    return s.len();
-}
-
-/// Returns the part of `s` from byte offset `start` up to (not including) `end`.
-///
-/// # Errors
-///
-/// Returns `Err("utf8")` when an offset falls inside a multi-byte character.
-///
-/// # Examples
-///
-/// ```
-/// use text::{slice};
-/// # use tests::assert;
-/// assert!((slice("hello", 1, 4) ?? "") == "ell");
-/// ```
-fn slice(string s, int start, int end) -> Result<string, string> {
-    return sub(s, start, end)?;
-}
-
-/// Returns `s` without leading ASCII whitespace (space, tab, CR, LF).
-///
-/// # Examples
-///
-/// ```
-/// use text::{trim_start};
-/// # use tests::assert;
-/// assert!((trim_start("  hi ") ?? "") == "hi ");
-/// ```
-fn trim_start(string s) -> Result<string, string>
-    ensures ok_len(result) >= 0 && ok_len(result) <= s.len()
-{
-    let lo = 0;
-    let hi = s.len();
-    while lo < hi && space_at(s, lo) {
-        lo = lo + 1;
-    }
-    return sub(s, lo, hi)?;
-}
-
-/// Returns `s` without trailing ASCII whitespace (space, tab, CR, LF).
-///
-/// # Examples
-///
-/// ```
-/// use text::{trim_end};
-/// # use tests::assert;
-/// assert!((trim_end(" hi \n") ?? "") == " hi");
-/// ```
-fn trim_end(string s) -> Result<string, string>
-    ensures ok_len(result) >= 0 && ok_len(result) <= s.len()
-{
-    let hi = s.len();
-    while hi > 0 && space_at(s, hi - 1) {
-        hi = hi - 1;
-    }
-    return sub(s, 0, hi)?;
-}
-
-/// Returns `s` without leading and trailing ASCII whitespace (space, tab, CR, LF).
-///
-/// Other Unicode whitespace is kept. The `Result` never holds an error for valid
-/// input; it exists because trimming works on bytes.
-///
-/// # Examples
-///
-/// ```
-/// use text::{trim};
-/// # use tests::assert;
-/// assert!((trim("\t  key = value \r\n") ?? "") == "key = value");
-/// ```
-fn trim(string s) -> Result<string, string>
-    ensures ok_len(result) >= 0 && ok_len(result) <= s.len()
-{
-    let lo = 0;
-    let hi = s.len();
-    while lo < hi && space_at(s, lo) {
-        lo = lo + 1;
-    }
-    while hi > lo && space_at(s, hi - 1) {
-        hi = hi - 1;
-    }
-    return sub(s, lo, hi)?;
-}
-
 /// Returns the byte offset of the last `needle` in `hay`, or `-1`.
 ///
 /// # Examples
@@ -208,32 +106,6 @@ fn rfind(string hay, string needle) -> int
         i = i - 1;
     }
     return -1;
-}
-
-/// Splits `s` at byte offset `at` into the part before and the part from `at` on.
-///
-/// # Errors
-///
-/// Returns `Err("utf8")` when `at` falls inside a multi-byte character.
-///
-/// # Examples
-///
-/// ```
-/// use text::{split_at};
-/// # use tests::assert;
-/// let (a, b) = split_at("hello", 2) ?? ("", "");
-/// assert!(a == "he" && b == "llo");
-/// ```
-fn split_at(string s, int at) -> Result<(string, string), string> {
-    if at < 0 {
-        at = 0;
-    }
-    if at > s.len() {
-        at = s.len();
-    }
-    let left = sub(s, 0, at)?;
-    let right = sub(s, at, s.len())?;
-    return (left, right);
 }
 
 /// Returns the `parts` concatenated with `sep` between each pair.
@@ -262,187 +134,231 @@ fn join(Vec<string> parts, string sep) -> string
     return out;
 }
 
-/// Returns `s` repeated `n` times; empty when `n <= 0`.
-///
-/// # Examples
-///
-/// ```
-/// use text::{repeat};
-/// # use tests::assert;
-/// assert!(repeat("ab", 3) == "ababab");
-/// ```
-fn repeat(string s, int n) -> string
-    ensures n > 0 || result == ""
-    ensures n <= 0 || result.len() == s.len() * n
-{
-    let out = "";
+// Bytes `start..end` of `s`; the offsets sit next to ASCII bytes, so they
+// are character boundaries.
+fn ascii_cut(string s, int start, int end) -> string {
+    return match slice_bytes(s, start, end) {
+        Result::Ok(x) => x,
+        Result::Err(_) => panic "text: cut inside a character",
+    };
+}
+
+// `s` with each byte in `from_lo..=from_hi` moved by `delta`; ASCII-only
+// changes keep the UTF-8 valid.
+fn shift_ascii(string s, byte from_lo, byte from_hi, int delta) -> string {
+    let b = to_bytes(s);
+    let out: Vec<byte> = Vec::new();
     let i = 0;
-    while i < n {
-        out = out + s;
+    while i < b.len() {
+        let c = b[i];
+        if c >= from_lo && c <= from_hi {
+            out.push(((c as int) + delta) as byte);
+        } else {
+            out.push(c);
+        }
         i = i + 1;
+    }
+    return match from_bytes(out) {
+        Result::Ok(x) => x,
+        Result::Err(_) => panic "text: case mapping broke UTF-8",
+    };
+}
+
+// Copies of `fill` that bring `s` to at least `width` bytes.
+fn padding(string s, int width, string fill) -> string {
+    let out = "";
+    if fill.len() == 0 {
+        return out;
+    }
+    while s.len() + out.len() < width {
+        out = out + fill;
     }
     return out;
 }
 
-/// Returns `s` with `fill` added in front until it is `width` bytes long. `fill` should be one byte; longer text is returned unchanged.
+/// String methods on `string`: trimming, case mapping, padding, line
+/// splitting, repeating and byte slicing.
+///
+/// Offsets and widths count bytes. Everything except [`Text::slice`] and
+/// [`Text::split_at`] returns a plain value; those two return `Err("utf8")`
+/// when an offset falls inside a multi-byte character.
 ///
 /// # Examples
 ///
 /// ```
-/// use text::{pad_left};
+/// use text::{Text};
 /// # use tests::assert;
-/// assert!((pad_left("7", 3, "0") ?? "") == "007");
+/// assert!("\t  Key = Value \r\n".trim().to_lower() == "key = value");
+/// assert!("7".pad_left(3, "0") == "007");
+/// assert!("one\ntwo\n".lines().len() == 2);
 /// ```
-fn pad_left(string s, int width, string fill) -> Result<string, string>
-    ensures fill.len() != 1 || ok_len(result) == max_int(width, s.len())
-    ensures fill.len() == 1 || ok_len(result) == -1
-{
-    if fill.len() != 1 {
-        raise "fill must be one byte";
-    }
-    return repeat(fill, width - s.len()) + s;
+trait Text<T> {
+    /// Returns `s` without leading and trailing ASCII whitespace (space, tab, CR, LF).
+    ///
+    /// Other Unicode whitespace is kept.
+    fn trim(T s) -> string {}
+
+    /// Returns `s` without leading ASCII whitespace (space, tab, CR, LF).
+    fn trim_start(T s) -> string {}
+
+    /// Returns `s` without trailing ASCII whitespace (space, tab, CR, LF).
+    fn trim_end(T s) -> string {}
+
+    /// Returns `s` with ASCII `A`-`Z` turned into `a`-`z`; other characters are unchanged.
+    fn to_lower(T s) -> string {}
+
+    /// Returns `s` with ASCII `a`-`z` turned into `A`-`Z`; other characters are unchanged.
+    fn to_upper(T s) -> string {}
+
+    /// Returns `s` with copies of `fill` in front until it is at least `width` bytes long.
+    ///
+    /// A one-byte `fill` gives exactly `width` bytes. Text already `width`
+    /// bytes or longer, or an empty `fill`, comes back unchanged.
+    fn pad_left(T s, int width, string fill) -> string {}
+
+    /// Returns `s` with copies of `fill` at the end until it is at least `width` bytes long.
+    ///
+    /// A one-byte `fill` gives exactly `width` bytes. Text already `width`
+    /// bytes or longer, or an empty `fill`, comes back unchanged.
+    fn pad_right(T s, int width, string fill) -> string {}
+
+    /// Splits `s` into lines at each LF, dropping one CR before it (so CRLF works too).
+    ///
+    /// A final LF ends the last line rather than starting an empty one, so
+    /// `"a\nb\n"` and `"a\nb"` both give two lines, and `""` gives none.
+    fn lines(T s) -> Vec<string> {}
+
+    /// Returns `s` repeated `n` times; empty when `n <= 0`.
+    fn repeat(T s, int n) -> string {}
+
+    /// Returns the part of `s` from byte offset `start` up to (not including) `end`.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err("utf8")` when an offset falls inside a multi-byte character.
+    fn slice(T s, int start, int end) -> Result<string, string> {}
+
+    /// Splits `s` at byte offset `at` (clamped to the text) into the part before and the part from `at` on.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err("utf8")` when `at` falls inside a multi-byte character.
+    fn split_at(T s, int at) -> Result<(string, string), string> {}
 }
 
-/// Returns `s` with `fill` added at the end until it is `width` bytes long. `fill` should be one byte; longer text is returned unchanged.
-///
-/// # Examples
-///
-/// ```
-/// use text::{pad_right};
-/// # use tests::assert;
-/// assert!((pad_right("ab", 4, ".") ?? "") == "ab..");
-/// ```
-fn pad_right(string s, int width, string fill) -> Result<string, string>
-    ensures fill.len() != 1 || ok_len(result) == max_int(width, s.len())
-    ensures fill.len() == 1 || ok_len(result) == -1
-{
-    if fill.len() != 1 {
-        raise "fill must be one byte";
+impl Text for string {
+    pub fn trim(string s) -> string
+        ensures result.len() <= s.len()
+    {
+        let lo = 0;
+        let hi = s.len();
+        while lo < hi && space_at(s, lo) {
+            lo = lo + 1;
+        }
+        while hi > lo && space_at(s, hi - 1) {
+            hi = hi - 1;
+        }
+        return ascii_cut(s, lo, hi);
     }
-    return s + repeat(fill, width - s.len());
+
+    pub fn trim_start(string s) -> string
+        ensures result.len() <= s.len()
+    {
+        let lo = 0;
+        while lo < s.len() && space_at(s, lo) {
+            lo = lo + 1;
+        }
+        return ascii_cut(s, lo, s.len());
+    }
+
+    pub fn trim_end(string s) -> string
+        ensures result.len() <= s.len()
+    {
+        let hi = s.len();
+        while hi > 0 && space_at(s, hi - 1) {
+            hi = hi - 1;
+        }
+        return ascii_cut(s, 0, hi);
+    }
+
+    pub fn to_lower(string s) -> string
+        ensures result.len() == s.len()
+    {
+        return shift_ascii(s, "A", "Z", 32);
+    }
+
+    pub fn to_upper(string s) -> string
+        ensures result.len() == s.len()
+    {
+        return shift_ascii(s, "a", "z", -32);
+    }
+
+    pub fn pad_left(string s, int width, string fill) -> string
+        ensures fill.len() != 1 || result.len() == max_int(width, s.len())
+        ensures fill.len() != 0 || result == s
+    {
+        return padding(s, width, fill) + s;
+    }
+
+    pub fn pad_right(string s, int width, string fill) -> string
+        ensures fill.len() != 1 || result.len() == max_int(width, s.len())
+        ensures fill.len() != 0 || result == s
+    {
+        return s + padding(s, width, fill);
+    }
+
+    pub fn lines(string s) -> Vec<string> {
+        let out: Vec<string> = Vec::new();
+        let start = 0;
+        let at = find_at(s, "\n", 0);
+        while at >= 0 {
+            out.push(line_piece(s, start, at));
+            start = at + 1;
+            at = find_at(s, "\n", start);
+        }
+        // A final LF ends the last line; it does not start an empty one.
+        if start < s.len() {
+            out.push(line_piece(s, start, s.len()));
+        }
+        return out;
+    }
+
+    pub fn repeat(string s, int n) -> string
+        ensures n > 0 || result == ""
+        ensures n <= 0 || result.len() == s.len() * n
+    {
+        let out = "";
+        let i = 0;
+        while i < n {
+            out = out + s;
+            i = i + 1;
+        }
+        return out;
+    }
+
+    pub fn slice(string s, int start, int end) -> Result<string, string> {
+        return sub(s, start, end)?;
+    }
+
+    pub fn split_at(string s, int at) -> Result<(string, string), string> {
+        if at < 0 {
+            at = 0;
+        }
+        if at > s.len() {
+            at = s.len();
+        }
+        let left = sub(s, 0, at)?;
+        let right = sub(s, at, s.len())?;
+        return (left, right);
+    }
 }
 
-fn line_piece(string s, int start, int end) -> Result<string, string> {
+// Line `start..end` of `s` without a CR before the LF.
+fn line_piece(string s, int start, int end) -> string {
     if end > start && match_at(s, "\r", end - 1) {
         end = end - 1;
     }
-    return sub(s, start, end)?;
-}
-
-/// Splits `s` into lines at each LF, dropping one CR before it (so CRLF works too).
-/// A final LF ends the last line rather than starting an empty one, so
-/// `"a\nb\n"` and `"a\nb"` both give two lines, and `""` gives none.
-///
-/// # Examples
-///
-/// ```
-/// use text::{lines};
-/// # use tests::assert;
-/// let ls = lines("one\r\ntwo\nthree") ?? Vec::new();
-/// assert!(ls.len() == 3);
-/// assert!(ls[0] == "one");
-/// ```
-fn lines(string s) -> Result<Vec<string>, string> {
-    let out: Vec<string> = Vec::new();
-    let start = 0;
-    let at = find_at(s, "\n", 0);
-    while at >= 0 {
-        let piece = line_piece(s, start, at)?;
-        out.push(piece);
-        start = at + 1;
-        at = find_at(s, "\n", start);
-    }
-    // A final LF ends the last line; it does not start an empty one.
-    if start < s.len() {
-        out.push(line_piece(s, start, s.len())?);
-    }
-    return out;
-}
-
-/// Returns `a` followed by `b`; the same as `a + b`.
-fn concat(string a, string b) -> string
-    ensures result.len() == a.len() + b.len()
-{
-    return a + b;
-}
-
-/// Returns `true` when `a` and `b` hold the same bytes; the same as `a == b`.
-fn eq(string a, string b) -> bool {
-    return a == b;
-}
-
-/// Returns `s` with ASCII `A`-`Z` turned into `a`-`z`; other characters are unchanged.
-///
-/// # Examples
-///
-/// ```
-/// use text::{to_lower};
-/// # use tests::assert;
-/// assert!((to_lower("Hello, WORLD") ?? "") == "hello, world");
-/// ```
-fn to_lower(string s) -> Result<string, string>
-    ensures ok_len(result) == s.len()
-{
-    let b = to_bytes(s);
-    let out: Vec<byte> = Vec::new();
-    let i = 0;
-    let a_up: byte = "A";
-    let z_up: byte = "Z";
-    while i < b.len() {
-        let c = b[i];
-        if c >= a_up {
-            if c <= z_up {
-                let n = (c as int) + 32;
-                let lo = n as byte;
-                out.push(lo);
-            }
-            if c > z_up {
-                out.push(c);
-            }
-        }
-        if c < a_up {
-            out.push(c);
-        }
-        i = i + 1;
-    }
-    return utf8_ok(out)?;
-}
-
-/// Returns `s` with ASCII `a`-`z` turned into `A`-`Z`; other characters are unchanged.
-///
-/// # Examples
-///
-/// ```
-/// use text::{to_upper};
-/// # use tests::assert;
-/// assert!((to_upper("coil") ?? "") == "COIL");
-/// ```
-fn to_upper(string s) -> Result<string, string>
-    ensures ok_len(result) == s.len()
-{
-    let b = to_bytes(s);
-    let out: Vec<byte> = Vec::new();
-    let i = 0;
-    let a_lo: byte = "a";
-    let z_lo: byte = "z";
-    while i < b.len() {
-        let c = b[i];
-        if c >= a_lo {
-            if c <= z_lo {
-                let n = (c as int) - 32;
-                let up = n as byte;
-                out.push(up);
-            }
-            if c > z_lo {
-                out.push(c);
-            }
-        }
-        if c < a_lo {
-            out.push(c);
-        }
-        i = i + 1;
-    }
-    return utf8_ok(out)?;
+    return ascii_cut(s, start, end);
 }
 
 // Byte offset of the character after the one starting at `i`, so a search
