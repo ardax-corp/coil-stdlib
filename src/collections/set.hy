@@ -15,7 +15,7 @@ use collections::map::HashMap;
 /// assert!(tags.insert("red"));
 /// assert!(!tags.insert("red"));
 /// assert!(tags.contains("red"));
-/// assert!(tags.size() == 1);
+/// assert!(tags.len() == 1);
 /// ```
 class HashSet<T> {
     inner: HashMap<T, bool>,
@@ -33,8 +33,8 @@ impl HashSet<T> {
     }
 
     /// Number of elements.
-    pub fn size() -> int {
-        return self.inner.size();
+    pub fn len() -> int {
+        return self.inner.len();
     }
 
     /// Returns `true` when the set has no values.

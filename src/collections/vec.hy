@@ -35,7 +35,7 @@ fn contains(Vec<int> xs, int needle) -> bool
     return false;
 }
 
-/// Returns the index of the first `needle` in `xs`, or `-1`. There is an `int` and a `string` version.
+/// Returns the index of the first `needle` in `xs`, or `None`. There is an `int` and a `string` version.
 ///
 /// # Examples
 ///
@@ -43,21 +43,20 @@ fn contains(Vec<int> xs, int needle) -> bool
 /// use collections::vec::{index_of};
 /// # use tests::assert;
 /// let xs: Vec<int> = [3, 1, 4, 1];
-/// assert!(index_of(xs, 1) == 1);
-/// assert!(index_of(xs, 9) == -1);
+/// assert!(index_of(xs, 1) == Option::Some(1));
+/// assert!(index_of(xs, 9).is_none());
 /// ```
-fn index_of(Vec<int> xs, int needle) -> int
-    ensures result >= -1 && result < xs.len()
-    ensures result < 0 || xs[result] == needle
+fn index_of(Vec<int> xs, int needle) -> Option<int>
+    ensures found_at(xs, needle, result)
 {
     let i = 0;
     while i < xs.len() {
         if xs[i] == needle {
-            return i;
+            return Option::Some(i);
         }
         i = i + 1;
     }
-    return 0 - 1;
+    return Option::None;
 }
 
 /// Finds `needle` in the ascending vector `xs` by halving, and returns an index holding it.
@@ -149,19 +148,16 @@ fn contains(Vec<string> xs, string needle) -> bool
     return false;
 }
 
-/// Returns the index of the first `needle` in `xs`, or `-1`.
-fn index_of(Vec<string> xs, string needle) -> int
-    ensures result >= -1 && result < xs.len()
-    ensures result < 0 || xs[result] == needle
-{
+/// Returns the index of the first `needle` in `xs`, or `None`.
+fn index_of(Vec<string> xs, string needle) -> Option<int> {
     let i = 0;
     while i < xs.len() {
         if xs[i] == needle {
-            return i;
+            return Option::Some(i);
         }
         i = i + 1;
     }
-    return 0 - 1;
+    return Option::None;
 }
 
 /// Returns `xs` with runs of equal neighbours collapsed to one value.

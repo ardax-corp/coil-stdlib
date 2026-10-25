@@ -84,30 +84,6 @@ fn find_at(string hay, string needle, int from) -> int {
     return -1;
 }
 
-/// Returns the byte offset of the last `needle` in `hay`, or `-1`.
-///
-/// # Examples
-///
-/// ```
-/// use text::{rfind};
-/// # use tests::assert;
-/// assert!(rfind("a=b=c", "=") == 3);
-/// ```
-fn rfind(string hay, string needle) -> int
-    ensures result >= -1 && result <= hay.len()
-    ensures result < 0 || match_at(hay, needle, result)
-{
-    let m = needle.len();
-    let i = hay.len() - m;
-    while i >= 0 {
-        if match_at(hay, needle, i) {
-            return i;
-        }
-        i = i - 1;
-    }
-    return -1;
-}
-
 /// Returns the `parts` concatenated with `sep` between each pair.
 ///
 /// # Examples
@@ -176,183 +152,6 @@ fn padding(string s, int width, string fill) -> string {
     return out;
 }
 
-/// String methods on `string`: trimming, case mapping, padding, line
-/// splitting, repeating and byte slicing.
-///
-/// Offsets and widths count bytes. Everything except [`Text::slice`] and
-/// [`Text::split_at`] returns a plain value; those two return `Err("utf8")`
-/// when an offset falls inside a multi-byte character.
-///
-/// # Examples
-///
-/// ```
-/// use text::{Text};
-/// # use tests::assert;
-/// assert!("\t  Key = Value \r\n".trim().to_lower() == "key = value");
-/// assert!("7".pad_left(3, "0") == "007");
-/// assert!("one\ntwo\n".lines().len() == 2);
-/// ```
-trait Text<T> {
-    /// Returns `s` without leading and trailing ASCII whitespace (space, tab, CR, LF).
-    ///
-    /// Other Unicode whitespace is kept.
-    fn trim(T s) -> string {}
-
-    /// Returns `s` without leading ASCII whitespace (space, tab, CR, LF).
-    fn trim_start(T s) -> string {}
-
-    /// Returns `s` without trailing ASCII whitespace (space, tab, CR, LF).
-    fn trim_end(T s) -> string {}
-
-    /// Returns `s` with ASCII `A`-`Z` turned into `a`-`z`; other characters are unchanged.
-    fn to_lower(T s) -> string {}
-
-    /// Returns `s` with ASCII `a`-`z` turned into `A`-`Z`; other characters are unchanged.
-    fn to_upper(T s) -> string {}
-
-    /// Returns `s` with copies of `fill` in front until it is at least `width` bytes long.
-    ///
-    /// A one-byte `fill` gives exactly `width` bytes. Text already `width`
-    /// bytes or longer, or an empty `fill`, comes back unchanged.
-    fn pad_left(T s, int width, string fill) -> string {}
-
-    /// Returns `s` with copies of `fill` at the end until it is at least `width` bytes long.
-    ///
-    /// A one-byte `fill` gives exactly `width` bytes. Text already `width`
-    /// bytes or longer, or an empty `fill`, comes back unchanged.
-    fn pad_right(T s, int width, string fill) -> string {}
-
-    /// Splits `s` into lines at each LF, dropping one CR before it (so CRLF works too).
-    ///
-    /// A final LF ends the last line rather than starting an empty one, so
-    /// `"a\nb\n"` and `"a\nb"` both give two lines, and `""` gives none.
-    fn lines(T s) -> Vec<string> {}
-
-    /// Returns `s` repeated `n` times; empty when `n <= 0`.
-    fn repeat(T s, int n) -> string {}
-
-    /// Returns the part of `s` from byte offset `start` up to (not including) `end`.
-    ///
-    /// # Errors
-    ///
-    /// Returns `Err("utf8")` when an offset falls inside a multi-byte character.
-    fn slice(T s, int start, int end) -> Result<string, string> {}
-
-    /// Splits `s` at byte offset `at` (clamped to the text) into the part before and the part from `at` on.
-    ///
-    /// # Errors
-    ///
-    /// Returns `Err("utf8")` when `at` falls inside a multi-byte character.
-    fn split_at(T s, int at) -> Result<(string, string), string> {}
-}
-
-impl Text for string {
-    pub fn trim(string s) -> string
-        ensures result.len() <= s.len()
-    {
-        let lo = 0;
-        let hi = s.len();
-        while lo < hi && space_at(s, lo) {
-            lo = lo + 1;
-        }
-        while hi > lo && space_at(s, hi - 1) {
-            hi = hi - 1;
-        }
-        return ascii_cut(s, lo, hi);
-    }
-
-    pub fn trim_start(string s) -> string
-        ensures result.len() <= s.len()
-    {
-        let lo = 0;
-        while lo < s.len() && space_at(s, lo) {
-            lo = lo + 1;
-        }
-        return ascii_cut(s, lo, s.len());
-    }
-
-    pub fn trim_end(string s) -> string
-        ensures result.len() <= s.len()
-    {
-        let hi = s.len();
-        while hi > 0 && space_at(s, hi - 1) {
-            hi = hi - 1;
-        }
-        return ascii_cut(s, 0, hi);
-    }
-
-    pub fn to_lower(string s) -> string
-        ensures result.len() == s.len()
-    {
-        return shift_ascii(s, "A", "Z", 32);
-    }
-
-    pub fn to_upper(string s) -> string
-        ensures result.len() == s.len()
-    {
-        return shift_ascii(s, "a", "z", -32);
-    }
-
-    pub fn pad_left(string s, int width, string fill) -> string
-        ensures fill.len() != 1 || result.len() == max_int(width, s.len())
-        ensures fill.len() != 0 || result == s
-    {
-        return padding(s, width, fill) + s;
-    }
-
-    pub fn pad_right(string s, int width, string fill) -> string
-        ensures fill.len() != 1 || result.len() == max_int(width, s.len())
-        ensures fill.len() != 0 || result == s
-    {
-        return s + padding(s, width, fill);
-    }
-
-    pub fn lines(string s) -> Vec<string> {
-        let out: Vec<string> = Vec::new();
-        let start = 0;
-        let at = find_at(s, "\n", 0);
-        while at >= 0 {
-            out.push(line_piece(s, start, at));
-            start = at + 1;
-            at = find_at(s, "\n", start);
-        }
-        // A final LF ends the last line; it does not start an empty one.
-        if start < s.len() {
-            out.push(line_piece(s, start, s.len()));
-        }
-        return out;
-    }
-
-    pub fn repeat(string s, int n) -> string
-        ensures n > 0 || result == ""
-        ensures n <= 0 || result.len() == s.len() * n
-    {
-        let out = "";
-        let i = 0;
-        while i < n {
-            out = out + s;
-            i = i + 1;
-        }
-        return out;
-    }
-
-    pub fn slice(string s, int start, int end) -> Result<string, string> {
-        return sub(s, start, end)?;
-    }
-
-    pub fn split_at(string s, int at) -> Result<(string, string), string> {
-        if at < 0 {
-            at = 0;
-        }
-        if at > s.len() {
-            at = s.len();
-        }
-        let left = sub(s, 0, at)?;
-        let right = sub(s, at, s.len())?;
-        return (left, right);
-    }
-}
-
 // Line `start..end` of `s` without a CR before the LF.
 fn line_piece(string s, int start, int end) -> string {
     if end > start && match_at(s, "\r", end - 1) {
@@ -386,6 +185,14 @@ fn span_text(string s, int start, int end) -> string {
 class Span {
     pub start: int,
     pub end: int,
+}
+
+// Start of the span in `r`, or `-1` for `None` (for contracts).
+fn span_start(Option<Span> r) -> int {
+    return match r {
+        Option::Some(span) => span.start,
+        Option::None => -1,
+    };
 }
 
 /// Something a [`Searchable`] value can be searched for: a plain `string`
@@ -607,4 +414,201 @@ trait Searchable<T: Show> {
 }
 
 impl Searchable for string {
+}
+
+/// String methods on `string`: trimming, case mapping, padding, line
+/// splitting, repeating and byte slicing.
+///
+/// Offsets and widths count bytes. Everything except [`Text::slice`] and
+/// [`Text::split_at`] returns a plain value; those two return `Err("utf8")`
+/// when an offset falls inside a multi-byte character.
+///
+/// # Examples
+///
+/// ```
+/// use text::{Text};
+/// # use tests::assert;
+/// assert!("\t  Key = Value \r\n".trim().to_lower() == "key = value");
+/// assert!("7".pad_left(3, "0") == "007");
+/// assert!("one\ntwo\n".lines().len() == 2);
+/// ```
+trait Text<T> {
+    /// Returns `s` without leading and trailing ASCII whitespace (space, tab, CR, LF).
+    ///
+    /// Other Unicode whitespace is kept.
+    fn trim(T s) -> string {}
+
+    /// Returns `s` without leading ASCII whitespace (space, tab, CR, LF).
+    fn trim_start(T s) -> string {}
+
+    /// Returns `s` without trailing ASCII whitespace (space, tab, CR, LF).
+    fn trim_end(T s) -> string {}
+
+    /// Returns `s` with ASCII `A`-`Z` turned into `a`-`z`; other characters are unchanged.
+    fn to_lower(T s) -> string {}
+
+    /// Returns `s` with ASCII `a`-`z` turned into `A`-`Z`; other characters are unchanged.
+    fn to_upper(T s) -> string {}
+
+    /// Returns `s` with copies of `fill` in front until it is at least `width` bytes long.
+    ///
+    /// A one-byte `fill` gives exactly `width` bytes. Text already `width`
+    /// bytes or longer, or an empty `fill`, comes back unchanged.
+    fn pad_left(T s, int width, string fill) -> string {}
+
+    /// Returns `s` with copies of `fill` at the end until it is at least `width` bytes long.
+    ///
+    /// A one-byte `fill` gives exactly `width` bytes. Text already `width`
+    /// bytes or longer, or an empty `fill`, comes back unchanged.
+    fn pad_right(T s, int width, string fill) -> string {}
+
+    /// Splits `s` into lines at each LF, dropping one CR before it (so CRLF works too).
+    ///
+    /// A final LF ends the last line rather than starting an empty one, so
+    /// `"a\nb\n"` and `"a\nb"` both give two lines, and `""` gives none.
+    fn lines(T s) -> Vec<string> {}
+
+    /// Returns `s` repeated `n` times; empty when `n <= 0`.
+    fn repeat(T s, int n) -> string {}
+
+    /// Returns the part of `s` from byte offset `start` up to (not including) `end`.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err("utf8")` when an offset falls inside a multi-byte character.
+    fn slice(T s, int start, int end) -> Result<string, string> {}
+
+    /// Splits `s` at byte offset `at` (clamped to the text) into the part before and the part from `at` on.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err("utf8")` when `at` falls inside a multi-byte character.
+    fn split_at(T s, int at) -> Result<(string, string), string> {}
+
+    /// Returns the byte span of the last `needle` in `s`, or `None`.
+    ///
+    /// An empty `needle` matches at the end. The search runs backwards, so
+    /// unlike [`Searchable::find`] it takes a plain `string`, not a [`Pattern`].
+    fn rfind(T s, string needle) -> Option<Span> {}
+}
+
+impl Text for string {
+    pub fn trim(string s) -> string
+        ensures result.len() <= s.len()
+    {
+        let lo = 0;
+        let hi = s.len();
+        while lo < hi && space_at(s, lo) {
+            lo = lo + 1;
+        }
+        while hi > lo && space_at(s, hi - 1) {
+            hi = hi - 1;
+        }
+        return ascii_cut(s, lo, hi);
+    }
+
+    pub fn trim_start(string s) -> string
+        ensures result.len() <= s.len()
+    {
+        let lo = 0;
+        while lo < s.len() && space_at(s, lo) {
+            lo = lo + 1;
+        }
+        return ascii_cut(s, lo, s.len());
+    }
+
+    pub fn trim_end(string s) -> string
+        ensures result.len() <= s.len()
+    {
+        let hi = s.len();
+        while hi > 0 && space_at(s, hi - 1) {
+            hi = hi - 1;
+        }
+        return ascii_cut(s, 0, hi);
+    }
+
+    pub fn to_lower(string s) -> string
+        ensures result.len() == s.len()
+    {
+        return shift_ascii(s, "A", "Z", 32);
+    }
+
+    pub fn to_upper(string s) -> string
+        ensures result.len() == s.len()
+    {
+        return shift_ascii(s, "a", "z", -32);
+    }
+
+    pub fn pad_left(string s, int width, string fill) -> string
+        ensures fill.len() != 1 || result.len() == max_int(width, s.len())
+        ensures fill.len() != 0 || result == s
+    {
+        return padding(s, width, fill) + s;
+    }
+
+    pub fn pad_right(string s, int width, string fill) -> string
+        ensures fill.len() != 1 || result.len() == max_int(width, s.len())
+        ensures fill.len() != 0 || result == s
+    {
+        return s + padding(s, width, fill);
+    }
+
+    pub fn lines(string s) -> Vec<string> {
+        let out: Vec<string> = Vec::new();
+        let start = 0;
+        let at = find_at(s, "\n", 0);
+        while at >= 0 {
+            out.push(line_piece(s, start, at));
+            start = at + 1;
+            at = find_at(s, "\n", start);
+        }
+        // A final LF ends the last line; it does not start an empty one.
+        if start < s.len() {
+            out.push(line_piece(s, start, s.len()));
+        }
+        return out;
+    }
+
+    pub fn repeat(string s, int n) -> string
+        ensures n > 0 || result == ""
+        ensures n <= 0 || result.len() == s.len() * n
+    {
+        let out = "";
+        let i = 0;
+        while i < n {
+            out = out + s;
+            i = i + 1;
+        }
+        return out;
+    }
+
+    pub fn slice(string s, int start, int end) -> Result<string, string> {
+        return sub(s, start, end)?;
+    }
+
+    pub fn split_at(string s, int at) -> Result<(string, string), string> {
+        if at < 0 {
+            at = 0;
+        }
+        if at > s.len() {
+            at = s.len();
+        }
+        let left = sub(s, 0, at)?;
+        let right = sub(s, at, s.len())?;
+        return (left, right);
+    }
+
+    pub fn rfind(string s, string needle) -> Option<Span>
+        ensures span_start(result) < 0 || match_at(s, needle, span_start(result))
+    {
+        let m = needle.len();
+        let i = s.len() - m;
+        while i >= 0 {
+            if match_at(s, needle, i) {
+                return Option::Some(new Span(i, i + m));
+            }
+            i = i - 1;
+        }
+        return Option::None;
+    }
 }

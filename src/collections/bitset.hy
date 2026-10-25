@@ -40,7 +40,7 @@ fn bits_per_word() -> int {
 /// seen.insert(200);
 /// assert!(seen.contains(200));
 /// assert!(!seen.contains(4));
-/// assert!(seen.size() == 2);
+/// assert!(seen.len() == 2);
 /// ```
 class BitSet
     invariant self.count >= 0 && self.count <= self.words.len() * WORD_BITS
@@ -52,7 +52,7 @@ class BitSet
 impl BitSet {
     /// Empty set with storage for at least `bits` indices (`0` → no words).
     pub static fn with_capacity(int bits) -> BitSet
-        ensures result.size() == 0
+        ensures result.len() == 0
         ensures result.capacity() >= bits
     {
         let words: Vec<int> = Vec::new();
@@ -73,7 +73,7 @@ impl BitSet {
     }
 
     /// Number of set bits (cardinality).
-    pub fn size() -> int {
+    pub fn len() -> int {
         return self.count;
     }
 

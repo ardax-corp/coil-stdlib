@@ -23,7 +23,7 @@ class Node<T> {
 /// xs.push_front(2);
 /// xs.push_front(1);
 /// xs.push_back(3);
-/// assert!(xs.size() == 3);
+/// assert!(xs.len() == 3);
 /// let sum = 0;
 /// for x in xs {
 ///     sum = sum * 10 + x;
@@ -50,7 +50,7 @@ impl List<T> {
     }
 
     /// Returns the number of values.
-    pub fn size() -> int {
+    pub fn len() -> int {
         return self.len;
     }
 
