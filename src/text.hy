@@ -84,32 +84,6 @@ fn find_at(string hay, string needle, int from) -> int {
     return -1;
 }
 
-/// Returns the `parts` concatenated with `sep` between each pair.
-///
-/// # Examples
-///
-/// ```
-/// use text::{join};
-/// # use tests::assert;
-/// let parts: Vec<string> = ["usr", "local", "bin"];
-/// assert!(join(parts, "/") == "usr/local/bin");
-/// ```
-fn join(Vec<string> parts, string sep) -> string
-    ensures parts.len() > 0 || result == ""
-    ensures parts.len() != 1 || result == parts[0]
-{
-    let out = "";
-    let i = 0;
-    while i < parts.len() {
-        if i > 0 {
-            out = out + sep;
-        }
-        out = out + parts[i];
-        i = i + 1;
-    }
-    return out;
-}
-
 // Bytes `start..end` of `s`; the offsets sit next to ASCII bytes, so they
 // are character boundaries.
 fn ascii_cut(string s, int start, int end) -> string {
@@ -610,5 +584,38 @@ impl Text for string {
             i = i - 1;
         }
         return Option::None;
+    }
+}
+
+/// `parts.join(sep)` on `Vec<string>`.
+///
+/// # Examples
+///
+/// ```
+/// use text::{Joined};
+/// # use tests::assert;
+/// let parts: Vec<string> = ["usr", "local", "bin"];
+/// assert!(parts.join("/") == "usr/local/bin");
+/// ```
+trait Joined<V> {
+    /// Returns the parts concatenated with `sep` between each pair.
+    fn join(V parts, string sep) -> string {}
+}
+
+impl Joined for Vec<string> {
+    pub fn join(Vec<string> parts, string sep) -> string
+        ensures parts.len() > 0 || result == ""
+        ensures parts.len() != 1 || result == parts[0]
+    {
+        let out = "";
+        let i = 0;
+        while i < parts.len() {
+            if i > 0 {
+                out = out + sep;
+            }
+            out = out + parts[i];
+            i = i + 1;
+        }
+        return out;
     }
 }
