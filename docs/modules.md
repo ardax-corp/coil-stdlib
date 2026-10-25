@@ -26,7 +26,7 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
 | `ascii` | `use ascii::{is_digit, is_alnum, …};` | ASCII classify / digit / case helpers |
 | `conv` | `use conv::{parse_int, int_to_hex, …};` | `int_to_dec` / `parse_int` / `parse_float` / radix parse |
 | `bytes` | `use bytes::{slice, concat, to_hex, …};` | `Vec<byte>` helpers; `Bytes` wrapper; hex encode/decode |
-| `text` | `use text::{Searchable, Text, Joined};` | String helpers via UTF-8 bytes (virtual `string` owns `format` / `to_bytes`). `Text` gives `string` plain-value methods: `s.trim()` / `trim_start` / `trim_end` / `to_lower` / `to_upper` / `lines` / `repeat(n)` / `pad_left(width, fill)` / `pad_right` (an empty `fill` returns `s`), plus `s.slice(a, b)` / `split_at(i)`, which return `Err("utf8")` for an offset inside a character, and `s.rfind(needle)` (`Option<Span>` of the last match). `Joined` gives `Vec<string>` `parts.join(sep)`. `Searchable` gives `string` (and any `Show` type with an empty `impl`) pattern methods: `"foobar".contains(p)`, `starts_with` / `ends_with` / `find` / `find_all` / `split` / `split_once` / `replace_first` / `replace_all`, where `p` is a `string` or any `Pattern` (coil-regex's `Regex`) |
+| `text` | `use text::{Searchable, Text, Joined, from_codepoints};` | String helpers via UTF-8 bytes (virtual `string` owns `format` / `to_bytes`). `Text` gives `string` plain-value methods: `s.trim()` / `trim_start` / `trim_end` / `to_lower` / `to_upper` (Latin, Greek, Cyrillic and Armenian as well as ASCII) / `chars` / `codepoints` / `char_len` / `char_at(i)` / `lines` / `repeat(n)` / `pad_left(width, fill)` / `pad_right` (an empty `fill` returns `s`), plus `s.slice(a, b)` / `split_at(i)`, which return `Err("utf8")` for an offset inside a character, and `s.rfind(needle)` (`Option<Span>` of the last match). `Joined` gives `Vec<string>` `parts.join(sep)`. `Searchable` gives `string` (and any `Show` type with an empty `impl`) pattern methods: `"foobar".contains(p)`, `starts_with` / `ends_with` / `find` / `find_all` / `split` / `split_once` / `replace_first` / `replace_all`, where `p` is a `string` or any `Pattern` (coil-regex's `Regex`) |
 | `encoding` | `use encoding::{encode, decode};` | Standard Base64 encode/decode |
 | `fmt` | `use fmt::{Buf, pad_left, …};` | Incremental string builder (`Buf`) and padding helpers |
 | `collections` | `use collections::{sort, sort_by, reverse, …};` | Stable mergesort / `sort_by` (`T -> K` with `K: Ord`) / `reverse` / `collect_ints`; strings sort by UTF-8 bytes |
@@ -45,6 +45,7 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
 
 ## Notes
 
+- `s[i]` and `s.len()` are **bytes**: `"héllo"[1]` is the first byte of `é`. Use `s.chars()` / `s.char_len()` / `s.char_at(i)` for characters and `s.codepoints()` / `from_codepoints(cps)` for code points.
 - Prefer **byte offsets** for `s.slice(a, b)` / `rfind` / `Span` offsets (mid-codepoint slices error on decode).
 - Absent results are `Option`, never `-1`: `bytes::find` / `find_from` / `rfind`, `xs.index_of(x)`, `ascii::digit_val` / `hex_val`.
 - Every collection's item count is `.len()` (`Vec`, `HashMap`, `HashSet`, `TreeMap`, `VecDeque`, `List`, `BitSet`).

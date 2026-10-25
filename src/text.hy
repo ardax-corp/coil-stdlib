@@ -1,5 +1,6 @@
 // String helpers on byte offsets (userland).
-// Byte-oriented offsets — slicing mid-codepoint yields UTF-8 errors.
+// Byte-oriented offsets — slicing mid-codepoint yields UTF-8 errors; `chars` /
+// `codepoints` / the case maps decode UTF-8.
 // Named `text` because virtual `string` already owns `format` / `to_bytes` / `from_bytes`.
 // Search is plain loops over `s[i]`, which reads the string in place; the
 // compiler runs the no-match stretches 64 bytes at a time
@@ -94,7 +95,7 @@ fn ascii_cut(string s, int start, int end) -> string {
 }
 
 // `s` with each byte in `from_lo..=from_hi` moved by `delta`; ASCII-only
-// changes keep the UTF-8 valid.
+// changes keep the UTF-8 valid (the all-ASCII fast path of the case maps).
 fn shift_ascii(string s, byte from_lo, byte from_hi, int delta) -> string {
     let b = to_bytes(s);
     let out: Vec<byte> = Vec::new();
@@ -107,6 +108,265 @@ fn shift_ascii(string s, byte from_lo, byte from_hi, int delta) -> string {
             out.push(c);
         }
         i = i + 1;
+    }
+    return match from_bytes(out) {
+        Result::Ok(x) => x,
+        Result::Err(_) => panic "text: case mapping broke UTF-8",
+    };
+}
+
+fn is_ascii(string s) -> bool {
+    let i = 0;
+    while i < s.len() {
+        if s[i] as int >= 128 {
+            return false;
+        }
+        i = i + 1;
+    }
+    return true;
+}
+
+// The code point whose UTF-8 sequence starts at byte `i` of `s`.
+fn decode_at(string s, int i) -> int {
+    let b0 = s[i] as int;
+    if b0 < 128 {
+        return b0;
+    }
+    if b0 < 224 {
+        return ((b0 & 31) << 6) | ((s[i + 1] as int) & 63);
+    }
+    if b0 < 240 {
+        return ((b0 & 15) << 12) | (((s[i + 1] as int) & 63) << 6) | ((s[i + 2] as int) & 63);
+    }
+    return ((b0 & 7) << 18) | (((s[i + 1] as int) & 63) << 12) | (((s[i + 2] as int) & 63) << 6) |
+           ((s[i + 3] as int) & 63);
+}
+
+// Appends the UTF-8 bytes of code point `cp` to `out`.
+fn encode_to(int cp, Vec<byte> out) {
+    if cp < 128 {
+        out.push(cp as byte);
+        return;
+    }
+    if cp < 2048 {
+        out.push((192 | (cp >> 6)) as byte);
+        out.push((128 | (cp & 63)) as byte);
+        return;
+    }
+    if cp < 65536 {
+        out.push((224 | (cp >> 12)) as byte);
+        out.push((128 | ((cp >> 6) & 63)) as byte);
+        out.push((128 | (cp & 63)) as byte);
+        return;
+    }
+    out.push((240 | (cp >> 18)) as byte);
+    out.push((128 | ((cp >> 12) & 63)) as byte);
+    out.push((128 | ((cp >> 6) & 63)) as byte);
+    out.push((128 | (cp & 63)) as byte);
+}
+
+/// Returns the string whose characters are the code points `cps`.
+///
+/// A value that is not a Unicode scalar (negative, a surrogate
+/// `0xD800..=0xDFFF`, or above `0x10FFFF`) becomes `U+FFFD`.
+///
+/// # Examples
+///
+/// ```
+/// use text::{Text, from_codepoints};
+/// # use tests::assert;
+/// let cps: Vec<int> = [104, 233];
+/// assert!(from_codepoints(cps) == "h\u{e9}");
+/// assert!(from_codepoints("\u{416}".codepoints()) == "\u{416}");
+/// ```
+fn from_codepoints(Vec<int> cps) -> string {
+    let out: Vec<byte> = Vec::new();
+    let i = 0;
+    while i < cps.len() {
+        let cp = cps[i];
+        if cp < 0 || cp > 1114111 || (cp >= 55296 && cp <= 57343) {
+            cp = 65533;
+        }
+        encode_to(cp, out);
+        i = i + 1;
+    }
+    return match from_bytes(out) {
+        Result::Ok(x) => x,
+        Result::Err(_) => panic "text: encoded code points are not UTF-8",
+    };
+}
+
+// Ranges where upper and lower case alternate, the upper case at `lo`'s
+// parity (`Ā ā Ă ă …`).
+fn paired_lower(int c, int lo, int hi) -> int {
+    if c >= lo && c <= hi && (c - lo) % 2 == 0 {
+        return c + 1;
+    }
+    return c;
+}
+
+fn paired_upper(int c, int lo, int hi) -> int {
+    if c >= lo && c <= hi && (c - lo) % 2 == 1 {
+        return c - 1;
+    }
+    return c;
+}
+
+fn alternating(int c, bool up) -> int {
+    let r = c;
+    if up {
+        r = paired_upper(r, 256, 303);
+        r = paired_upper(r, 306, 311);
+        r = paired_upper(r, 313, 328);
+        r = paired_upper(r, 330, 375);
+        r = paired_upper(r, 377, 382);
+        r = paired_upper(r, 984, 1007);
+        r = paired_upper(r, 1120, 1153);
+        r = paired_upper(r, 1162, 1215);
+        r = paired_upper(r, 1217, 1230);
+        r = paired_upper(r, 1232, 1327);
+        r = paired_upper(r, 7680, 7829);
+        r = paired_upper(r, 7840, 7935);
+    } else {
+        r = paired_lower(r, 256, 303);
+        r = paired_lower(r, 306, 311);
+        r = paired_lower(r, 313, 328);
+        r = paired_lower(r, 330, 375);
+        r = paired_lower(r, 377, 382);
+        r = paired_lower(r, 984, 1007);
+        r = paired_lower(r, 1120, 1153);
+        r = paired_lower(r, 1162, 1215);
+        r = paired_lower(r, 1217, 1230);
+        r = paired_lower(r, 1232, 1327);
+        r = paired_lower(r, 7680, 7829);
+        r = paired_lower(r, 7840, 7935);
+    }
+    return r;
+}
+
+// Simple (one-to-one) lower case of code point `c`.
+fn lower_cp(int c) -> int {
+    if c < 128 {
+        if c >= 65 && c <= 90 {
+            return c + 32;
+        }
+        return c;
+    }
+    // Latin-1: À..Þ except ×.
+    if c >= 192 && c <= 222 && c != 215 {
+        return c + 32;
+    }
+    if c == 376 {
+        return 255;
+    }
+    if c == 304 {
+        return 105;
+    }
+    // Greek: Α..Ϋ (no U+03A2), and the accented capitals.
+    if c >= 913 && c <= 939 && c != 930 {
+        return c + 32;
+    }
+    if c == 902 {
+        return 940;
+    }
+    if c >= 904 && c <= 906 {
+        return c + 37;
+    }
+    if c == 908 {
+        return 972;
+    }
+    if c >= 910 && c <= 911 {
+        return c + 63;
+    }
+    // Cyrillic: Ѐ..Џ, А..Я, Ӏ.
+    if c >= 1024 && c <= 1039 {
+        return c + 80;
+    }
+    if c >= 1040 && c <= 1071 {
+        return c + 32;
+    }
+    if c == 1216 {
+        return 1231;
+    }
+    // Armenian: Ա..Ֆ.
+    if c >= 1329 && c <= 1366 {
+        return c + 48;
+    }
+    return alternating(c, false);
+}
+
+// Simple (one-to-one) upper case of code point `c`.
+fn upper_cp(int c) -> int {
+    if c < 128 {
+        if c >= 97 && c <= 122 {
+            return c - 32;
+        }
+        return c;
+    }
+    // Latin-1: à..þ except ÷; ß has no one-character upper case.
+    if c >= 224 && c <= 254 && c != 247 {
+        return c - 32;
+    }
+    if c == 255 {
+        return 376;
+    }
+    if c == 181 {
+        return 924;
+    }
+    if c == 305 {
+        return 73;
+    }
+    if c == 383 {
+        return 83;
+    }
+    // Greek: α..ϋ with final ς as Σ, and the accented small letters.
+    if c == 962 {
+        return 931;
+    }
+    if c >= 945 && c <= 971 {
+        return c - 32;
+    }
+    if c == 940 {
+        return 902;
+    }
+    if c >= 941 && c <= 943 {
+        return c - 37;
+    }
+    if c == 972 {
+        return 908;
+    }
+    if c >= 973 && c <= 974 {
+        return c - 63;
+    }
+    // Cyrillic: а..я, ѐ..џ, ӏ.
+    if c >= 1072 && c <= 1103 {
+        return c - 32;
+    }
+    if c >= 1104 && c <= 1119 {
+        return c - 80;
+    }
+    if c == 1231 {
+        return 1216;
+    }
+    // Armenian: ա..ֆ.
+    if c >= 1377 && c <= 1414 {
+        return c - 48;
+    }
+    return alternating(c, true);
+}
+
+// `s` with every character case-mapped (`up` for upper case).
+fn map_case(string s, bool up) -> string {
+    let out: Vec<byte> = Vec::with_capacity(s.len());
+    let i = 0;
+    while i < s.len() {
+        let c = decode_at(s, i);
+        if up {
+            encode_to(upper_cp(c), out);
+        } else {
+            encode_to(lower_cp(c), out);
+        }
+        i = next_char(s, i);
     }
     return match from_bytes(out) {
         Result::Ok(x) => x,
@@ -418,11 +678,35 @@ trait Text<T> {
     /// Returns `s` without trailing ASCII whitespace (space, tab, CR, LF).
     fn trim_end(T s) -> string {}
 
-    /// Returns `s` with ASCII `A`-`Z` turned into `a`-`z`; other characters are unchanged.
+    /// Returns `s` in lower case: ASCII, Latin (Latin-1, Extended-A and
+    /// Additional), Greek, Cyrillic and Armenian letters; other characters
+    /// are unchanged.
+    ///
+    /// Each character maps to one character (`"SS"` does not become `"ß"`),
+    /// so the byte length can change only where the two cases differ in
+    /// width (`İ` / `i`).
     fn to_lower(T s) -> string {}
 
-    /// Returns `s` with ASCII `a`-`z` turned into `A`-`Z`; other characters are unchanged.
+    /// Returns `s` in upper case, for the scripts [`Text::to_lower`] covers;
+    /// other characters are unchanged.
+    ///
+    /// `ß` stays `ß` (its upper case is two characters) and final `ς` becomes `Σ`.
     fn to_upper(T s) -> string {}
+
+    /// Returns the characters of `s`, each as its own string.
+    ///
+    /// `s[i]` and `s.len()` count bytes; this counts characters (code points),
+    /// so `"héllo".chars()` has five items.
+    fn chars(T s) -> Vec<string> {}
+
+    /// Returns the Unicode code points of `s`.
+    fn codepoints(T s) -> Vec<int> {}
+
+    /// Returns the number of characters (code points) in `s`; `s.len()` is bytes.
+    fn char_len(T s) -> int {}
+
+    /// Returns the character at character index `i`, or `None` when `i` is out of range.
+    fn char_at(T s, int i) -> Option<string> {}
 
     /// Returns `s` with copies of `fill` in front until it is at least `width` bytes long.
     ///
@@ -501,16 +785,76 @@ impl Text for string {
         return ascii_cut(s, 0, hi);
     }
 
-    pub fn to_lower(string s) -> string
-        ensures result.len() == s.len()
-    {
-        return shift_ascii(s, "A", "Z", 32);
+    pub fn to_lower(string s) -> string {
+        if is_ascii(s) {
+            return shift_ascii(s, "A", "Z", 32);
+        }
+        return map_case(s, false);
     }
 
-    pub fn to_upper(string s) -> string
-        ensures result.len() == s.len()
+    pub fn to_upper(string s) -> string {
+        if is_ascii(s) {
+            return shift_ascii(s, "a", "z", -32);
+        }
+        return map_case(s, true);
+    }
+
+    pub fn chars(string s) -> Vec<string>
+        ensures result.len() <= s.len()
     {
-        return shift_ascii(s, "a", "z", -32);
+        let out: Vec<string> = Vec::new();
+        let i = 0;
+        while i < s.len() {
+            let next = next_char(s, i);
+            out.push(span_text(s, i, next));
+            i = next;
+        }
+        return out;
+    }
+
+    pub fn codepoints(string s) -> Vec<int>
+        ensures result.len() <= s.len()
+    {
+        let out: Vec<int> = Vec::new();
+        let i = 0;
+        while i < s.len() {
+            out.push(decode_at(s, i));
+            i = next_char(s, i);
+        }
+        return out;
+    }
+
+    pub fn char_len(string s) -> int
+        ensures result >= 0 && result <= s.len()
+    {
+        let n = 0;
+        let i = 0;
+        while i < s.len() {
+            // Continuation bytes are `10xxxxxx`; every other byte starts a character.
+            let b = s[i] as int;
+            if b < 128 || b >= 192 {
+                n = n + 1;
+            }
+            i = i + 1;
+        }
+        return n;
+    }
+
+    pub fn char_at(string s, int i) -> Option<string> {
+        if i < 0 {
+            return Option::None;
+        }
+        let at = 0;
+        let k = 0;
+        while at < s.len() {
+            let next = next_char(s, at);
+            if k == i {
+                return Option::Some(span_text(s, at, next));
+            }
+            k = k + 1;
+            at = next;
+        }
+        return Option::None;
     }
 
     pub fn pad_left(string s, int width, string fill) -> string
