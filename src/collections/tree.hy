@@ -73,7 +73,7 @@ impl TreeMap<K, V> {
         let vals: Vec<V> = Vec::new();
         let left: Vec<int> = Vec::new();
         let right: Vec<int> = Vec::new();
-        return new TreeMap(keys, vals, left, right, 0 - 1, 0);
+        return new TreeMap(keys, vals, left, right, -1, 0);
     }
 
     /// Creates an empty map; the same as `TreeMap::new`.
@@ -82,7 +82,7 @@ impl TreeMap<K, V> {
     }
 
     /// Returns the number of entries.
-    pub fn size() -> int {
+    pub fn len() -> int {
         return self.len;
     }
 
@@ -99,7 +99,7 @@ impl TreeMap<K, V> {
         self.vals = Vec::new();
         self.left = Vec::new();
         self.right = Vec::new();
-        self.root = 0 - 1;
+        self.root = -1;
         self.len = 0;
     }
 
@@ -126,7 +126,7 @@ impl TreeMap<K: Ord + Eq, V> {
     /// assert!(m.insert("a", 1));
     /// assert!(!m.insert("a", 2));
     /// assert!(m.get_or("a", 0) == 2);
-    /// assert!(m.size() == 1);
+    /// assert!(m.len() == 1);
     /// ```
     pub fn insert(K k, V v) -> bool
         ensures !result || self.len == old(self.len) + 1
@@ -136,8 +136,8 @@ impl TreeMap<K: Ord + Eq, V> {
             let slot = self.keys.len();
             self.keys.push(k);
             self.vals.push(v);
-            self.left.push(0 - 1);
-            self.right.push(0 - 1);
+            self.left.push(-1);
+            self.right.push(-1);
             self.root = slot;
             self.len = 1;
             return true;
@@ -154,8 +154,8 @@ impl TreeMap<K: Ord + Eq, V> {
                     let slot = self.keys.len();
                     self.keys.push(k);
                     self.vals.push(v);
-                    self.left.push(0 - 1);
-                    self.right.push(0 - 1);
+                    self.left.push(-1);
+                    self.right.push(-1);
                     self.left[cur] = slot;
                     self.len = self.len + 1;
                     return true;
@@ -167,8 +167,8 @@ impl TreeMap<K: Ord + Eq, V> {
                     let slot = self.keys.len();
                     self.keys.push(k);
                     self.vals.push(v);
-                    self.left.push(0 - 1);
-                    self.right.push(0 - 1);
+                    self.left.push(-1);
+                    self.right.push(-1);
                     self.right[cur] = slot;
                     self.len = self.len + 1;
                     return true;
@@ -249,7 +249,7 @@ impl TreeMap<K: Ord + Eq, V> {
     }
 
     fn find_parent(int idx) -> int {
-        let p = 0 - 1;
+        let p = -1;
         let cur = self.root;
         while cur >= 0 {
             if cur == idx {
@@ -263,7 +263,7 @@ impl TreeMap<K: Ord + Eq, V> {
                 cur = self.right[cur];
             }
         }
-        return 0 - 1;
+        return -1;
     }
 
     fn set_child_of(int parent, int old_c, int new_c) {
@@ -315,7 +315,7 @@ impl TreeMap<K: Ord + Eq, V> {
         ensures result || self.len == old(self.len)
     {
         let cur = self.root;
-        let target = 0 - 1;
+        let target = -1;
         while cur >= 0 {
             if k == self.keys[cur] {
                 target = cur;
@@ -333,7 +333,7 @@ impl TreeMap<K: Ord + Eq, V> {
         let parent = self.find_parent(target);
         if self.left[target] < 0 {
             if self.right[target] < 0 {
-                self.set_child_of(parent, target, 0 - 1);
+                self.set_child_of(parent, target, -1);
             } else {
                 self.set_child_of(parent, target, self.right[target]);
             }

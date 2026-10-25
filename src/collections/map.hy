@@ -27,7 +27,7 @@ class Entry<K, V> {
 /// ages.insert("ada", 36);
 /// ages.insert("alan", 41);
 /// ages.insert("ada", 37);
-/// assert!(ages.size() == 2);
+/// assert!(ages.len() == 2);
 /// assert!(ages.get_or("ada", 0) == 37);
 /// assert!(ages.get_or("grace", -1) == -1);
 ///
@@ -86,7 +86,7 @@ impl HashMap<K, V> {
         let heads: Vec<int> = Vec::new();
         let i = 0;
         while i < n {
-            heads.push(0 - 1);
+            heads.push(-1);
             i = i + 1;
         }
         let keys: Vec<K> = Vec::new();
@@ -104,7 +104,7 @@ impl HashMap<K, V> {
     /// use collections::map::{HashMap};
     /// # use tests::assert;
     /// let m: HashMap<string, int> = HashMap::new();
-    /// assert!(m.size() == 0);
+    /// assert!(m.len() == 0);
     /// ```
     pub static fn new() -> HashMap<K, V> {
         return HashMap::with_capacity(8);
@@ -121,9 +121,9 @@ impl HashMap<K, V> {
     /// m.insert("a", 1);
     /// m.insert("b", 2);
     /// m.remove("a");
-    /// assert!(m.size() == 1);
+    /// assert!(m.len() == 1);
     /// ```
-    pub fn size() -> int {
+    pub fn len() -> int {
         return self.len;
     }
 
@@ -157,7 +157,7 @@ impl HashMap<K, V> {
     {
         let i = 0;
         while i < self.cap {
-            self.heads[i] = 0 - 1;
+            self.heads[i] = -1;
             i = i + 1;
         }
         let n = self.live.len();
@@ -267,7 +267,7 @@ impl HashMap<K: Eq + Hash, V> {
             }
             idx = self.next[idx];
         }
-        return 0 - 1;
+        return -1;
     }
 
     fn grow() {
@@ -278,7 +278,7 @@ impl HashMap<K: Eq + Hash, V> {
         let heads: Vec<int> = Vec::new();
         let i = 0;
         while i < new_cap {
-            heads.push(0 - 1);
+            heads.push(-1);
             i = i + 1;
         }
         let keys: Vec<K> = Vec::new();
@@ -423,7 +423,7 @@ impl HashMap<K: Eq + Hash, V> {
     {
         let h = self.bucket(k);
         let idx = self.heads[h];
-        let prev = 0 - 1;
+        let prev = -1;
         while idx >= 0 {
             if self.live[idx] == 1 {
                 if self.keys[idx] == k {

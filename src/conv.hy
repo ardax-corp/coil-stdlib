@@ -140,8 +140,8 @@ fn int_to_bin(int n) -> string {
 /// ```
 /// use conv::{parse_int_radix};
 /// # use tests::assert;
-/// assert!((parse_int_radix("ff", 16) ?? 0) == 255);
-/// assert!((parse_int_radix("-10", 10) ?? 0) == -10);
+/// assert!((parse_int_radix("ff", 16).ok() ?? 0) == 255);
+/// assert!((parse_int_radix("-10", 10).ok() ?? 0) == -10);
 /// assert!(parse_int_radix("12", 8).is_err());
 /// ```
 fn parse_int_radix(string s, int radix) -> Result<int, string> {
@@ -163,10 +163,10 @@ fn parse_int_radix(string s, int radix) -> Result<int, string> {
     while i < b.len() {
         let digit = -1;
         if radix == 10 {
-            digit = digit_val(b[i]);
+            digit = digit_val(b[i]) ?? -1;
         } else {
             if radix == 16 {
-                digit = hex_val(b[i]);
+                digit = hex_val(b[i]) ?? -1;
             } else {
                 raise "invalid radix";
             }
@@ -203,7 +203,7 @@ fn parse_int_radix(string s, int radix) -> Result<int, string> {
 /// ```
 /// use conv::{parse_int};
 /// # use tests::assert;
-/// assert!((parse_int(" 42 ") ?? 0) == 42);
+/// assert!((parse_int(" 42 ").ok() ?? 0) == 42);
 /// let bad = match parse_int("4x2") {
 ///     Result::Err(e) => e,
 ///     Result::Ok(_) => "",
@@ -226,8 +226,8 @@ fn parse_int(string s) -> Result<int, string> {
 /// ```
 /// use conv::{parse_float};
 /// # use tests::assert;
-/// assert!((parse_float("2.5") ?? 0.0) == 2.5);
-/// assert!((parse_float("1e3") ?? 0.0) == 1000.0);
+/// assert!((parse_float("2.5").ok() ?? 0.0) == 2.5);
+/// assert!((parse_float("1e3").ok() ?? 0.0) == 1000.0);
 /// assert!(parse_float("abc").is_err());
 /// ```
 fn parse_float(string s) -> Result<float, string> {
@@ -240,7 +240,7 @@ fn parse_float(string s) -> Result<float, string> {
     let sign = 1.0;
     if b[i] == "-" || b[i] == "+" {
         if b[i] == "-" {
-            sign = 0.0 - 1.0;
+            sign = -1.0;
         }
         i = i + 1;
     }
@@ -254,7 +254,7 @@ fn parse_float(string s) -> Result<float, string> {
         if is_digit(b[i]) == false {
             break;
         }
-        let whole_digit = digit_val(b[i]);
+        let whole_digit = digit_val(b[i]) ?? 0;
         value = value * 10.0 + (whole_digit as float);
         saw_digit = true;
         i = i + 1;
@@ -268,7 +268,7 @@ fn parse_float(string s) -> Result<float, string> {
                 if is_digit(b[i]) == false {
                     break;
                 }
-                let fraction_digit = digit_val(b[i]);
+                let fraction_digit = digit_val(b[i]) ?? 0;
                 value = value * 10.0 + (fraction_digit as float);
                 frac_places = frac_places + 1;
                 saw_digit = true;
@@ -302,7 +302,7 @@ fn parse_float(string s) -> Result<float, string> {
                 if is_digit(b[i]) == false {
                     break;
                 }
-                let exponent_digit: int = digit_val(b[i]);
+                let exponent_digit: int = digit_val(b[i]) ?? 0;
                 exponent = exponent * 10 + exponent_digit;
                 i = i + 1;
             }

@@ -7,7 +7,7 @@ test("list push pop front back") {
     xs.push_front(1);
     xs.push_front(2);
     xs.push_back(3);
-    assert!(xs.size() == 3);
+    assert!(xs.len() == 3);
     assert!((xs.peek_front() ?? 0) == 2);
     assert!((xs.pop_front() ?? 0) == 2);
     assert!((xs.pop_back() ?? 0) == 3);
@@ -35,6 +35,6 @@ test("list empty peek") {
     assert!((xs.peek_front() ?? -7) == -7);
     assert!((xs.pop_front() ?? -7) == -7);
     xs.push_front(5);
-    assert!(xs.size() == 1);
+    assert!(xs.len() == 1);
     assert!((xs.peek_front() ?? 0) == 5);
 }

@@ -84,7 +84,7 @@ fn to_hex(Vec<byte> buf) -> string
 /// ```
 /// use bytes::{from_hex};
 /// # use tests::assert;
-/// let b = from_hex("00AbfF") ?? Vec::new();
+/// let b = from_hex("00AbfF").ok() ?? Vec::new();
 /// assert!(b.len() == 3 && b[1] == 171 as byte);
 /// assert!(from_hex("abc").is_err());
 /// ```
@@ -97,8 +97,8 @@ fn from_hex(string s) -> Result<Vec<byte>, string> {
     let out: Vec<byte> = Vec::new();
     let i = 0;
     while i < n {
-        let hi = hex_val(b[i]);
-        let lo = hex_val(b[i + 1]);
+        let hi = hex_val(b[i]) ?? -1;
+        let lo = hex_val(b[i + 1]) ?? -1;
         if hi < 0 {
             raise "invalid hex";
         }
@@ -172,8 +172,9 @@ fn eq(Vec<byte> a, Vec<byte> b) -> bool
     return region_eq(a, 0, b, 0, a.len());
 }
 
-/// Returns the offset of the first `needle` in `hay` at or after `start`, or `-1`.
-fn find_from(Vec<byte> hay, Vec<byte> needle, int start) -> int
+// Offset of the first `needle` in `hay` at or after `start` (clamped to
+// `0 ..= hay.len()`), or `-1`.
+fn find_index(Vec<byte> hay, Vec<byte> needle, int start) -> int
     ensures result >= -1 && result <= hay.len()
     ensures result < 0 || result >= start || (start > hay.len() && result == hay.len())
     ensures result < 0 ||
@@ -203,30 +204,8 @@ fn find_from(Vec<byte> hay, Vec<byte> needle, int start) -> int
     return -1;
 }
 
-/// Returns the offset of the first `needle` in `hay`, or `-1`. An empty `needle` matches at `0`.
-///
-/// # Examples
-///
-/// ```
-/// use bytes::{find};
-/// # use tests::assert;
-/// assert!(find("a,b,c", ",") == 1);
-/// assert!(find("abc", "x") == -1);
-/// ```
-fn find(Vec<byte> hay, Vec<byte> needle) -> int {
-    return find_from(hay, needle, 0);
-}
-
-/// Returns the offset of the last `needle` in `hay`, or `-1`. An empty `needle` matches at `hay.len()`.
-///
-/// # Examples
-///
-/// ```
-/// use bytes::{rfind};
-/// # use tests::assert;
-/// assert!(rfind("a,b,c", ",") == 3);
-/// ```
-fn rfind(Vec<byte> hay, Vec<byte> needle) -> int
+// Offset of the last `needle` in `hay`, or `-1`.
+fn rfind_index(Vec<byte> hay, Vec<byte> needle) -> int
     ensures result >= -1 && result <= hay.len()
     ensures result < 0 ||
             (result + needle.len() <= hay.len() && region_eq(hay, result, needle, 0, needle.len()))
@@ -249,11 +228,52 @@ fn rfind(Vec<byte> hay, Vec<byte> needle) -> int
     return -1;
 }
 
+fn found(int at) -> Option<int> {
+    if at < 0 {
+        return Option::None;
+    }
+    return Option::Some(at);
+}
+
+/// Returns the offset of the first `needle` in `hay` at or after `start`, or `None`.
+///
+/// `start` is clamped to `0 ..= hay.len()`; an empty `needle` matches there.
+fn find_from(Vec<byte> hay, Vec<byte> needle, int start) -> Option<int> {
+    return found(find_index(hay, needle, start));
+}
+
+/// Returns the offset of the first `needle` in `hay`, or `None`. An empty `needle` matches at `0`.
+///
+/// # Examples
+///
+/// ```
+/// use bytes::{find};
+/// # use tests::assert;
+/// assert!(find("a,b,c", ",") == Option::Some(1));
+/// assert!(find("abc", "x").is_none());
+/// ```
+fn find(Vec<byte> hay, Vec<byte> needle) -> Option<int> {
+    return found(find_index(hay, needle, 0));
+}
+
+/// Returns the offset of the last `needle` in `hay`, or `None`. An empty `needle` matches at `hay.len()`.
+///
+/// # Examples
+///
+/// ```
+/// use bytes::{rfind};
+/// # use tests::assert;
+/// assert!(rfind("a,b,c", ",") == Option::Some(3));
+/// ```
+fn rfind(Vec<byte> hay, Vec<byte> needle) -> Option<int> {
+    return found(rfind_index(hay, needle));
+}
+
 /// Returns `true` when `needle` occurs in `hay`.
 fn contains(Vec<byte> hay, Vec<byte> needle) -> bool
     ensures !result || needle.len() <= hay.len()
 {
-    return find(hay, needle) >= 0;
+    return find_index(hay, needle, 0) >= 0;
 }
 
 /// Returns `true` when `buf` begins with `prefix`.
@@ -311,7 +331,7 @@ fn copy(Vec<byte> src) -> Vec<byte>
 /// use bytes::{replace, to_string};
 /// # use tests::assert;
 /// let out = replace("a-b-c", "-", "+");
-/// assert!((to_string(out) ?? "") == "a+b+c");
+/// assert!((to_string(out).ok() ?? "") == "a+b+c");
 /// ```
 fn replace(Vec<byte> hay, Vec<byte> old, Vec<byte> new) -> Vec<byte>
     ensures old.len() > 0 || eq(result, hay)
@@ -369,7 +389,7 @@ fn repeat(Vec<byte> src, int n) -> Vec<byte>
 /// use bytes::{pad_left, to_string};
 /// # use tests::assert;
 /// let zero: byte = "0";
-/// assert!((to_string(pad_left("42", 5, zero)) ?? "") == "00042");
+/// assert!((to_string(pad_left("42", 5, zero)).ok() ?? "") == "00042");
 /// ```
 fn pad_left(Vec<byte> src, int width, byte fill) -> Vec<byte>
     ensures result.len() >= src.len() && result.len() >= width

@@ -1,12 +1,10 @@
 use tests::assert;
-use text::{Searchable, trim, to_lower, to_upper, join, repeat, pad_left, pad_right, lines};
+use text::{Joined, Searchable, Span, Text};
 
 test("trim and affixes") {
-    let t = match trim("  hi  ") {
-        Result::Ok(s) => s,
-        Result::Err(_) => panic "trim",
-    };
-    assert!(t == "hi");
+    assert!("  hi  ".trim() == "hi");
+    assert!("  hi  ".trim_start() == "hi  ");
+    assert!("  hi  ".trim_end() == "  hi");
     assert!("hello".starts_with("he"));
     assert!("hello".ends_with("lo"));
     assert!("hello".contains("ell"));
@@ -17,16 +15,8 @@ test("split and case") {
     assert!(parts.len() == 3);
     assert!(parts[0] == "a");
     assert!(parts[2] == "c");
-    let low = match to_lower("AbC") {
-        Result::Ok(s) => s,
-        Result::Err(_) => panic "lower",
-    };
-    assert!(low == "abc");
-    let up = match to_upper("AbC") {
-        Result::Ok(s) => s,
-        Result::Err(_) => panic "upper",
-    };
-    assert!(up == "ABC");
+    assert!("AbC".to_lower() == "abc");
+    assert!("AbC".to_upper() == "ABC");
 }
 
 test("replace split once and join") {
@@ -39,53 +29,115 @@ test("replace split once and join") {
     parts.push("a");
     parts.push("b");
     parts.push("c");
-    assert!(join(parts, "::") == "a::b::c");
+    assert!(parts.join("::") == "a::b::c");
 }
 
 test("repeat text") {
-    assert!(repeat("ab", 3) == "ababab");
-    assert!(repeat("ab", -1) == "");
+    assert!("ab".repeat(3) == "ababab");
+    assert!("ab".repeat(-1) == "");
 }
 
 test("pad text left") {
-    assert!(pad_left("7", 3, "0")? == "007");
+    assert!("7".pad_left(3, "0") == "007");
 }
 
 test("pad text right") {
-    assert!(pad_right("7", 3, "0")? == "700");
+    assert!("7".pad_right(3, "0") == "700");
 }
 
 test("pad text preserves wide input") {
-    assert!(pad_right("wide", 2, "0")? == "wide");
+    assert!("wide".pad_right(2, "0") == "wide");
 }
 
 test("lines handles crlf") {
-    let rows = lines("a\r\nb")?;
+    let rows = "a\r\nb".lines();
     assert!(rows.len() == 2);
     assert!(rows[0] == "a");
     assert!(rows[1] == "b");
 }
 
 test("a final newline ends the last line rather than starting a new one (#74)") {
-    let rows = lines("a\r\nb\n")?;
+    let rows = "a\r\nb\n".lines();
     assert!(rows.len() == 2);
     assert!(rows[0] == "a");
     assert!(rows[1] == "b");
-    let one = lines("a\r\n")?;
+    let one = "a\r\n".lines();
     assert!(one.len() == 1);
 }
 
 test("lines keeps empty lines in the middle and at the end") {
-    let rows = lines("a\n\nb\n\n")?;
+    let rows = "a\n\nb\n\n".lines();
     assert!(rows.len() == 4);
     assert!(rows[1] == "");
     assert!(rows[3] == "");
 }
 
 test("lines of empty text is empty") {
-    let none = lines("")?;
+    let none = "".lines();
     assert!(none.len() == 0);
-    let blank = lines("\n")?;
+    let blank = "\n".lines();
     assert!(blank.len() == 1);
     assert!(blank[0] == "");
+}
+
+test("pad with an empty fill returns the text unchanged") {
+    assert!("7".pad_left(3, "") == "7");
+    assert!("7".pad_right(3, "") == "7");
+}
+
+test("pad repeats a longer fill until the width is reached") {
+    assert!("7".pad_left(4, "ab") == "abab7");
+    assert!("7".pad_right(2, "ab") == "7ab");
+}
+
+test("slice and split_at fail inside a multi-byte character") {
+    assert!(("hello".slice(1, 4).ok() ?? "") == "ell");
+    assert!("h\u{e9}llo".slice(0, 2).is_err());
+    let (a, b) = "hello".split_at(2).ok() ?? ("", "");
+    assert!(a == "he" && b == "llo");
+    assert!("h\u{e9}llo".split_at(2).is_err());
+}
+
+test("text methods compose without ? in a plain function") {
+    let words: Vec<string> = Vec::new();
+    for line in " Alpha \n beta\n".lines() {
+        words.push(line.trim().to_lower());
+    }
+    assert!(words.len() == 2 && words[0] == "alpha" && words[1] == "beta");
+}
+
+test("rfind gives the span of the last match, or None") {
+    let at = "a=b=c".rfind("=") ?? new Span(-1, -1);
+    assert!(at.start == 3 && at.end == 4);
+    assert!("abc".rfind("z").is_none());
+    let empty = "abc".rfind("") ?? new Span(-1, -1);
+    assert!(empty.start == 3);
+}
+
+// `n` copies of `x` with `mark` spliced in at `at`.
+fn marked(int n, int at, string mark) -> string {
+    return "x".repeat(at) + mark + "x".repeat(n - at);
+}
+
+test("rfind across 64-byte lanes: the last match, near misses skipped") {
+    for n in [0, 1, 62, 63, 64, 65, 127, 128, 200] {
+        let at = 0;
+        while at <= n {
+            let s = marked(n, at, "ab") + "a" + "x".repeat(70) + "b";
+            let hit = s.rfind("ab") ?? new Span(-1, -1);
+            assert!(hit.start == at && hit.end == at + 2);
+            let one = s.rfind("b") ?? new Span(-1, -1);
+            assert!(one.start == s.len() - 1);
+            let long = marked(n, at, "abxa") + "abxb";
+            let three = long.rfind("abxa") ?? new Span(-1, -1);
+            assert!(three.start == at);
+            at = at + if at < 3 || at > n - 3 {
+                1
+            } else {
+                9
+            };
+        }
+    }
+    assert!("x".repeat(300).rfind("xy").is_none());
+    assert!("ab".rfind("abc").is_none());
 }

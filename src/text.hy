@@ -1,5 +1,6 @@
 // String helpers on byte offsets (userland).
-// Byte-oriented offsets — slicing mid-codepoint yields UTF-8 errors.
+// Byte-oriented offsets — slicing mid-codepoint yields UTF-8 errors; `chars` /
+// `codepoints` / the case maps decode UTF-8.
 // Named `text` because virtual `string` already owns `format` / `to_bytes` / `from_bytes`.
 // Search is plain loops over `s[i]`, which reads the string in place; the
 // compiler runs the no-match stretches 64 bytes at a time
@@ -7,25 +8,10 @@
 use string::{to_bytes, from_bytes, slice_bytes};
 use ascii::is_space;
 
-fn utf8_ok(Vec<byte> b) -> Result<string, string> {
-    return match from_bytes(b) {
-        Result::Ok(s) => s,
-        Result::Err(_) => raise "utf8",
-    };
-}
-
 fn sub(string s, int start, int end) -> Result<string, string> {
     return match slice_bytes(s, start, end) {
         Result::Ok(x) => x,
         Result::Err(_) => raise "utf8",
-    };
-}
-
-// Length of an `Ok` string, `-1` for an `Err` (for contracts).
-fn ok_len(Result<string, string> r) -> int {
-    return match r {
-        Result::Ok(x) => x.len(),
-        Result::Err(_) => -1,
     };
 }
 
@@ -99,350 +85,340 @@ fn find_at(string hay, string needle, int from) -> int {
     return -1;
 }
 
-/// Returns the length of `s` in bytes; the same as `s.len()`.
-fn byte_len(string s) -> int {
-    return s.len();
-}
-
-/// Returns the part of `s` from byte offset `start` up to (not including) `end`.
-///
-/// # Errors
-///
-/// Returns `Err("utf8")` when an offset falls inside a multi-byte character.
-///
-/// # Examples
-///
-/// ```
-/// use text::{slice};
-/// # use tests::assert;
-/// assert!((slice("hello", 1, 4) ?? "") == "ell");
-/// ```
-fn slice(string s, int start, int end) -> Result<string, string> {
-    return sub(s, start, end)?;
-}
-
-/// Returns `s` without leading ASCII whitespace (space, tab, CR, LF).
-///
-/// # Examples
-///
-/// ```
-/// use text::{trim_start};
-/// # use tests::assert;
-/// assert!((trim_start("  hi ") ?? "") == "hi ");
-/// ```
-fn trim_start(string s) -> Result<string, string>
-    ensures ok_len(result) >= 0 && ok_len(result) <= s.len()
-{
-    let lo = 0;
-    let hi = s.len();
-    while lo < hi && space_at(s, lo) {
-        lo = lo + 1;
-    }
-    return sub(s, lo, hi)?;
-}
-
-/// Returns `s` without trailing ASCII whitespace (space, tab, CR, LF).
-///
-/// # Examples
-///
-/// ```
-/// use text::{trim_end};
-/// # use tests::assert;
-/// assert!((trim_end(" hi \n") ?? "") == " hi");
-/// ```
-fn trim_end(string s) -> Result<string, string>
-    ensures ok_len(result) >= 0 && ok_len(result) <= s.len()
-{
-    let hi = s.len();
-    while hi > 0 && space_at(s, hi - 1) {
-        hi = hi - 1;
-    }
-    return sub(s, 0, hi)?;
-}
-
-/// Returns `s` without leading and trailing ASCII whitespace (space, tab, CR, LF).
-///
-/// Other Unicode whitespace is kept. The `Result` never holds an error for valid
-/// input; it exists because trimming works on bytes.
-///
-/// # Examples
-///
-/// ```
-/// use text::{trim};
-/// # use tests::assert;
-/// assert!((trim("\t  key = value \r\n") ?? "") == "key = value");
-/// ```
-fn trim(string s) -> Result<string, string>
-    ensures ok_len(result) >= 0 && ok_len(result) <= s.len()
-{
-    let lo = 0;
-    let hi = s.len();
-    while lo < hi && space_at(s, lo) {
-        lo = lo + 1;
-    }
-    while hi > lo && space_at(s, hi - 1) {
-        hi = hi - 1;
-    }
-    return sub(s, lo, hi)?;
-}
-
-/// Returns the byte offset of the last `needle` in `hay`, or `-1`.
-///
-/// # Examples
-///
-/// ```
-/// use text::{rfind};
-/// # use tests::assert;
-/// assert!(rfind("a=b=c", "=") == 3);
-/// ```
-fn rfind(string hay, string needle) -> int
-    ensures result >= -1 && result <= hay.len()
-    ensures result < 0 || match_at(hay, needle, result)
-{
+// Byte offset of the last `needle` in `hay`, or `-1`. An empty needle
+// matches at the end. Candidates need the needle's first and last bytes: a
+// count-down byte scan skips the rest 64 at a time.
+fn rfind_at(string hay, string needle) -> int {
     let m = needle.len();
     let i = hay.len() - m;
+    if m == 0 {
+        return i;
+    }
+    let first = needle[0];
+    let k = m - 1;
+    let tail = needle[k];
     while i >= 0 {
-        if match_at(hay, needle, i) {
-            return i;
+        if hay[i] == first && hay[i + k] == tail {
+            let j = 1;
+            while j < k && hay[i + j] == needle[j] {
+                j = j + 1;
+            }
+            if j >= k {
+                return i;
+            }
         }
         i = i - 1;
     }
     return -1;
 }
 
-/// Splits `s` at byte offset `at` into the part before and the part from `at` on.
-///
-/// # Errors
-///
-/// Returns `Err("utf8")` when `at` falls inside a multi-byte character.
-///
-/// # Examples
-///
-/// ```
-/// use text::{split_at};
-/// # use tests::assert;
-/// let (a, b) = split_at("hello", 2) ?? ("", "");
-/// assert!(a == "he" && b == "llo");
-/// ```
-fn split_at(string s, int at) -> Result<(string, string), string> {
-    if at < 0 {
-        at = 0;
-    }
-    if at > s.len() {
-        at = s.len();
-    }
-    let left = sub(s, 0, at)?;
-    let right = sub(s, at, s.len())?;
-    return (left, right);
+// Bytes `start..end` of `s`; the offsets sit next to ASCII bytes, so they
+// are character boundaries.
+fn ascii_cut(string s, int start, int end) -> string {
+    return match slice_bytes(s, start, end) {
+        Result::Ok(x) => x,
+        Result::Err(_) => panic "text: cut inside a character",
+    };
 }
 
-/// Returns the `parts` concatenated with `sep` between each pair.
-///
-/// # Examples
-///
-/// ```
-/// use text::{join};
-/// # use tests::assert;
-/// let parts: Vec<string> = ["usr", "local", "bin"];
-/// assert!(join(parts, "/") == "usr/local/bin");
-/// ```
-fn join(Vec<string> parts, string sep) -> string
-    ensures parts.len() > 0 || result == ""
-    ensures parts.len() != 1 || result == parts[0]
-{
-    let out = "";
+// `s` with each byte in `from_lo..=from_hi` moved by `delta`; ASCII-only
+// changes keep the UTF-8 valid (the all-ASCII fast path of the case maps).
+fn shift_ascii(string s, byte from_lo, byte from_hi, int delta) -> string {
+    let b = to_bytes(s);
+    let out: Vec<byte> = Vec::new();
     let i = 0;
-    while i < parts.len() {
-        if i > 0 {
-            out = out + sep;
+    while i < b.len() {
+        let c = b[i];
+        if c >= from_lo && c <= from_hi {
+            out.push(((c as int) + delta) as byte);
+        } else {
+            out.push(c);
         }
-        out = out + parts[i];
         i = i + 1;
     }
-    return out;
+    return match from_bytes(out) {
+        Result::Ok(x) => x,
+        Result::Err(_) => panic "text: case mapping broke UTF-8",
+    };
 }
 
-/// Returns `s` repeated `n` times; empty when `n <= 0`.
-///
-/// # Examples
-///
-/// ```
-/// use text::{repeat};
-/// # use tests::assert;
-/// assert!(repeat("ab", 3) == "ababab");
-/// ```
-fn repeat(string s, int n) -> string
-    ensures n > 0 || result == ""
-    ensures n <= 0 || result.len() == s.len() * n
-{
-    let out = "";
+fn is_ascii(string s) -> bool {
     let i = 0;
-    while i < n {
-        out = out + s;
+    while i < s.len() {
+        if s[i] as int >= 128 {
+            return false;
+        }
         i = i + 1;
+    }
+    return true;
+}
+
+// The code point whose UTF-8 sequence starts at byte `i` of `s`.
+fn decode_at(string s, int i) -> int {
+    let b0 = s[i] as int;
+    if b0 < 128 {
+        return b0;
+    }
+    if b0 < 224 {
+        return ((b0 & 31) << 6) | ((s[i + 1] as int) & 63);
+    }
+    if b0 < 240 {
+        return ((b0 & 15) << 12) | (((s[i + 1] as int) & 63) << 6) | ((s[i + 2] as int) & 63);
+    }
+    return ((b0 & 7) << 18) | (((s[i + 1] as int) & 63) << 12) | (((s[i + 2] as int) & 63) << 6) |
+           ((s[i + 3] as int) & 63);
+}
+
+// Appends the UTF-8 bytes of code point `cp` to `out`.
+fn encode_to(int cp, Vec<byte> out) {
+    if cp < 128 {
+        out.push(cp as byte);
+        return;
+    }
+    if cp < 2048 {
+        out.push((192 | (cp >> 6)) as byte);
+        out.push((128 | (cp & 63)) as byte);
+        return;
+    }
+    if cp < 65536 {
+        out.push((224 | (cp >> 12)) as byte);
+        out.push((128 | ((cp >> 6) & 63)) as byte);
+        out.push((128 | (cp & 63)) as byte);
+        return;
+    }
+    out.push((240 | (cp >> 18)) as byte);
+    out.push((128 | ((cp >> 12) & 63)) as byte);
+    out.push((128 | ((cp >> 6) & 63)) as byte);
+    out.push((128 | (cp & 63)) as byte);
+}
+
+/// Returns the string whose characters are the code points `cps`.
+///
+/// A value that is not a Unicode scalar (negative, a surrogate
+/// `0xD800..=0xDFFF`, or above `0x10FFFF`) becomes `U+FFFD`.
+///
+/// # Examples
+///
+/// ```
+/// use text::{Text, from_codepoints};
+/// # use tests::assert;
+/// let cps: Vec<int> = [104, 233];
+/// assert!(from_codepoints(cps) == "h\u{e9}");
+/// assert!(from_codepoints("\u{416}".codepoints()) == "\u{416}");
+/// ```
+fn from_codepoints(Vec<int> cps) -> string {
+    let out: Vec<byte> = Vec::new();
+    let i = 0;
+    while i < cps.len() {
+        let cp = cps[i];
+        if cp < 0 || cp > 1114111 || (cp >= 55296 && cp <= 57343) {
+            cp = 65533;
+        }
+        encode_to(cp, out);
+        i = i + 1;
+    }
+    return match from_bytes(out) {
+        Result::Ok(x) => x,
+        Result::Err(_) => panic "text: encoded code points are not UTF-8",
+    };
+}
+
+// Ranges where upper and lower case alternate, the upper case at `lo`'s
+// parity (`Ā ā Ă ă …`).
+fn paired_lower(int c, int lo, int hi) -> int {
+    if c >= lo && c <= hi && (c - lo) % 2 == 0 {
+        return c + 1;
+    }
+    return c;
+}
+
+fn paired_upper(int c, int lo, int hi) -> int {
+    if c >= lo && c <= hi && (c - lo) % 2 == 1 {
+        return c - 1;
+    }
+    return c;
+}
+
+fn alternating(int c, bool up) -> int {
+    let r = c;
+    if up {
+        r = paired_upper(r, 256, 303);
+        r = paired_upper(r, 306, 311);
+        r = paired_upper(r, 313, 328);
+        r = paired_upper(r, 330, 375);
+        r = paired_upper(r, 377, 382);
+        r = paired_upper(r, 984, 1007);
+        r = paired_upper(r, 1120, 1153);
+        r = paired_upper(r, 1162, 1215);
+        r = paired_upper(r, 1217, 1230);
+        r = paired_upper(r, 1232, 1327);
+        r = paired_upper(r, 7680, 7829);
+        r = paired_upper(r, 7840, 7935);
+    } else {
+        r = paired_lower(r, 256, 303);
+        r = paired_lower(r, 306, 311);
+        r = paired_lower(r, 313, 328);
+        r = paired_lower(r, 330, 375);
+        r = paired_lower(r, 377, 382);
+        r = paired_lower(r, 984, 1007);
+        r = paired_lower(r, 1120, 1153);
+        r = paired_lower(r, 1162, 1215);
+        r = paired_lower(r, 1217, 1230);
+        r = paired_lower(r, 1232, 1327);
+        r = paired_lower(r, 7680, 7829);
+        r = paired_lower(r, 7840, 7935);
+    }
+    return r;
+}
+
+// Simple (one-to-one) lower case of code point `c`.
+fn lower_cp(int c) -> int {
+    if c < 128 {
+        if c >= 65 && c <= 90 {
+            return c + 32;
+        }
+        return c;
+    }
+    // Latin-1: À..Þ except ×.
+    if c >= 192 && c <= 222 && c != 215 {
+        return c + 32;
+    }
+    if c == 376 {
+        return 255;
+    }
+    if c == 304 {
+        return 105;
+    }
+    // Greek: Α..Ϋ (no U+03A2), and the accented capitals.
+    if c >= 913 && c <= 939 && c != 930 {
+        return c + 32;
+    }
+    if c == 902 {
+        return 940;
+    }
+    if c >= 904 && c <= 906 {
+        return c + 37;
+    }
+    if c == 908 {
+        return 972;
+    }
+    if c >= 910 && c <= 911 {
+        return c + 63;
+    }
+    // Cyrillic: Ѐ..Џ, А..Я, Ӏ.
+    if c >= 1024 && c <= 1039 {
+        return c + 80;
+    }
+    if c >= 1040 && c <= 1071 {
+        return c + 32;
+    }
+    if c == 1216 {
+        return 1231;
+    }
+    // Armenian: Ա..Ֆ.
+    if c >= 1329 && c <= 1366 {
+        return c + 48;
+    }
+    return alternating(c, false);
+}
+
+// Simple (one-to-one) upper case of code point `c`.
+fn upper_cp(int c) -> int {
+    if c < 128 {
+        if c >= 97 && c <= 122 {
+            return c - 32;
+        }
+        return c;
+    }
+    // Latin-1: à..þ except ÷; ß has no one-character upper case.
+    if c >= 224 && c <= 254 && c != 247 {
+        return c - 32;
+    }
+    if c == 255 {
+        return 376;
+    }
+    if c == 181 {
+        return 924;
+    }
+    if c == 305 {
+        return 73;
+    }
+    if c == 383 {
+        return 83;
+    }
+    // Greek: α..ϋ with final ς as Σ, and the accented small letters.
+    if c == 962 {
+        return 931;
+    }
+    if c >= 945 && c <= 971 {
+        return c - 32;
+    }
+    if c == 940 {
+        return 902;
+    }
+    if c >= 941 && c <= 943 {
+        return c - 37;
+    }
+    if c == 972 {
+        return 908;
+    }
+    if c >= 973 && c <= 974 {
+        return c - 63;
+    }
+    // Cyrillic: а..я, ѐ..џ, ӏ.
+    if c >= 1072 && c <= 1103 {
+        return c - 32;
+    }
+    if c >= 1104 && c <= 1119 {
+        return c - 80;
+    }
+    if c == 1231 {
+        return 1216;
+    }
+    // Armenian: ա..ֆ.
+    if c >= 1377 && c <= 1414 {
+        return c - 48;
+    }
+    return alternating(c, true);
+}
+
+// `s` with every character case-mapped (`up` for upper case).
+fn map_case(string s, bool up) -> string {
+    let out: Vec<byte> = Vec::with_capacity(s.len());
+    let i = 0;
+    while i < s.len() {
+        let c = decode_at(s, i);
+        if up {
+            encode_to(upper_cp(c), out);
+        } else {
+            encode_to(lower_cp(c), out);
+        }
+        i = next_char(s, i);
+    }
+    return match from_bytes(out) {
+        Result::Ok(x) => x,
+        Result::Err(_) => panic "text: case mapping broke UTF-8",
+    };
+}
+
+// Copies of `fill` that bring `s` to at least `width` bytes.
+fn padding(string s, int width, string fill) -> string {
+    let out = "";
+    if fill.len() == 0 {
+        return out;
+    }
+    while s.len() + out.len() < width {
+        out = out + fill;
     }
     return out;
 }
 
-/// Returns `s` with `fill` added in front until it is `width` bytes long. `fill` should be one byte; longer text is returned unchanged.
-///
-/// # Examples
-///
-/// ```
-/// use text::{pad_left};
-/// # use tests::assert;
-/// assert!((pad_left("7", 3, "0") ?? "") == "007");
-/// ```
-fn pad_left(string s, int width, string fill) -> Result<string, string>
-    ensures fill.len() != 1 || ok_len(result) == max_int(width, s.len())
-    ensures fill.len() == 1 || ok_len(result) == -1
-{
-    if fill.len() != 1 {
-        raise "fill must be one byte";
-    }
-    return repeat(fill, width - s.len()) + s;
-}
-
-/// Returns `s` with `fill` added at the end until it is `width` bytes long. `fill` should be one byte; longer text is returned unchanged.
-///
-/// # Examples
-///
-/// ```
-/// use text::{pad_right};
-/// # use tests::assert;
-/// assert!((pad_right("ab", 4, ".") ?? "") == "ab..");
-/// ```
-fn pad_right(string s, int width, string fill) -> Result<string, string>
-    ensures fill.len() != 1 || ok_len(result) == max_int(width, s.len())
-    ensures fill.len() == 1 || ok_len(result) == -1
-{
-    if fill.len() != 1 {
-        raise "fill must be one byte";
-    }
-    return s + repeat(fill, width - s.len());
-}
-
-fn line_piece(string s, int start, int end) -> Result<string, string> {
+// Line `start..end` of `s` without a CR before the LF.
+fn line_piece(string s, int start, int end) -> string {
     if end > start && match_at(s, "\r", end - 1) {
         end = end - 1;
     }
-    return sub(s, start, end)?;
-}
-
-/// Splits `s` into lines at each LF, dropping one CR before it (so CRLF works too).
-/// A final LF ends the last line rather than starting an empty one, so
-/// `"a\nb\n"` and `"a\nb"` both give two lines, and `""` gives none.
-///
-/// # Examples
-///
-/// ```
-/// use text::{lines};
-/// # use tests::assert;
-/// let ls = lines("one\r\ntwo\nthree") ?? Vec::new();
-/// assert!(ls.len() == 3);
-/// assert!(ls[0] == "one");
-/// ```
-fn lines(string s) -> Result<Vec<string>, string> {
-    let out: Vec<string> = Vec::new();
-    let start = 0;
-    let at = find_at(s, "\n", 0);
-    while at >= 0 {
-        let piece = line_piece(s, start, at)?;
-        out.push(piece);
-        start = at + 1;
-        at = find_at(s, "\n", start);
-    }
-    // A final LF ends the last line; it does not start an empty one.
-    if start < s.len() {
-        out.push(line_piece(s, start, s.len())?);
-    }
-    return out;
-}
-
-/// Returns `a` followed by `b`; the same as `a + b`.
-fn concat(string a, string b) -> string
-    ensures result.len() == a.len() + b.len()
-{
-    return a + b;
-}
-
-/// Returns `true` when `a` and `b` hold the same bytes; the same as `a == b`.
-fn eq(string a, string b) -> bool {
-    return a == b;
-}
-
-/// Returns `s` with ASCII `A`-`Z` turned into `a`-`z`; other characters are unchanged.
-///
-/// # Examples
-///
-/// ```
-/// use text::{to_lower};
-/// # use tests::assert;
-/// assert!((to_lower("Hello, WORLD") ?? "") == "hello, world");
-/// ```
-fn to_lower(string s) -> Result<string, string>
-    ensures ok_len(result) == s.len()
-{
-    let b = to_bytes(s);
-    let out: Vec<byte> = Vec::new();
-    let i = 0;
-    let a_up: byte = "A";
-    let z_up: byte = "Z";
-    while i < b.len() {
-        let c = b[i];
-        if c >= a_up {
-            if c <= z_up {
-                let n = (c as int) + 32;
-                let lo = n as byte;
-                out.push(lo);
-            }
-            if c > z_up {
-                out.push(c);
-            }
-        }
-        if c < a_up {
-            out.push(c);
-        }
-        i = i + 1;
-    }
-    return utf8_ok(out)?;
-}
-
-/// Returns `s` with ASCII `a`-`z` turned into `A`-`Z`; other characters are unchanged.
-///
-/// # Examples
-///
-/// ```
-/// use text::{to_upper};
-/// # use tests::assert;
-/// assert!((to_upper("coil") ?? "") == "COIL");
-/// ```
-fn to_upper(string s) -> Result<string, string>
-    ensures ok_len(result) == s.len()
-{
-    let b = to_bytes(s);
-    let out: Vec<byte> = Vec::new();
-    let i = 0;
-    let a_lo: byte = "a";
-    let z_lo: byte = "z";
-    while i < b.len() {
-        let c = b[i];
-        if c >= a_lo {
-            if c <= z_lo {
-                let n = (c as int) - 32;
-                let up = n as byte;
-                out.push(up);
-            }
-            if c > z_lo {
-                out.push(c);
-            }
-        }
-        if c < a_lo {
-            out.push(c);
-        }
-        i = i + 1;
-    }
-    return utf8_ok(out)?;
+    return ascii_cut(s, start, end);
 }
 
 // Byte offset of the character after the one starting at `i`, so a search
@@ -470,6 +446,14 @@ fn span_text(string s, int start, int end) -> string {
 class Span {
     pub start: int,
     pub end: int,
+}
+
+// Start of the span in `r`, or `-1` for `None` (for contracts).
+fn span_start(Option<Span> r) -> int {
+    return match r {
+        Option::Some(span) => span.start,
+        Option::None => -1,
+    };
 }
 
 /// Something a [`Searchable`] value can be searched for: a plain `string`
@@ -691,4 +675,314 @@ trait Searchable<T: Show> {
 }
 
 impl Searchable for string {
+}
+
+/// String methods on `string`: trimming, case mapping, padding, line
+/// splitting, repeating and byte slicing.
+///
+/// Offsets and widths count bytes. Everything except [`Text::slice`] and
+/// [`Text::split_at`] returns a plain value; those two return `Err("utf8")`
+/// when an offset falls inside a multi-byte character.
+///
+/// # Examples
+///
+/// ```
+/// use text::{Text};
+/// # use tests::assert;
+/// assert!("\t  Key = Value \r\n".trim().to_lower() == "key = value");
+/// assert!("7".pad_left(3, "0") == "007");
+/// assert!("one\ntwo\n".lines().len() == 2);
+/// ```
+trait Text<T> {
+    /// Returns `s` without leading and trailing ASCII whitespace (space, tab, CR, LF).
+    ///
+    /// Other Unicode whitespace is kept.
+    fn trim(T s) -> string {}
+
+    /// Returns `s` without leading ASCII whitespace (space, tab, CR, LF).
+    fn trim_start(T s) -> string {}
+
+    /// Returns `s` without trailing ASCII whitespace (space, tab, CR, LF).
+    fn trim_end(T s) -> string {}
+
+    /// Returns `s` in lower case: ASCII, Latin (Latin-1, Extended-A and
+    /// Additional), Greek, Cyrillic and Armenian letters; other characters
+    /// are unchanged.
+    ///
+    /// Each character maps to one character (`"SS"` does not become `"ß"`),
+    /// so the byte length can change only where the two cases differ in
+    /// width (`İ` / `i`).
+    fn to_lower(T s) -> string {}
+
+    /// Returns `s` in upper case, for the scripts [`Text::to_lower`] covers;
+    /// other characters are unchanged.
+    ///
+    /// `ß` stays `ß` (its upper case is two characters) and final `ς` becomes `Σ`.
+    fn to_upper(T s) -> string {}
+
+    /// Returns the characters of `s`, each as its own string.
+    ///
+    /// `s[i]` and `s.len()` count bytes; this counts characters (code points),
+    /// so `"héllo".chars()` has five items.
+    fn chars(T s) -> Vec<string> {}
+
+    /// Returns the Unicode code points of `s`.
+    fn codepoints(T s) -> Vec<int> {}
+
+    /// Returns the number of characters (code points) in `s`; `s.len()` is bytes.
+    fn char_len(T s) -> int {}
+
+    /// Returns the character at character index `i`, or `None` when `i` is out of range.
+    fn char_at(T s, int i) -> Option<string> {}
+
+    /// Returns `s` with copies of `fill` in front until it is at least `width` bytes long.
+    ///
+    /// A one-byte `fill` gives exactly `width` bytes. Text already `width`
+    /// bytes or longer, or an empty `fill`, comes back unchanged.
+    fn pad_left(T s, int width, string fill) -> string {}
+
+    /// Returns `s` with copies of `fill` at the end until it is at least `width` bytes long.
+    ///
+    /// A one-byte `fill` gives exactly `width` bytes. Text already `width`
+    /// bytes or longer, or an empty `fill`, comes back unchanged.
+    fn pad_right(T s, int width, string fill) -> string {}
+
+    /// Splits `s` into lines at each LF, dropping one CR before it (so CRLF works too).
+    ///
+    /// A final LF ends the last line rather than starting an empty one, so
+    /// `"a\nb\n"` and `"a\nb"` both give two lines, and `""` gives none.
+    fn lines(T s) -> Vec<string> {}
+
+    /// Returns `s` repeated `n` times; empty when `n <= 0`.
+    fn repeat(T s, int n) -> string {}
+
+    /// Returns the part of `s` from byte offset `start` up to (not including) `end`.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err("utf8")` when an offset falls inside a multi-byte character.
+    fn slice(T s, int start, int end) -> Result<string, string> {}
+
+    /// Splits `s` at byte offset `at` (clamped to the text) into the part before and the part from `at` on.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err("utf8")` when `at` falls inside a multi-byte character.
+    fn split_at(T s, int at) -> Result<(string, string), string> {}
+
+    /// Returns the byte span of the last `needle` in `s`, or `None`.
+    ///
+    /// An empty `needle` matches at the end. The search runs backwards, so
+    /// unlike [`Searchable::find`] it takes a plain `string`, not a [`Pattern`].
+    fn rfind(T s, string needle) -> Option<Span> {}
+}
+
+impl Text for string {
+    pub fn trim(string s) -> string
+        ensures result.len() <= s.len()
+    {
+        let lo = 0;
+        let hi = s.len();
+        while lo < hi && space_at(s, lo) {
+            lo = lo + 1;
+        }
+        while hi > lo && space_at(s, hi - 1) {
+            hi = hi - 1;
+        }
+        return ascii_cut(s, lo, hi);
+    }
+
+    pub fn trim_start(string s) -> string
+        ensures result.len() <= s.len()
+    {
+        let lo = 0;
+        while lo < s.len() && space_at(s, lo) {
+            lo = lo + 1;
+        }
+        return ascii_cut(s, lo, s.len());
+    }
+
+    pub fn trim_end(string s) -> string
+        ensures result.len() <= s.len()
+    {
+        let hi = s.len();
+        while hi > 0 && space_at(s, hi - 1) {
+            hi = hi - 1;
+        }
+        return ascii_cut(s, 0, hi);
+    }
+
+    pub fn to_lower(string s) -> string {
+        if is_ascii(s) {
+            return shift_ascii(s, "A", "Z", 32);
+        }
+        return map_case(s, false);
+    }
+
+    pub fn to_upper(string s) -> string {
+        if is_ascii(s) {
+            return shift_ascii(s, "a", "z", -32);
+        }
+        return map_case(s, true);
+    }
+
+    pub fn chars(string s) -> Vec<string>
+        ensures result.len() <= s.len()
+    {
+        let out: Vec<string> = Vec::new();
+        let i = 0;
+        while i < s.len() {
+            let next = next_char(s, i);
+            out.push(span_text(s, i, next));
+            i = next;
+        }
+        return out;
+    }
+
+    pub fn codepoints(string s) -> Vec<int>
+        ensures result.len() <= s.len()
+    {
+        let out: Vec<int> = Vec::new();
+        let i = 0;
+        while i < s.len() {
+            out.push(decode_at(s, i));
+            i = next_char(s, i);
+        }
+        return out;
+    }
+
+    pub fn char_len(string s) -> int
+        ensures result >= 0 && result <= s.len()
+    {
+        let n = 0;
+        let i = 0;
+        while i < s.len() {
+            // Continuation bytes are `10xxxxxx`; every other byte starts a character.
+            let b = s[i] as int;
+            if b < 128 || b >= 192 {
+                n = n + 1;
+            }
+            i = i + 1;
+        }
+        return n;
+    }
+
+    pub fn char_at(string s, int i) -> Option<string> {
+        if i < 0 {
+            return Option::None;
+        }
+        let at = 0;
+        let k = 0;
+        while at < s.len() {
+            let next = next_char(s, at);
+            if k == i {
+                return Option::Some(span_text(s, at, next));
+            }
+            k = k + 1;
+            at = next;
+        }
+        return Option::None;
+    }
+
+    pub fn pad_left(string s, int width, string fill) -> string
+        ensures fill.len() != 1 || result.len() == max_int(width, s.len())
+        ensures fill.len() != 0 || result == s
+    {
+        return padding(s, width, fill) + s;
+    }
+
+    pub fn pad_right(string s, int width, string fill) -> string
+        ensures fill.len() != 1 || result.len() == max_int(width, s.len())
+        ensures fill.len() != 0 || result == s
+    {
+        return s + padding(s, width, fill);
+    }
+
+    pub fn lines(string s) -> Vec<string> {
+        let out: Vec<string> = Vec::new();
+        let start = 0;
+        let at = find_at(s, "\n", 0);
+        while at >= 0 {
+            out.push(line_piece(s, start, at));
+            start = at + 1;
+            at = find_at(s, "\n", start);
+        }
+        // A final LF ends the last line; it does not start an empty one.
+        if start < s.len() {
+            out.push(line_piece(s, start, s.len()));
+        }
+        return out;
+    }
+
+    pub fn repeat(string s, int n) -> string
+        ensures n > 0 || result == ""
+        ensures n <= 0 || result.len() == s.len() * n
+    {
+        let out = "";
+        let i = 0;
+        while i < n {
+            out = out + s;
+            i = i + 1;
+        }
+        return out;
+    }
+
+    pub fn slice(string s, int start, int end) -> Result<string, string> {
+        return sub(s, start, end)?;
+    }
+
+    pub fn split_at(string s, int at) -> Result<(string, string), string> {
+        if at < 0 {
+            at = 0;
+        }
+        if at > s.len() {
+            at = s.len();
+        }
+        let left = sub(s, 0, at)?;
+        let right = sub(s, at, s.len())?;
+        return (left, right);
+    }
+
+    pub fn rfind(string s, string needle) -> Option<Span>
+        ensures span_start(result) < 0 || match_at(s, needle, span_start(result))
+    {
+        let at = rfind_at(s, needle);
+        if at < 0 {
+            return Option::None;
+        }
+        return Option::Some(new Span(at, at + needle.len()));
+    }
+}
+
+/// `parts.join(sep)` on `Vec<string>`.
+///
+/// # Examples
+///
+/// ```
+/// use text::{Joined};
+/// # use tests::assert;
+/// let parts: Vec<string> = ["usr", "local", "bin"];
+/// assert!(parts.join("/") == "usr/local/bin");
+/// ```
+trait Joined<V> {
+    /// Returns the parts concatenated with `sep` between each pair.
+    fn join(V parts, string sep) -> string {}
+}
+
+impl Joined for Vec<string> {
+    pub fn join(Vec<string> parts, string sep) -> string
+        ensures parts.len() > 0 || result == ""
+        ensures parts.len() != 1 || result == parts[0]
+    {
+        let out = "";
+        let i = 0;
+        while i < parts.len() {
+            if i > 0 {
+                out = out + sep;
+            }
+            out = out + parts[i];
+            i = i + 1;
+        }
+        return out;
+    }
 }

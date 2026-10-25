@@ -65,27 +65,26 @@ fn to_upper(byte c) -> byte {
     return c;
 }
 
-/// Numeric value of an ASCII decimal digit, or `-1` for another byte.
-fn digit_val(byte c) -> int {
+/// Numeric value of an ASCII decimal digit, or `None` for another byte.
+fn digit_val(byte c) -> Option<int> {
     if !is_digit(c) {
-        return -1;
+        return Option::None;
     }
-    return (c as int) - (("0" as byte) as int);
+    return Option::Some((c as int) - (("0" as byte) as int));
 }
 
-/// Numeric value of an ASCII hex digit, or `-1` for another byte.
-fn hex_val(byte c) -> int {
-    let d = digit_val(c);
-    if d >= 0 {
-        return d;
+/// Numeric value of an ASCII hex digit, or `None` for another byte.
+fn hex_val(byte c) -> Option<int> {
+    if is_digit(c) {
+        return digit_val(c);
     }
     if c >= "a" && c <= "f" {
-        return (c as int) - (("a" as byte) as int) + 10;
+        return Option::Some((c as int) - (("a" as byte) as int) + 10);
     }
     if c >= "A" && c <= "F" {
-        return (c as int) - (("A" as byte) as int) + 10;
+        return Option::Some((c as int) - (("A" as byte) as int) + 10);
     }
-    return -1;
+    return Option::None;
 }
 
 /// Lowercase hex digit for `0..=15`.

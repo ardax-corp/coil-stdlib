@@ -16,7 +16,7 @@
 /// q.push_front("zeroth");
 /// assert!((q.pop_front() ?? "") == "zeroth");
 /// assert!((q.pop_back() ?? "") == "second");
-/// assert!(q.size() == 1);
+/// assert!(q.len() == 1);
 /// ```
 class VecDeque<T>
     invariant self.len >= 0 && self.len <= self.cap
@@ -54,7 +54,7 @@ impl VecDeque<T> {
     }
 
     /// Returns the number of values.
-    pub fn size() -> int {
+    pub fn len() -> int {
         return self.len;
     }
 

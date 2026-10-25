@@ -119,7 +119,7 @@ fn clamp<T: Ord>(T x, T lo, T hi) -> T {
 /// ```
 fn signum(int x) -> int {
     if x < 0 {
-        return 0 - 1;
+        return -1;
     }
     if x > 0 {
         return 1;
@@ -133,7 +133,7 @@ fn signum(float x) -> float {
         return 1.0;
     }
     if x < 0.0 {
-        return 0.0 - 1.0;
+        return -1.0;
     }
     return 0.0;
 }

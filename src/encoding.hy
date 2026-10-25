@@ -94,7 +94,7 @@ fn encode(Vec<byte> data) -> string {
 /// ```
 /// use encoding::{decode, encode};
 /// # use tests::assert;
-/// let bytes = decode("aGVsbG8=") ?? Vec::new();
+/// let bytes = decode("aGVsbG8=").ok() ?? Vec::new();
 /// assert!(bytes.len() == 5);
 /// assert!(encode(bytes) == "aGVsbG8=");
 /// ```

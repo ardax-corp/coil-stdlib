@@ -7,7 +7,7 @@ test("treemap insert update") {
     assert!(t.insert(1, 10) == true);
     assert!(t.insert(3, 30) == true);
     assert!(t.insert(2, 22) == false);
-    assert!(t.size() == 3);
+    assert!(t.len() == 3);
 }
 
 test("treemap get contains") {
@@ -26,14 +26,14 @@ test("treemap get contains") {
 test("treemap empty and skewed inserts") {
     let t = TreeMap::empty();
     assert!(t.is_empty());
-    assert!(t.size() == 0);
+    assert!(t.len() == 0);
     assert!(t.contains(1) == false);
     assert!(t.get_or(1, -1) == -1);
     assert!(t.insert(1, 10));
     assert!(t.insert(2, 20));
     assert!(t.insert(3, 30));
     assert!(t.insert(4, 40));
-    assert!(t.size() == 4);
+    assert!(t.len() == 4);
     assert!(t.get_or(1, -1) == 10);
     assert!(t.get_or(4, -1) == 40);
     assert!(t.contains(2));
@@ -46,7 +46,7 @@ test("treemap left spine inserts") {
     assert!(t.insert(3, 30));
     assert!(t.insert(2, 20));
     assert!(t.insert(1, 10));
-    assert!(t.size() == 4);
+    assert!(t.len() == 4);
     assert!(t.get_or(1, -1) == 10);
     assert!(t.get_or(4, -1) == 40);
     assert!(t.contains(2));
@@ -84,5 +84,5 @@ test("treemap remove a node whose successor sits deeper") {
     assert!(t.get_or(65, -1) == 6);
     assert!(t.get_or(70, -1) == 3);
     assert!(t.get_or(80, -1) == 5);
-    assert!(t.size() == 5);
+    assert!(t.len() == 5);
 }
