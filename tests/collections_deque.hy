@@ -7,7 +7,7 @@ test("deque push pop both ends") {
     xs.push_front(1);
     xs.push_front(2);
     xs.push_back(3);
-    assert!(xs.size() == 3);
+    assert!(xs.len() == 3);
     assert!((xs.peek_front() ?? 0) == 2);
     assert!((xs.peek_back() ?? 0) == 3);
     assert!((xs.pop_front() ?? 0) == 2);
@@ -35,11 +35,11 @@ test("deque wraparound then grow") {
     assert!((xs.pop_front() ?? -1) == 1);
     xs.push_back(8);
     xs.push_back(9);
-    assert!(xs.size() == 8);
+    assert!(xs.len() == 8);
     assert!(xs.capacity() == 8);
     xs.push_back(10);
     assert!(xs.capacity() == 16);
-    assert!(xs.size() == 9);
+    assert!(xs.len() == 9);
     let v = xs.to_vec();
     assert!(v.len() == 9);
     assert!(v[0] == 2);
@@ -56,7 +56,7 @@ test("deque push_front wrap and grow") {
         xs.push_front(i);
         i = i + 1;
     }
-    assert!(xs.size() == 8);
+    assert!(xs.len() == 8);
     assert!(xs.capacity() == 8);
     xs.push_front(8);
     assert!(xs.capacity() == 16);
@@ -77,7 +77,7 @@ test("deque to_vec and clear reuse") {
     xs.clear();
     assert!(xs.is_empty());
     xs.push_back(4);
-    assert!(xs.size() == 1);
+    assert!(xs.len() == 1);
     assert!((xs.peek_front() ?? 0) == 4);
 }
 
@@ -121,7 +121,7 @@ test("deque clear keeps capacity after wrap") {
     assert!((xs.peek_back() ?? 0 - 3) == 0 - 3);
     xs.push_back(42);
     xs.push_front(7);
-    assert!(xs.size() == 2);
+    assert!(xs.len() == 2);
     let v = xs.to_vec();
     assert!(v[0] == 7);
     assert!(v[1] == 42);
@@ -138,7 +138,7 @@ test("deque both ends after wrap then grow") {
     assert!((xs.pop_front() ?? 0 - 1) == 0);
     xs.push_front(100);
     xs.push_back(101);
-    assert!(xs.size() == 8);
+    assert!(xs.len() == 8);
     assert!(xs.capacity() == 8);
     xs.push_back(102);
     assert!(xs.capacity() == 16);

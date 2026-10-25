@@ -296,7 +296,7 @@ impl Checked for int {
         if b == 0 {
             return None;
         }
-        if a == INT_MIN && b == 0 - 1 {
+        if a == INT_MIN && b == -1 {
             return None;
         }
         return Some(a / b);

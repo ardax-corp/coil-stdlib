@@ -1,5 +1,5 @@
 use tests::assert;
-use text::{Searchable, Text, join};
+use text::{Searchable, Span, Text, join};
 
 test("trim and affixes") {
     assert!("  hi  ".trim() == "hi");
@@ -104,4 +104,12 @@ test("text methods compose without ? in a plain function") {
         words.push(line.trim().to_lower());
     }
     assert!(words.len() == 2 && words[0] == "alpha" && words[1] == "beta");
+}
+
+test("rfind gives the span of the last match, or None") {
+    let at = "a=b=c".rfind("=") ?? new Span(-1, -1);
+    assert!(at.start == 3 && at.end == 4);
+    assert!("abc".rfind("z").is_none());
+    let empty = "abc".rfind("") ?? new Span(-1, -1);
+    assert!(empty.start == 3);
 }

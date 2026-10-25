@@ -10,25 +10,25 @@ test("slice concat eq") {
 
 test("find contains affixes") {
     // `to_bytes` / buffer args may invalidate — rebuild hay per call.
-    assert!(find(to_bytes("abcdef"), to_bytes("cd")) == 2);
-    assert!(find(to_bytes("abcdef"), to_bytes("zz")) == -1);
+    assert!(find(to_bytes("abcdef"), to_bytes("cd")) == Option::Some(2));
+    assert!(find(to_bytes("abcdef"), to_bytes("zz")).is_none());
     assert!(contains(to_bytes("abcdef"), to_bytes("de")));
     assert!(starts_with(to_bytes("abcdef"), to_bytes("ab")));
     assert!(ends_with(to_bytes("abcdef"), to_bytes("ef")));
 }
 
 test("find_from skips prefix") {
-    assert!(find_from(to_bytes("ababab"), to_bytes("ab"), 1) == 2);
-    assert!(find_from(to_bytes("ababab"), to_bytes("ab"), 2) == 2);
-    assert!(find_from(to_bytes("ababab"), to_bytes("ab"), 4) == 4);
-    assert!(find_from(to_bytes("ababab"), to_bytes("ab"), 5) == -1);
-    assert!(find_from(to_bytes("abc"), to_bytes(""), 2) == 2);
+    assert!(find_from(to_bytes("ababab"), to_bytes("ab"), 1) == Option::Some(2));
+    assert!(find_from(to_bytes("ababab"), to_bytes("ab"), 2) == Option::Some(2));
+    assert!(find_from(to_bytes("ababab"), to_bytes("ab"), 4) == Option::Some(4));
+    assert!(find_from(to_bytes("ababab"), to_bytes("ab"), 5).is_none());
+    assert!(find_from(to_bytes("abc"), to_bytes(""), 2) == Option::Some(2));
 }
 
 test("rfind and replace") {
-    assert!(rfind(to_bytes("ababa"), to_bytes("ba")) == 3);
-    assert!(rfind(to_bytes("abc"), to_bytes("z")) == -1);
-    assert!(rfind(to_bytes("abc"), to_bytes("")) == 3);
+    assert!(rfind(to_bytes("ababa"), to_bytes("ba")) == Option::Some(3));
+    assert!(rfind(to_bytes("abc"), to_bytes("z")).is_none());
+    assert!(rfind(to_bytes("abc"), to_bytes("")) == Option::Some(3));
     assert!(eq(replace(to_bytes("aaaa"), to_bytes("aa"), to_bytes("b")), to_bytes("bb")));
     assert!(eq(replace(to_bytes("abc"), to_bytes(""), to_bytes("x")), to_bytes("abc")));
 }
