@@ -84,7 +84,7 @@ fn to_hex(Vec<byte> buf) -> string
 /// ```
 /// use bytes::{from_hex};
 /// # use tests::assert;
-/// let b = from_hex("00AbfF") ?? Vec::new();
+/// let b = from_hex("00AbfF").ok() ?? Vec::new();
 /// assert!(b.len() == 3 && b[1] == 171 as byte);
 /// assert!(from_hex("abc").is_err());
 /// ```
@@ -331,7 +331,7 @@ fn copy(Vec<byte> src) -> Vec<byte>
 /// use bytes::{replace, to_string};
 /// # use tests::assert;
 /// let out = replace("a-b-c", "-", "+");
-/// assert!((to_string(out) ?? "") == "a+b+c");
+/// assert!((to_string(out).ok() ?? "") == "a+b+c");
 /// ```
 fn replace(Vec<byte> hay, Vec<byte> old, Vec<byte> new) -> Vec<byte>
     ensures old.len() > 0 || eq(result, hay)
@@ -389,7 +389,7 @@ fn repeat(Vec<byte> src, int n) -> Vec<byte>
 /// use bytes::{pad_left, to_string};
 /// # use tests::assert;
 /// let zero: byte = "0";
-/// assert!((to_string(pad_left("42", 5, zero)) ?? "") == "00042");
+/// assert!((to_string(pad_left("42", 5, zero)).ok() ?? "") == "00042");
 /// ```
 fn pad_left(Vec<byte> src, int width, byte fill) -> Vec<byte>
     ensures result.len() >= src.len() && result.len() >= width

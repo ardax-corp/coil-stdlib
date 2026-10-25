@@ -91,9 +91,9 @@ test("pad repeats a longer fill until the width is reached") {
 }
 
 test("slice and split_at fail inside a multi-byte character") {
-    assert!(("hello".slice(1, 4) ?? "") == "ell");
+    assert!(("hello".slice(1, 4).ok() ?? "") == "ell");
     assert!("h\u{e9}llo".slice(0, 2).is_err());
-    let (a, b) = "hello".split_at(2) ?? ("", "");
+    let (a, b) = "hello".split_at(2).ok() ?? ("", "");
     assert!(a == "he" && b == "llo");
     assert!("h\u{e9}llo".split_at(2).is_err());
 }

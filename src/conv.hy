@@ -140,8 +140,8 @@ fn int_to_bin(int n) -> string {
 /// ```
 /// use conv::{parse_int_radix};
 /// # use tests::assert;
-/// assert!((parse_int_radix("ff", 16) ?? 0) == 255);
-/// assert!((parse_int_radix("-10", 10) ?? 0) == -10);
+/// assert!((parse_int_radix("ff", 16).ok() ?? 0) == 255);
+/// assert!((parse_int_radix("-10", 10).ok() ?? 0) == -10);
 /// assert!(parse_int_radix("12", 8).is_err());
 /// ```
 fn parse_int_radix(string s, int radix) -> Result<int, string> {
@@ -203,7 +203,7 @@ fn parse_int_radix(string s, int radix) -> Result<int, string> {
 /// ```
 /// use conv::{parse_int};
 /// # use tests::assert;
-/// assert!((parse_int(" 42 ") ?? 0) == 42);
+/// assert!((parse_int(" 42 ").ok() ?? 0) == 42);
 /// let bad = match parse_int("4x2") {
 ///     Result::Err(e) => e,
 ///     Result::Ok(_) => "",
@@ -226,8 +226,8 @@ fn parse_int(string s) -> Result<int, string> {
 /// ```
 /// use conv::{parse_float};
 /// # use tests::assert;
-/// assert!((parse_float("2.5") ?? 0.0) == 2.5);
-/// assert!((parse_float("1e3") ?? 0.0) == 1000.0);
+/// assert!((parse_float("2.5").ok() ?? 0.0) == 2.5);
+/// assert!((parse_float("1e3").ok() ?? 0.0) == 1000.0);
 /// assert!(parse_float("abc").is_err());
 /// ```
 fn parse_float(string s) -> Result<float, string> {
