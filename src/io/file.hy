@@ -70,7 +70,7 @@ fn read_text(string path) -> Result<string, IoError> {
     let b = read_bytes(path)?;
     return match from_bytes(b) {
         Result::Ok(s) => s,
-        Result::Err(e) => raise e,
+        Result::Err(_) => raise IoError::InvalidInput,
     };
 }
 

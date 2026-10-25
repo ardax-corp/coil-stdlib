@@ -438,7 +438,7 @@ fn pad_right(Vec<byte> src, int width, byte fill) -> Vec<byte>
 /// # Errors
 ///
 /// Returns `Err("utf8")` when `b` is not valid UTF-8. `string::from_bytes` does
-/// the same with an `IoError`.
+/// the same with a `StringError`.
 fn to_string(Vec<byte> b) -> Result<string, string> {
     return match from_bytes(b) {
         Result::Ok(s) => s,
