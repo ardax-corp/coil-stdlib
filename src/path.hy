@@ -31,11 +31,11 @@ use bytes::{slice as bytes_slice, concat as bytes_concat};
 /// ```
 /// use path::{Path};
 /// # use tests::assert;
-/// let p = Path::from("/srv/app/../data/report.csv").normalize() ?? Path::from("");
+/// let p = Path::from("/srv/app/../data/report.csv").normalize().ok() ?? Path::from("");
 /// assert!(p.as_str() == "/srv/data/report.csv");
-/// assert!((p.basename() ?? "") == "report.csv");
-/// assert!((p.extension() ?? "") == "csv");
-/// assert!((p.dirname() ?? p).as_str() == "/srv/data");
+/// assert!((p.basename().ok() ?? "") == "report.csv");
+/// assert!((p.extension().ok() ?? "") == "csv");
+/// assert!((p.dirname().ok() ?? p).as_str() == "/srv/data");
 /// ```
 class Path {
     raw: string,
@@ -74,9 +74,9 @@ impl Path {
     /// ```
     /// use path::{Path};
     /// # use tests::assert;
-    /// let p = Path::from("logs/").join(Path::from("/today.txt")) ?? Path::from("");
+    /// let p = Path::from("logs/").join(Path::from("/today.txt")).ok() ?? Path::from("");
     /// assert!(p.as_str() == "logs/today.txt");
-    /// assert!((Path::from("a").join(Path::from("b")) ?? Path::from("")).as_str() == "a/b");
+    /// assert!((Path::from("a").join(Path::from("b")).ok() ?? Path::from("")).as_str() == "a/b");
     /// ```
     pub fn join(Path other) -> Result<Path, IoError> {
         let a = self.raw;
@@ -127,9 +127,9 @@ impl Path {
     /// ```
     /// use path::{Path};
     /// # use tests::assert;
-    /// assert!((Path::from("a/b/c.txt").dirname() ?? Path::from("")).as_str() == "a/b");
-    /// assert!((Path::from("/top").dirname() ?? Path::from("")).as_str() == "/");
-    /// assert!((Path::from("file").dirname() ?? Path::from("")).as_str() == ".");
+    /// assert!((Path::from("a/b/c.txt").dirname().ok() ?? Path::from("")).as_str() == "a/b");
+    /// assert!((Path::from("/top").dirname().ok() ?? Path::from("")).as_str() == "/");
+    /// assert!((Path::from("file").dirname().ok() ?? Path::from("")).as_str() == ".");
     /// ```
     pub fn dirname() -> Result<Path, IoError> {
         let path = self.raw;
@@ -178,8 +178,8 @@ impl Path {
     /// ```
     /// use path::{Path};
     /// # use tests::assert;
-    /// assert!((Path::from("a/b/c.txt").basename() ?? "") == "c.txt");
-    /// assert!((Path::from("a/b/").basename() ?? "") == "b");
+    /// assert!((Path::from("a/b/c.txt").basename().ok() ?? "") == "c.txt");
+    /// assert!((Path::from("a/b/").basename().ok() ?? "") == "b");
     /// ```
     pub fn basename() -> Result<string, IoError> {
         let path = self.raw;
@@ -222,8 +222,8 @@ impl Path {
     /// ```
     /// use path::{Path};
     /// # use tests::assert;
-    /// assert!((Path::from("archive.tar.gz").extension() ?? "") == "gz");
-    /// assert!((Path::from("Makefile").extension() ?? "") == "");
+    /// assert!((Path::from("archive.tar.gz").extension().ok() ?? "") == "gz");
+    /// assert!((Path::from("Makefile").extension().ok() ?? "") == "");
     /// ```
     pub fn extension() -> Result<string, IoError> {
         let base = self.basename()?;
@@ -291,8 +291,8 @@ impl Path {
     /// ```
     /// use path::{Path};
     /// # use tests::assert;
-    /// assert!((Path::from("a/./b//../c").normalize() ?? Path::from("")).as_str() == "a/c");
-    /// assert!((Path::from("/../x").normalize() ?? Path::from("")).as_str() == "/x");
+    /// assert!((Path::from("a/./b//../c").normalize().ok() ?? Path::from("")).as_str() == "a/c");
+    /// assert!((Path::from("/../x").normalize().ok() ?? Path::from("")).as_str() == "/x");
     /// ```
     pub fn normalize() -> Result<Path, IoError> {
         let b = to_bytes(self.raw);
@@ -369,7 +369,7 @@ impl Path {
     /// ```
     /// use path::{Path};
     /// # use tests::assert;
-    /// let parts = Path::from("/usr/local/../bin").components() ?? Vec::new();
+    /// let parts = Path::from("/usr/local/../bin").components().ok() ?? Vec::new();
     /// assert!(parts.len() == 2);
     /// assert!(parts[0] == "usr" && parts[1] == "bin");
     /// ```
