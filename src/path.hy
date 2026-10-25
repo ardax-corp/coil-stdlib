@@ -19,6 +19,14 @@ use io::file::append_bytes;
 use string::{to_bytes, from_bytes};
 use bytes::{slice as bytes_slice, concat as bytes_concat};
 
+// A path piece as text; bytes that are not UTF-8 are `InvalidInput`.
+fn utf8_path(Vec<byte> b) -> Result<string, IoError> {
+    return match from_bytes(b) {
+        Result::Ok(s) => s,
+        Result::Err(_) => raise IoError::InvalidInput,
+    };
+}
+
 /// A file-system path, with helpers to take it apart and to use it.
 ///
 /// `Path` is plain text: building one never touches the disk. Both `/` and `\\`
@@ -95,25 +103,25 @@ impl Path {
             if b_starts {
                 return match from_bytes(bytes_concat(ab, bytes_slice(bb, 1, bb.len()))) {
                     Result::Ok(s) => new Path(s),
-                    Result::Err(e) => raise e,
+                    Result::Err(_) => raise IoError::InvalidInput,
                 };
             }
             return match from_bytes(bytes_concat(ab, bb)) {
                 Result::Ok(s) => new Path(s),
-                Result::Err(e) => raise e,
+                Result::Err(_) => raise IoError::InvalidInput,
             };
         }
         if b_starts {
             return match from_bytes(bytes_concat(ab, bb)) {
                 Result::Ok(s) => new Path(s),
-                Result::Err(e) => raise e,
+                Result::Err(_) => raise IoError::InvalidInput,
             };
         }
         let slash: Vec<byte> = Vec::new();
         slash.push(47);
         return match from_bytes(bytes_concat(bytes_concat(ab, slash), bb)) {
             Result::Ok(s) => new Path(s),
-            Result::Err(e) => raise e,
+            Result::Err(_) => raise IoError::InvalidInput,
         };
     }
 
@@ -159,12 +167,12 @@ impl Path {
                 if i == 0 {
                     return match from_bytes(bytes_slice(b, 0, 1)) {
                         Result::Ok(s) => new Path(s),
-                        Result::Err(e) => raise e,
+                        Result::Err(_) => raise IoError::InvalidInput,
                     };
                 }
                 return match from_bytes(bytes_slice(b, 0, i)) {
                     Result::Ok(s) => new Path(s),
-                    Result::Err(e) => raise e,
+                    Result::Err(_) => raise IoError::InvalidInput,
                 };
             }
         }
@@ -209,10 +217,10 @@ impl Path {
         while i > 0 {
             i = i - 1;
             if Path::is_sep(b[i]) {
-                return from_bytes(bytes_slice(b, i + 1, end))?;
+                return utf8_path(bytes_slice(b, i + 1, end))?;
             }
         }
-        return from_bytes(bytes_slice(b, 0, end))?;
+        return utf8_path(bytes_slice(b, 0, end))?;
     }
 
     /// Returns the text after the last `.` of the last component, or `""` when there is none.
@@ -236,7 +244,7 @@ impl Path {
                 if i + 1 >= n {
                     return "";
                 }
-                return from_bytes(bytes_slice(b, i + 1, n))?;
+                return utf8_path(bytes_slice(b, i + 1, n))?;
             }
         }
         return "";
@@ -314,7 +322,7 @@ impl Path {
                 if i > start {
                     let piece = match from_bytes(bytes_slice(b, start, i)) {
                         Result::Ok(s) => s,
-                        Result::Err(e) => raise e,
+                        Result::Err(_) => raise IoError::InvalidInput,
                     };
                     if piece == ".." {
                         if parts.len() > 0 {
@@ -358,7 +366,7 @@ impl Path {
         }
         return match from_bytes(out) {
             Result::Ok(s) => new Path(s),
-            Result::Err(e) => raise e,
+            Result::Err(_) => raise IoError::InvalidInput,
         };
     }
 
@@ -394,7 +402,7 @@ impl Path {
             }
             if at_end || is_slash {
                 if i > start {
-                    let piece = from_bytes(bytes_slice(b, start, i))?;
+                    let piece = utf8_path(bytes_slice(b, start, i))?;
                     out.push(piece);
                 }
                 start = i + 1;

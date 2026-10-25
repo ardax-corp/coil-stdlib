@@ -270,6 +270,14 @@ fn eprintln(string s) -> Result<int, IoError> {
     return write_all(stderr(), newline_bytes())?;
 }
 
+// A read line as text; bytes that are not UTF-8 are `InvalidInput`.
+fn line_text(Vec<byte> b) -> Result<string, IoError> {
+    return match str_from_bytes(b) {
+        Result::Ok(s) => s,
+        Result::Err(_) => raise IoError::InvalidInput,
+    };
+}
+
 /// Reads one line from `s`, without its line ending (LF or CRLF).
 ///
 /// Returns `None` at the end of the stream. A last line without a newline is
@@ -335,8 +343,8 @@ fn read_line(Stream s) -> Result<Option<string>, IoError> {
                 trimmed.push(acc[i]);
                 i = i + 1;
             }
-            return Option::Some(str_from_bytes(trimmed)?);
+            return Option::Some(line_text(trimmed)?);
         }
     }
-    return Option::Some(str_from_bytes(acc)?);
+    return Option::Some(line_text(acc)?);
 }
