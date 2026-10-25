@@ -31,7 +31,7 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
 | `fmt` | `use fmt::{Buf, pad_left, …};` | Incremental string builder (`Buf`) and padding helpers |
 | `collections` | `use collections::{sort, sort_by, reverse, …};` | Stable mergesort / `sort_by` (`T -> K` with `K: Ord`) / `reverse` / `collect_ints`; strings sort by UTF-8 bytes |
 | `collections::vec` | `use collections::vec::{VecOps, VecEq, VecOrd, VecSum};` | `Vec<T>` methods: `VecOps` (any `T`): `map` / `filter` / `fold` / `enumerate` / `zip` / `any` / `all` / `count` / `take` / `skip` / `first` / `last` / `concat` / `chunks` / `windows` / `partition`; `VecEq` (`T: Eq`): `contains` / `index_of` / `dedup`; `VecOrd` (`T: Ord`): `min` / `max` / `binary_search`; `VecSum`: `sum` on `Vec<int>` / `Vec<float>` |
-| `collections::map` | `use collections::map::{HashMap};` | Chaining hash map (`Eq`+`Hash`); `get(k, fallback)` |
+| `collections::map` | `use collections::map::{HashMap};` | Chaining hash map (`Eq`+`Hash`); `get(k) -> Option<V>`, `get_or(k, fallback)` |
 | `collections::set` | `use collections::set::{HashSet};` | Unique-value set backed by `HashMap<T, bool>` |
 | `collections::list` | `use collections::list::{List};` | Mutable deque (singly-linked); `peek_*` / `pop_*` → `Option` |
 | `collections::deque` | `use collections::deque::{VecDeque};` | Ring-buffer deque over growable `Vec`; O(1) push/pop at both ends |
@@ -56,8 +56,6 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
 - Collections that are type-tied should be **methods** (`m.insert(k, v)`).
   Cross-module user classes are still limited in the language
   ([COI-12](https://linear.app/ardax/issue/COI-12)).
-- Generic `HashMap::get` returns a fallback value (not `Option<V>`) due to a
-  compiler limitation on generic class methods returning `Option`.
 - `xs.fold(init, fn (A acc, T x) => …)` takes any accumulator type `A`.
 - `for (i, x) in xs.enumerate()` walks indices and values together.
 - `xs.chunks(n)` is the only name (no `chunk` alias). `windows` is overlapping
