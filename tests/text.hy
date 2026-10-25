@@ -113,3 +113,31 @@ test("rfind gives the span of the last match, or None") {
     let empty = "abc".rfind("") ?? new Span(-1, -1);
     assert!(empty.start == 3);
 }
+
+// `n` copies of `x` with `mark` spliced in at `at`.
+fn marked(int n, int at, string mark) -> string {
+    return "x".repeat(at) + mark + "x".repeat(n - at);
+}
+
+test("rfind across 64-byte lanes: the last match, near misses skipped") {
+    for n in [0, 1, 62, 63, 64, 65, 127, 128, 200] {
+        let at = 0;
+        while at <= n {
+            let s = marked(n, at, "ab") + "a" + "x".repeat(70) + "b";
+            let hit = s.rfind("ab") ?? new Span(-1, -1);
+            assert!(hit.start == at && hit.end == at + 2);
+            let one = s.rfind("b") ?? new Span(-1, -1);
+            assert!(one.start == s.len() - 1);
+            let long = marked(n, at, "abxa") + "abxb";
+            let three = long.rfind("abxa") ?? new Span(-1, -1);
+            assert!(three.start == at);
+            at = at + if at < 3 || at > n - 3 {
+                1
+            } else {
+                9
+            };
+        }
+    }
+    assert!("x".repeat(300).rfind("xy").is_none());
+    assert!("ab".rfind("abc").is_none());
+}

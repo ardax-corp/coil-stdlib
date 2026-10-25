@@ -85,6 +85,33 @@ fn find_at(string hay, string needle, int from) -> int {
     return -1;
 }
 
+// Byte offset of the last `needle` in `hay`, or `-1`. An empty needle
+// matches at the end. Candidates need the needle's first and last bytes: a
+// count-down byte scan skips the rest 64 at a time.
+fn rfind_at(string hay, string needle) -> int {
+    let m = needle.len();
+    let i = hay.len() - m;
+    if m == 0 {
+        return i;
+    }
+    let first = needle[0];
+    let k = m - 1;
+    let tail = needle[k];
+    while i >= 0 {
+        if hay[i] == first && hay[i + k] == tail {
+            let j = 1;
+            while j < k && hay[i + j] == needle[j] {
+                j = j + 1;
+            }
+            if j >= k {
+                return i;
+            }
+        }
+        i = i - 1;
+    }
+    return -1;
+}
+
 // Bytes `start..end` of `s`; the offsets sit next to ASCII bytes, so they
 // are character boundaries.
 fn ascii_cut(string s, int start, int end) -> string {
@@ -919,15 +946,11 @@ impl Text for string {
     pub fn rfind(string s, string needle) -> Option<Span>
         ensures span_start(result) < 0 || match_at(s, needle, span_start(result))
     {
-        let m = needle.len();
-        let i = s.len() - m;
-        while i >= 0 {
-            if match_at(s, needle, i) {
-                return Option::Some(new Span(i, i + m));
-            }
-            i = i - 1;
+        let at = rfind_at(s, needle);
+        if at < 0 {
+            return Option::None;
         }
-        return Option::None;
+        return Option::Some(new Span(at, at + needle.len()));
     }
 }
 
