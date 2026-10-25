@@ -1,5 +1,5 @@
 use tests::assert;
-use text::{Searchable, Span, Text, join};
+use text::{Joined, Searchable, Span, Text};
 
 test("trim and affixes") {
     assert!("  hi  ".trim() == "hi");
@@ -29,7 +29,7 @@ test("replace split once and join") {
     parts.push("a");
     parts.push("b");
     parts.push("c");
-    assert!(join(parts, "::") == "a::b::c");
+    assert!(parts.join("::") == "a::b::c");
 }
 
 test("repeat text") {
