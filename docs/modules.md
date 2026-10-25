@@ -26,11 +26,11 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
 | `ascii` | `use ascii::{is_digit, is_alnum, …};` | ASCII classify / digit / case helpers |
 | `conv` | `use conv::{parse_int, int_to_hex, …};` | `int_to_dec` / `parse_int` / `parse_float` / radix parse |
 | `bytes` | `use bytes::{slice, concat, to_hex, …};` | `Vec<byte>` helpers; `Bytes` wrapper; hex encode/decode |
-| `text` | `use text::{Searchable, Text, join};` | String helpers via UTF-8 bytes (virtual `string` owns `format` / `to_bytes`). `Text` gives `string` plain-value methods: `s.trim()` / `trim_start` / `trim_end` / `to_lower` / `to_upper` / `lines` / `repeat(n)` / `pad_left(width, fill)` / `pad_right` (an empty `fill` returns `s`), plus `s.slice(a, b)` / `split_at(i)`, which return `Err("utf8")` for an offset inside a character, and `s.rfind(needle)` (`Option<Span>` of the last match). `Searchable` gives `string` (and any `Show` type with an empty `impl`) pattern methods: `"foobar".contains(p)`, `starts_with` / `ends_with` / `find` / `find_all` / `split` / `split_once` / `replace_first` / `replace_all`, where `p` is a `string` or any `Pattern` (coil-regex's `Regex`) |
+| `text` | `use text::{Searchable, Text, Joined};` | String helpers via UTF-8 bytes (virtual `string` owns `format` / `to_bytes`). `Text` gives `string` plain-value methods: `s.trim()` / `trim_start` / `trim_end` / `to_lower` / `to_upper` / `lines` / `repeat(n)` / `pad_left(width, fill)` / `pad_right` (an empty `fill` returns `s`), plus `s.slice(a, b)` / `split_at(i)`, which return `Err("utf8")` for an offset inside a character, and `s.rfind(needle)` (`Option<Span>` of the last match). `Joined` gives `Vec<string>` `parts.join(sep)`. `Searchable` gives `string` (and any `Show` type with an empty `impl`) pattern methods: `"foobar".contains(p)`, `starts_with` / `ends_with` / `find` / `find_all` / `split` / `split_once` / `replace_first` / `replace_all`, where `p` is a `string` or any `Pattern` (coil-regex's `Regex`) |
 | `encoding` | `use encoding::{encode, decode};` | Standard Base64 encode/decode |
 | `fmt` | `use fmt::{Buf, pad_left, …};` | Incremental string builder (`Buf`) and padding helpers |
 | `collections` | `use collections::{sort, sort_by, reverse, …};` | Stable mergesort / `sort_by` (`T -> K` with `K: Ord`) / `reverse` / `collect_ints`; strings sort by UTF-8 bytes |
-| `collections::vec` | `use collections::vec::{map, filter, chunks, windows, partition, …};` | `Vec<T>` helpers: `map` / `filter` / `chunks` / `windows` / `partition` / `first` / `contains` / … |
+| `collections::vec` | `use collections::vec::{VecOps, VecEq, VecOrd, VecSum};` | `Vec<T>` methods: `VecOps` (any `T`): `map` / `filter` / `fold` / `enumerate` / `zip` / `any` / `all` / `count` / `take` / `skip` / `first` / `last` / `concat` / `chunks` / `windows` / `partition`; `VecEq` (`T: Eq`): `contains` / `index_of` / `dedup`; `VecOrd` (`T: Ord`): `min` / `max` / `binary_search`; `VecSum`: `sum` on `Vec<int>` / `Vec<float>` |
 | `collections::map` | `use collections::map::{HashMap};` | Chaining hash map (`Eq`+`Hash`); `get(k, fallback)` |
 | `collections::set` | `use collections::set::{HashSet};` | Unique-value set backed by `HashMap<T, bool>` |
 | `collections::list` | `use collections::list::{List};` | Mutable deque (singly-linked); `peek_*` / `pop_*` → `Option` |
@@ -46,7 +46,7 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
 ## Notes
 
 - Prefer **byte offsets** for `s.slice(a, b)` / `rfind` / `Span` offsets (mid-codepoint slices error on decode).
-- Absent results are `Option`, never `-1`: `bytes::find` / `find_from` / `rfind`, `collections::vec::index_of`, `ascii::digit_val` / `hex_val`.
+- Absent results are `Option`, never `-1`: `bytes::find` / `find_from` / `rfind`, `xs.index_of(x)`, `ascii::digit_val` / `hex_val`.
 - Every collection's item count is `.len()` (`Vec`, `HashMap`, `HashSet`, `TreeMap`, `VecDeque`, `List`, `BitSet`).
 - Byte constants use single-byte string literals (`"/"`, `"\n"`) under `byte` /
   `Vec<byte>` expected types; whole string literals coerce to `Vec<byte>` /
@@ -57,11 +57,11 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
   ([COI-12](https://linear.app/ardax/issue/COI-12)).
 - Generic `HashMap::get` returns a fallback value (not `Option<V>`) due to a
   compiler limitation on generic class methods returning `Option`.
-- `collections::vec::map` / `filter` / `partition` accept open-`T` lambdas; `fold` is
-  currently available for `Vec<int>` only.
-- `chunks` is the only name (no `chunk` alias). `windows` is overlapping
+- `xs.fold(init, fn (A acc, T x) => …)` takes any accumulator type `A`.
+- `for (i, x) in xs.enumerate()` walks indices and values together.
+- `xs.chunks(n)` is the only name (no `chunk` alias). `windows` is overlapping
   exact-size slices; empty when `size <= 0` or `size > len`.
-- `partition` returns `Partitioned<T>` (`matched()` / `rest()`), a named pair
+- `xs.partition(pred)` returns `Partitioned<T>` (`matched()` / `rest()`), a named pair
   rather than `Vec<Vec<T>>`, so buckets are not positional `[0]`/`[1]`.
 - `sort_by<T, K: Ord>` uses the same `T -> K` / `K: Ord` story as `map` + `sort`.
 - `BitSet::with_capacity` / `capacity` are in **bits**. Storage is `Vec<int>`
