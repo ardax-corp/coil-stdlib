@@ -1,24 +1,27 @@
 # Consume coil-stdlib
 
-Unprefixed imports (`use ascii`, `use path::{Path}`) need this package's **`src/`**
-as a module root — not the parent `.spool/deps` folder. `spool` links
-`.spool/deps/stdlib` at `src/`.
+Every spool project declares the stdlib as a dependency; there is no global
+copy. `spool new` and `spool init` write it for you. spool passes the locked
+checkout's **`src/`** as a module root, so imports are unprefixed (`use ascii`,
+`use path::{Path}`); no `[module].roots` entry is needed.
 
 ## Via spool
 
 ```toml
 [dependencies]
-stdlib = { git = "https://github.com/ardax-corp/coil-stdlib.git", version = "^0.1" }
-
-[module]
-roots = ["./src", "./.spool/deps/stdlib"]
+stdlib = { git = "https://github.com/ardax-corp/coil-stdlib.git", version = "latest" }
 ```
+
+`version = "latest"` follows this repo's tip, locked to a commit in
+`coil.lock`; spool warns until you pin it, because `spool update` can move a
+project onto breaking changes. Pin a commit (this repo has no tags yet):
 
 ```bash
-spool add stdlib --git https://github.com/ardax-corp/coil-stdlib.git --version '^0.1'
+spool add stdlib --git https://github.com/ardax-corp/coil-stdlib.git --rev <commit SHA>
 ```
 
-If roots only list `"./.spool/deps"`, imports are prefixed: `use stdlib::ascii`.
+Each project locks its own stdlib version; projects on the same commit share
+one cached checkout.
 
 ## Path / sibling checkout
 
