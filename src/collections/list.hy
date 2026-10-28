@@ -79,7 +79,7 @@ impl List<T> {
         self.len = self.len + 1;
     }
 
-    /// Adds `v` at the back. Walks the list, so it takes time proportional to its length.
+    /// Adds `v` at the back. Rebuilds the list, so it takes time proportional to its length.
     ///
     /// # Examples
     ///
@@ -95,32 +95,22 @@ impl List<T> {
     pub fn push_back(T v)
         ensures self.len == old(self.len) + 1
     {
-        let n = new Node(v, Option::None);
-        if self.is_empty() {
-            self.head = Option::Some(n);
-        } else {
-            let cur = self.head;
-            let done = false;
-            while !done {
-                match cur {
-                    Option::None => {
-                        done = true;
-                    },
-                    Option::Some(node) => {
-                        match node.next {
-                            Option::None => {
-                                node.next = Option::Some(n);
-                                done = true;
-                            },
-                            Option::Some(next) => {
-                                cur = Option::Some(next);
-                            },
-                        }
-                    },
-                }
-            }
-        }
+        // Nodes are copy-on-write values, so the list is rebuilt rather
+        // than its last node written through a walk.
+        let vals = self.to_vec();
+        self.head = List::build(vals, vals.len(), Option::Some(new Node(v, Option::None)));
         self.len = self.len + 1;
+    }
+
+    /// The first `n` of `vals` as nodes, in front of `rest`.
+    static fn build(Vec<T> vals, int n, Option<Node<T>> rest) -> Option<Node<T>> {
+        let out = rest;
+        let i = n - 1;
+        while i >= 0 {
+            out = Option::Some(new Node(vals[i], out));
+            i = i - 1;
+        }
+        return out;
     }
 
     /// Returns the front value without removing it, or `None` when the list is empty.
@@ -159,53 +149,19 @@ impl List<T> {
 
     /// Removes and returns the back value, or `None` when the list is empty.
     ///
-    /// Walks the list, so it takes time proportional to its length.
+    /// Rebuilds the list, so it takes time proportional to its length.
     pub fn pop_back() -> Option<T>
         ensures self.len == old(self.len) - 1 || (old(self.len) == 0 && self.len == 0)
     {
         if self.is_empty() {
             return Option::None;
         }
-        if self.len == 1 {
-            return self.pop_front();
-        }
-        let cur = self.head;
-        let prev = Option::None;
-        let done = false;
-        while !done {
-            match cur {
-                Option::None => {
-                    done = true;
-                },
-                Option::Some(node) => {
-                    match node.next {
-                        Option::None => {
-                            done = true;
-                        },
-                        Option::Some(next) => {
-                            prev = cur;
-                            cur = Option::Some(next);
-                        },
-                    }
-                },
-            }
-        }
-        return match cur {
-            Option::None => Option::None,
-            Option::Some(last) => {
-                let v = last.value;
-                match prev {
-                    Option::None => {
-                        self.head = Option::None;
-                    },
-                    Option::Some(p) => {
-                        p.next = Option::None;
-                    },
-                }
-                self.len = self.len - 1;
-                return Option::Some(v);
-            },
-        };
+        let vals = self.to_vec();
+        let last = vals.len() - 1;
+        let v = vals[last];
+        self.head = List::build(vals, last, Option::None);
+        self.len = self.len - 1;
+        return Option::Some(v);
     }
 
     /// Removes every value.
