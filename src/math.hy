@@ -9,6 +9,7 @@
 // correctly rounded; the rest stay within 1 ulp like the C originals.
 
 // 2^n.
+
 const TWO24 = 16777216.0;
 
 const TWO_M24 = 1.0 / 16777216.0;
@@ -42,6 +43,7 @@ const P1009 = 2.0 ** 1009.0;
 const P1023 = 2.0 ** 1023.0;
 
 // 2^-1022 * 2^53: one scalbn step into the subnormal range without double rounding.
+
 const P969N = 2.0 ** -969.0;
 
 const MIN_NORMAL = 2.0 ** -1022.0;
@@ -86,11 +88,13 @@ const N7 = 2.0 ** -7.0;
 
 // Veltkamp splitters: `c - (c - a)` with `c = SPLIT * a` keeps the top
 // 26 (SPLIT) or 21 (SPLIT21) significant bits of `a`.
+
 const SPLIT = 134217729.0;
 
 const SPLIT21 = 4294967297.0;
 
 // Thresholds the C sources test on the high 32 bits of a double, as values.
+
 const SIN_SMALL = 0.000000014901161193847656;
 
 const PIO4_HW = 0.7853984832763672;
@@ -132,6 +136,7 @@ const ACOS_TINY = 0.000000000000000006938900521352129;
 const K_LN2 = 1416.0996898839683;
 
 // pi and pi/2 split into a double and the remainder.
+
 const PI_HI = 3.141592653589793;
 
 const PI_LO = 0.00000000000000012246467991473532;
@@ -145,6 +150,7 @@ const PIO4 = 0.7853981633974483;
 const PIO4_LO = 0.00000000000000003061616997868383;
 
 // Argument reduction by pi/2 (__rem_pio2): pi/2 as three 33-bit pieces plus tails.
+
 const INV_PIO2 = 0.6366197723675814;
 
 const PIO2_1 = 1.5707963267341256;
@@ -160,6 +166,7 @@ const PIO2_3 = 0.0000000000000000000020222662487111665;
 const PIO2_3T = 0.000000000000000000000000000000084784276603689;
 
 // pi/2 in 24-bit pieces for the Payne-Hanek reduction (__rem_pio2_large).
+
 const PIO2_T0 = 1.570796251296997;
 
 const PIO2_T1 = 0.00000007549789415861596;
@@ -171,6 +178,7 @@ const PIO2_T3 = 0.0000000000000000000003282003415807913;
 const PIO2_T4 = 0.00000000000000000000000000001270655753080676;
 
 // 2/pi in 24-bit chunks, for the Payne-Hanek reduction.
+
 const IPIO2 = readonly [
     0xA2F983, 0x6E4E44, 0x1529FC, 0x2757D1, 0xF534DD, 0xC0DB62, 0x95993C, 0x439041, 0xFE5163, 0xABDEBB,
     0xC561B7, 0x246E3A, 0x424DD2, 0xE00649, 0x2EEA09, 0xD1921C, 0xFE1DEB, 0x1CB129, 0xA73EE8, 0x8235F5,
@@ -182,6 +190,7 @@ const IPIO2 = readonly [
 ];
 
 // sin on [-pi/4, pi/4] (__kernel_sin).
+
 const SIN_S1 = -0.16666666666666632;
 
 const SIN_S2 = 0.00833333333332249;
@@ -195,6 +204,7 @@ const SIN_S5 = -0.000000025050760253406863;
 const SIN_S6 = 0.000000000158969099521155;
 
 // cos on [-pi/4, pi/4] (__kernel_cos).
+
 const COS_C1 = 0.0416666666666666;
 
 const COS_C2 = -0.001388888888887411;
@@ -208,6 +218,7 @@ const COS_C5 = 0.000000002087572321298175;
 const COS_C6 = -0.000000000011359647557788195;
 
 // tan on [-pi/4, pi/4] (__kernel_tan).
+
 const TAN_T0 = 0.3333333333333341;
 
 const TAN_T1 = 0.13333333333320124;
@@ -236,6 +247,7 @@ const TAN_T12 = 0.00002590730518636337;
 
 // exp (ARM optimized-routines, as in glibc and musl): 2^(j/128) ~=
 // EXP_SCALE[j] * (1 + EXP_TAIL[j]), x ~= k*ln2/128 + r, and a quartic in r.
+
 const EXP_SCALE = readonly [
     1.0, 1.0054299011128027, 1.0108892860517005, 1.016378314910953, 1.0218971486541166,
     1.0274459491187637, 1.0330248790212284, 1.0386341019613787, 1.0442737824274138,
@@ -352,6 +364,7 @@ const EXP_C4 = 0.0416666808410674;
 const EXP_C5 = 0.008333335853059549;
 
 // expm1 (fdlibm).
+
 const LN2_HI = 0.6931471803691238;
 
 const LN2_LO = 0.00000000019082149292705877;
@@ -369,6 +382,7 @@ const EXPM1_Q4 = 0.000004008217827329362;
 const EXPM1_Q5 = -0.00000020109921818362437;
 
 // ln, log2 and log10.
+
 const LOG_LG1 = 0.6666666666666735;
 
 const LOG_LG2 = 0.3999999999940942;
@@ -396,6 +410,7 @@ const LOG10_2HI = 0.30102999566361177;
 const LOG10_2LO = 0.0000000000003694239077158931;
 
 // atan.
+
 const ATANHI0 = 0.4636476090008061;
 
 const ATANHI1 = 0.7853981633974483;
@@ -435,6 +450,7 @@ const ATAN_AT9 = -0.036531572744216916;
 const ATAN_AT10 = 0.016285820115365782;
 
 // asin and acos.
+
 const ASIN_PS0 = 0.16666666666666666;
 
 const ASIN_PS1 = -0.3255658186224009;
@@ -457,6 +473,7 @@ const ASIN_QS4 = 0.07703815055590194;
 
 // cbrt (CORE-MATH): 2^(1/3), 2^(2/3), a cubic for z^(1/3) on [1, 2], and two
 // inputs whose rounding the iteration cannot settle.
+
 const CBRT2 = 1.2599210498948732;
 
 const CBRT4 = 1.5874010519681996;
