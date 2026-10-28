@@ -1,5 +1,6 @@
 use tests::assert;
 use num::{PI, E, TAU, abs, fract, is_nan, signum};
+use math::{sin, cos, exp, ln};
 
 test("PI E TAU") {
     assert!(PI > 3.14);
