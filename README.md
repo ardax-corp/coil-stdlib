@@ -26,6 +26,7 @@ coil.toml
 src/ascii.hy          # use ascii::…
 src/cell.hy           # use cell::{Ref}
 src/collections/      # map, set, list, deque, bitset, tree, vec
+src/math.hy           # use math::{sin, sqrt, …} — float math in Coil
 src/path.hy           # use path::{Path, …}
 tests/                # coil test
 docs/                 # package documentation

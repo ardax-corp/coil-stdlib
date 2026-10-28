@@ -1,12 +1,13 @@
-// Scalar numeric helpers layered on auto-imported `prelude::math`.
+// Scalar numeric helpers layered on the userland `math` module.
 // Named `num` so workspace `examples/src/math.hy` does not shadow this module.
 //
 // `abs` stays type-overloaded (numeric / negation, not Ord).
 // `min` / `max` / `clamp` are generic over `Ord` (int, float, and derived orders).
 // Powers are the `**` operator (`int` and `float`); checked/wrapping/saturating
 // int powers are on the `arith` traits.
-// IEEE scalars (`sin`/`atan`/`log10`/`sinh`/…) stay on `prelude::math`
-// — auto-imported; this module does not re-export them.
+// IEEE scalars (`sin`/`atan`/`log10`/`sinh`/…) live on `math`; this module
+// does not re-export them.
+use math::{floor, ceil, sqrt};
 
 // The circle constant π, as a `float`.
 const PI = 3.141592653589793;
