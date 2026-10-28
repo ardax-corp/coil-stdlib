@@ -2,10 +2,12 @@
 
 `use path::*` is banned (`E0124`). List names explicitly.
 
-IEEE float math is auto-imported from virtual `prelude::math` in the
-compiler — not this package: `sin`/`cos`/`tan`/`sqrt`/`floor`/`ceil`/
-`exp`/`ln`, `atan`/`atan2`/`asin`/`acos`, `log10`/`log2`/`cbrt`, and
-`sinh`/`cosh`/`tanh`. `num` does not re-export those. Float power and
+IEEE float math is the userland `math` module, written in Coil rather than
+host natives: `sin`/`cos`/`tan`/`sqrt`/`floor`/`ceil`/`exp`/`ln`,
+`atan`/`atan2`/`asin`/`acos`, `log10`/`log2`/`cbrt`, and `sinh`/`cosh`/`tanh`
+(`use math::{sin, sqrt};`). They used to be host natives auto-imported from
+the compiler's `prelude::math`; calling one without the `use` is now a compile
+error that names the import. `num` does not re-export them. Float power and
 remainder are the `**` and `%` operators (`num` has no `pow`; overflow-aware
 int powers are `arith`'s `checked_pow` and friends). Named float constants `PI`,
 `E`, and `TAU` live on `num` as compile-time `const`s (not HostInvoke).
@@ -37,6 +39,7 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
 | `collections::deque` | `use collections::deque::{VecDeque};` | Ring-buffer deque over growable `Vec`; O(1) push/pop at both ends |
 | `collections::bitset` | `use collections::bitset::{BitSet};` | Dense bit set of non-negative `int` indices; 63 bits per `int` word |
 | `collections::tree` | `use collections::tree::{TreeMap};` | Mutable BST map over `Ord`+`Eq`; remove / min / max / iter |
+| `math` | `use math::{sin, cos, sqrt, exp, ln, atan2, …};` | IEEE-754 double functions in pure Coil (ports of FreeBSD msun / musl, ARM optimized-routines `exp`, CORE-MATH `cbrt`). `sqrt`, `floor`, `ceil` and `cbrt` are correctly rounded; the rest stay within 2 ulp of the host libm in `tests/math.hy`. Huge trig arguments use a Payne-Hanek reduction |
 | `num` | `use num::{PI, E, TAU, abs, min, signum, gcd, …};` | Float constants `PI`/`E`/`TAU`; helpers: `abs`, `min`/`max`/`clamp` over `Ord`, `round`, `signum`, `gcd`/`lcm`, `trunc`/`fract`, NaN/inf checks, euclidean div/rem, `hypot` |
 | `random` | `use random::{Rng};` | Seeded `Rng` PRNG (`from_time` mixes [coil-time](https://github.com/ardax-corp/coil-time) timestamps as ints) |
 | `path` | `use path::{Path};` | `Path` value: join / normalize / components / FS + file I/O |
