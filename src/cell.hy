@@ -21,7 +21,7 @@
 /// bump();
 /// assert!(count.get() == 2);
 /// ```
-class Ref<T> {
+shared class Ref<T> {
     value: T,
 }
 
