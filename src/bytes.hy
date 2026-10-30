@@ -28,16 +28,13 @@ fn region_eq(Vec<byte> a, int ao, Vec<byte> b, int bo, int n) -> bool
     requires ao + n <= a.len() && bo + n <= b.len()
 {
     let i = 0;
-    let ok = true;
-    while ok && i < n {
+    while i < n {
         if a[ao + i] != b[bo + i] {
-            ok = false;
+            return false;
         }
-        if ok {
-            i = i + 1;
-        }
+        i = i + 1;
     }
-    return ok;
+    return true;
 }
 
 fn hex_nibble(int n) -> string {
