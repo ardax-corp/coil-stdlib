@@ -49,3 +49,26 @@ test("pad bytes right") {
 test("pad bytes preserves wide input") {
     assert!(eq(pad_left(to_bytes("wide"), 2, "0"), to_bytes("wide")));
 }
+
+test("eq and affixes on long buffers, a difference anywhere") {
+    for n in [0, 1, 63, 64, 65, 200] {
+        let a: Vec<byte> = Vec::new();
+        let k = 0;
+        while k < n {
+            a.push((k % 251) as byte);
+            k = k + 1;
+        }
+        assert!(eq(a, slice(a, 0, n)));
+        assert!(starts_with(a, slice(a, 0, n / 2)));
+        assert!(ends_with(a, slice(a, n / 2, n)));
+        for at in [0, n / 2, n - 1] {
+            if at >= 0 && at < n {
+                let b = slice(a, 0, n);
+                b[at] = 255 as byte;
+                assert!(!eq(a, b));
+                assert!(!starts_with(a, slice(b, 0, at + 1)));
+                assert!(starts_with(a, slice(b, 0, at)));
+            }
+        }
+    }
+}
