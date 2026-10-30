@@ -43,6 +43,10 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
 | `num` | `use num::{PI, E, TAU, abs, min, signum, gcd, …};` | Float constants `PI`/`E`/`TAU`; helpers: `abs`, `min`/`max`/`clamp` over `Ord`, `round`, `signum`, `gcd`/`lcm`, `trunc`/`fract`, NaN/inf checks, euclidean div/rem, `hypot` |
 | `random` | `use random::{Rng};` | Seeded `Rng` PRNG (`from_time` mixes [coil-time](https://github.com/ardax-corp/coil-time) timestamps as ints) |
 | `path` | `use path::{Path};` | `Path` value: join / normalize / components / FS + file I/O |
+| `future` | `use future::{Promise, Group, all, try_all, race, first_ok, limit};` | Futures over tasks: `Promise<T>` (a one-shot value another task sets: `resolve` / `cancel` / `wait` / `wait_timeout` / `try_get`), `Group<T>` (a scope's children in completion order: `spawn` / `next` / `next_index` / `cancel_all`) and combinators over `Vec<unit -> T>` bodies: `all` and `limit(n, ..)` (results in input order), `try_all` (first `Err` cancels the rest), `race` (first finisher wins, the rest are cancelled) and `first_ok`. A `Task<R>` stays the future for work you start |
+| `io::buffered` | `use io::buffered::{Reader, Writer};` | Buffered, deadline-aware streams over any `Stream`: `read_line` / `read_until` / `read_exact` / `peek` / `read_some` / `read_to_end` / `take_buffered`, buffered `write` / `flush`, `set_timeout(ms)` — [IO adapters](io.md) |
+| `net` | `use net::{serve};` | `serve(listener, max, handler)`: one task per connection, at most `max` at once — [IO adapters](io.md) |
+| `timer` | `use timer::{Interval, sleep_until};` | `Interval::new(ms).tick()` (no drift, skips missed periods) and `sleep_until(mono_nanos)` |
 | `io::sync` | `use io::sync::{write_all, copy, …};` | Blocking adapters — [IO adapters](io.md) |
 | `io::file` | `use io::file::{read_text, append_bytes, …};` | Whole-file read/write/append — [IO adapters](io.md) |
 
