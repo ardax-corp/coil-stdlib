@@ -5,10 +5,7 @@
 // sees `WouldBlock`. Inside a task a wait lets other tasks run. A timeout set
 // with `set_timeout` applies to each wait, and costs nothing while data is
 // ready.
-use io::read;
-use io::write_from;
-use io::wait_readable;
-use io::wait_writable;
+use io::{read, write_from, wait_readable, wait_writable};
 use task::{timeout, TaskError};
 use string::{from_bytes as str_from_bytes, to_bytes as str_to_bytes};
 
@@ -35,12 +32,15 @@ fn __wait(Stream s, bool write, int ms) -> Result<unit, IoError> {
         }
         return wait_readable(s);
     }
-    let waited = timeout(ms, fn () use (s, write) {
-        if write {
-            return wait_writable(s);
-        }
-        return wait_readable(s);
-    });
+    let waited = timeout(
+        ms,
+        fn () use (s, write) {
+            if write {
+                return wait_writable(s);
+            }
+            return wait_readable(s);
+        },
+    );
     return match waited {
         Result::Ok(r) => r,
         Result::Err(TaskError::TimedOut) => Result::Err(IoError::TimedOut),
@@ -386,7 +386,7 @@ impl Writer {
         if self.__buf.len() >= self.__capacity {
             self.flush()?;
         }
-        return ();
+        return;
     }
 
     /// Adds the UTF-8 bytes of `s`, like `write`.
@@ -432,7 +432,7 @@ impl Writer {
         }
         let empty: Vec<byte> = Vec::new();
         self.__buf = empty;
-        return ();
+        return;
     }
 
     // Keeps only the held bytes from `offset` on.

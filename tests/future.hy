@@ -189,15 +189,18 @@ test("limit caps how many run at once") {
     let i = 0;
     while i < 6 {
         let k = i;
-        bodies.push(fn () use (running, peak, k) {
-            let now = running.update(fn (int n) => n + 1);
-            if now > peak.get() {
-                peak.set(now);
-            }
-            sleep(2);
-            running.update(fn (int n) => n - 1);
-            return k * k;
-        });
+        bodies
+            .push(
+                fn () use (running, peak, k) {
+                    let now = running.update(fn (int n) => n + 1);
+                    if now > peak.get() {
+                        peak.set(now);
+                    }
+                    sleep(2);
+                    running.update(fn (int n) => n - 1);
+                    return k * k;
+                },
+            );
         i = i + 1;
     }
     let ok = match limit(2, bodies) {
@@ -225,13 +228,16 @@ test("try_all collects Ok values in input order") {
 test("try_all returns the first Err and cancels the rest") {
     let unwound = Ref::new(false);
     let bodies: Vec<unit -> Result<int, string>> = Vec::new();
-    bodies.push(fn () use (unwound) {
-        defer use (unwound) {
-            unwound.set(true);
-        }
-        sleep(10000);
-        return Result::Ok(1);
-    });
+    bodies
+        .push(
+            fn () use (unwound) {
+                defer use (unwound) {
+                    unwound.set(true);
+                }
+                sleep(10000);
+                return Result::Ok(1);
+            },
+        );
     bodies.push(fn () {
         sleep(1);
         return Result::Err("bad");
@@ -243,13 +249,16 @@ test("try_all returns the first Err and cancels the rest") {
 test("race returns the first finisher and cancels the others") {
     let unwound = Ref::new(false);
     let bodies: Vec<unit -> string> = Vec::new();
-    bodies.push(fn () use (unwound) {
-        defer use (unwound) {
-            unwound.set(true);
-        }
-        sleep(10000);
-        return "slow";
-    });
+    bodies
+        .push(
+            fn () use (unwound) {
+                defer use (unwound) {
+                    unwound.set(true);
+                }
+                sleep(10000);
+                return "slow";
+            },
+        );
     bodies.push(fn () {
         sleep(1);
         return "fast";

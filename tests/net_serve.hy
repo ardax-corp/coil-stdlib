@@ -1,9 +1,13 @@
 use tests::assert;
 use cell::Ref;
-use net::{serve};
-use io::buffered::{Reader, Writer};
-use io::{close};
-use io::net::tcp::{listen, connect, local_addr, shutdown};
+use net::serve;
+use io::buffered::Reader;
+use io::buffered::Writer;
+use io::close;
+use io::net::tcp::listen;
+use io::net::tcp::connect;
+use io::net::tcp::local_addr;
+use io::net::tcp::shutdown;
 use task::{scope, Scope, Task, sleep};
 
 fn echo_client(int port, string msg) -> string {
@@ -37,22 +41,26 @@ test("serve runs a handler per connection and caps concurrency") {
     let replies = Ref::new("");
     let out = scope(fn (Scope s) use (listener, port, running, peak, replies) {
         let server = s.spawn(fn () use (listener, running, peak) {
-            return serve(listener, 2, fn (Stream conn) use (running, peak) {
-                let now = running.update(fn (int n) => n + 1);
-                if now > peak.get() {
-                    peak.set(now);
-                }
-                let r = Reader::new(conn);
-                let line = match r.read_line() {
-                    Result::Ok(Option::Some(l)) => l,
-                    default => "",
-                };
-                sleep(5);
-                let w = Writer::new(conn);
-                let _ = w.write_str("echo " + line + "\n");
-                let _ = w.flush();
-                running.update(fn (int n) => n - 1);
-            });
+            return serve(
+                listener,
+                2,
+                fn (Stream conn) use (running, peak) {
+                    let now = running.update(fn (int n) => n + 1);
+                    if now > peak.get() {
+                        peak.set(now);
+                    }
+                    let r = Reader::new(conn);
+                    let line = match r.read_line() {
+                        Result::Ok(Option::Some(l)) => l,
+                        default => "",
+                    };
+                    sleep(5);
+                    let w = Writer::new(conn);
+                    let _ = w.write_str("echo " + line + "\n");
+                    let _ = w.flush();
+                    running.update(fn (int n) => n - 1);
+                },
+            );
         });
         let clients: Vec<Task<string>> = Vec::new();
         let i = 0;

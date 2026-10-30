@@ -1,6 +1,6 @@
 // Timers as values over `task::sleep` and the monotonic clock.
-use clock::{mono_nanos};
-use task::{sleep};
+use clock::mono_nanos;
+use task::sleep;
 
 fn __ns_per_ms() -> int {
     return 1000000;

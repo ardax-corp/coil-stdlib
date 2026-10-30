@@ -1,6 +1,6 @@
 // Connection loops over `io::net::tcp`.
 use io::close;
-use io::sync::{accept_wait};
+use io::sync::accept_wait;
 use task::{scope, Scope, Channel, channel, TaskError};
 
 /// Accepts connections on `listener` and runs `handler` on each one in its

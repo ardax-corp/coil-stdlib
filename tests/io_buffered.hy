@@ -1,10 +1,16 @@
 use tests::assert;
-use io::buffered::{Reader, Writer};
-use io::file::{write_text, read_text};
+use io::buffered::Reader;
+use io::buffered::Writer;
+use io::file::write_text;
+use io::file::read_text;
 use io::fs::remove_file;
-use io::{open, close};
-use io::net::tcp::{listen, connect, local_addr, shutdown};
-use io::sync::{accept_wait};
+use io::open;
+use io::close;
+use io::net::tcp::listen;
+use io::net::tcp::connect;
+use io::net::tcp::local_addr;
+use io::net::tcp::shutdown;
+use io::sync::accept_wait;
 use string::{to_bytes, from_bytes};
 use task::{scope, Scope, sleep};
 
@@ -157,7 +163,9 @@ test("reader waits for a slow peer inside a task") {
         let b = r.read_line();
         let c = r.read_line();
         let _ = close(conn);
-        return a == Result::Ok(Option::Some("hello")) && b == Result::Ok(Option::Some("world")) && c == Result::Ok(Option::None);
+        return a == Result::Ok(Option::Some("hello")) &&
+               b == Result::Ok(Option::Some("world")) &&
+               c == Result::Ok(Option::None);
     });
     let _ = close(listener);
     assert!(got.unwrap_or(false));

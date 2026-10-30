@@ -1,7 +1,7 @@
 use tests::assert;
 use timer::{Interval, sleep_until};
-use clock::{mono_nanos};
-use task::{sleep};
+use clock::mono_nanos;
+use task::sleep;
 
 test("sleep_until waits for the deadline") {
     let deadline = mono_nanos() + 3000000;
