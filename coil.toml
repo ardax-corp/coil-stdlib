@@ -3,7 +3,7 @@ name = "stdlib"
 version = "0.1.0"
 
 [module]
-roots = ["./src", ".ci/coil-time/src"]
+roots = ["./src"]
 
 [dependencies]
-time = { path = ".ci/coil-time", trusted = true }
+time = { git = "https://github.com/ardax-corp/coil-time.git", version = "latest" }

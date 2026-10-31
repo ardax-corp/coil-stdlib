@@ -61,8 +61,6 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
   `[byte; N]` too (`to_bytes(s)` for a string value).
 - `num` is named so a project `math.hy` does not shadow it.
 - Collections that are type-tied should be **methods** (`m.insert(k, v)`).
-  Cross-module user classes are still limited in the language
-  ([COI-12](https://linear.app/ardax/issue/COI-12)).
 - `xs.fold(init, fn (A acc, T x) => …)` takes any accumulator type `A`.
 - `for (i, x) in xs.enumerate()` walks indices and values together.
 - `xs.chunks(n)` is the only name (no `chunk` alias). `windows` is overlapping
