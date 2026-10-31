@@ -65,7 +65,7 @@ fn main() {
 
 ## `io::sync`
 
-Blocking helpers over L0 + `wait_readable` / `wait_writable` (`src/io/sync.hy`), not host natives.
+Blocking helpers over L0 + `wait_readable` / `wait_writable` (`src/io/sync.coil`), not host natives.
 
 | Function | Notes |
 |----------|-------|

@@ -259,7 +259,7 @@ impl Path {
     /// # use tests::assert;
     /// assert!(Path::from("/etc").is_absolute());
     /// assert!(Path::from("C:\\data").is_absolute());
-    /// assert!(!Path::from("src/main.hy").is_absolute());
+    /// assert!(!Path::from("src/main.coil").is_absolute());
     /// ```
     pub fn is_absolute() -> bool {
         let path = self.raw;

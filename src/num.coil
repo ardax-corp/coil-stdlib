@@ -1,5 +1,5 @@
 // Scalar numeric helpers layered on the userland `math` module.
-// Named `num` so workspace `examples/src/math.hy` does not shadow this module.
+// Named `num` so workspace `examples/src/math.coil` does not shadow this module.
 //
 // `abs` stays type-overloaded (numeric / negation, not Ord).
 // `min` / `max` / `clamp` are generic over `Ord` (int, float, and derived orders).
