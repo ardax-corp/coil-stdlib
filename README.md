@@ -36,11 +36,12 @@ docs/                 # package documentation
 
 ## Develop
 
-Needs a Coil toolchain on `PATH` (or `COIL`) and a
-[coil-time](https://github.com/ardax-corp/coil-time) checkout at `.ci/coil-time`.
-`random::Rng::from_time` uses coil-time clocks through HostInvoke (Coil module
-root only — no `libtime` dload):
+Needs a Coil toolchain on `PATH` (or `COIL`). `random::Rng::from_time` uses
+[coil-time](https://github.com/ardax-corp/coil-time), a pure-Coil dependency
+declared in `coil.toml`. With spool, `spool install` fetches it and
+`spool test` passes its root. With plain `coil`, clone it next to this checkout:
 
 ```bash
-coil test --allow-read --allow-write --allow-net --root .ci/coil-time/src
+git clone https://github.com/ardax-corp/coil-time.git ../coil-time
+coil test --allow-read --allow-write --allow-net --root ../coil-time/src
 ```

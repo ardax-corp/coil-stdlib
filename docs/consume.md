@@ -31,12 +31,11 @@ roots = ["./src", "../coil-stdlib/src"]
 ```
 
 `random::Rng::from_time` seeds from [coil-time](https://github.com/ardax-corp/coil-time)
-timestamps as ints. Treat `time` as a Coil module root only (HostInvoke clocks;
-no `libtime` dload). This package's `coil.toml` pins a trusted path dep at
-`.ci/coil-time` (CI checkout). Sibling checkout is the same shape with
-`../coil-time`. Pass `--root .ci/coil-time/src` (CLI `--root`; the compiler does
-not follow `[module] roots` or path deps for discovery). Do not pass
-`--allow-dload time` and do not put a native search path on `[ffi]`.
+timestamps as ints. `coil.toml` declares it as a git dependency
+(`https://github.com/ardax-corp/coil-time.git`), so spool fetches it along with
+stdlib. It is pure Coil: no `--allow-dload time` and no `[ffi]` search path.
+With plain `coil`, clone coil-time and pass `--root ../coil-time/src` (the
+compiler reads no `coil.toml`).
 
 ## Language repo checkout
 
