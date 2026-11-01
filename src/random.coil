@@ -1,4 +1,6 @@
-// Seeded PRNG (`Rng`). `from_time` mixes coil-time timestamps as ints.
+// Seeded PRNG (`Rng`). `from_entropy` seeds from the OS CSPRNG (builtin
+// `entropy`); `from_time` mixes coil-time timestamps as ints.
+use entropy::bytes as os_bytes;
 use time::{epoch, timestamp};
 use arith::{Wrapping, INT_MAX};
 
@@ -10,9 +12,9 @@ fn shr_logical(int x, int n) -> int {
 /// A seeded pseudo-random number generator.
 ///
 /// The same seed always gives the same sequence, which makes tests repeatable.
-/// It is not cryptographically secure: for keys, tokens and nonces use
-/// `crypto::random_bytes` from coil-crypto. `from_time` needs the coil-time
-/// package on the module roots.
+/// It is not cryptographically secure: for keys, tokens and nonces use the
+/// builtin `entropy::bytes(n)`, which reads the OS CSPRNG on every call.
+/// `from_time` needs the coil-time package on the module roots.
 ///
 /// # Examples
 ///
@@ -37,6 +39,31 @@ impl Rng {
             s = 1;
         }
         return new Rng(s);
+    }
+
+    /// Creates a generator seeded with 64 bits from the OS CSPRNG
+    /// (`entropy::bytes`), so two processes started in the same instant
+    /// still get different sequences. The sequence itself is still splitmix64:
+    /// not for keys or tokens.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use random::{Rng};
+    /// # use tests::assert;
+    /// let r = Rng::from_entropy();
+    /// let roll = r.range(1, 7);
+    /// assert!(roll >= 1 && roll < 7);
+    /// ```
+    pub static fn from_entropy() -> Rng {
+        let raw = os_bytes(8);
+        let seed = 0;
+        let i = 0;
+        while i < 8 {
+            seed = (seed << 8) | (raw[i] as int);
+            i = i + 1;
+        }
+        return Rng::seeded(seed);
     }
 
     /// Creates a generator seeded from the current wall-clock and monotonic time (via coil-time).
