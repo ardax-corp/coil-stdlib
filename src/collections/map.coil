@@ -2,7 +2,7 @@
 // (linear probing), as CPython's compact dict. No Default on K/V.
 
 /// One key-value pair, as `HashMap` iteration yields it.
-class Entry<K, V> {
+class Pair<K, V> {
     /// The key.
     pub key: K,
     /// The value stored under `key`.
@@ -229,7 +229,7 @@ impl HashMap<K, V> {
 
     /// Returns an iterator over the entries, in insertion order.
     ///
-    /// `for e in m` does the same; each item is an `Entry` with `key` and `value`.
+    /// `for e in m` does the same; each item is a `Pair` with `key` and `value`.
     ///
     /// # Examples
     ///
@@ -643,13 +643,13 @@ impl HashMap<K: Eq + Hash, V> {
 
 impl HashMapIter<K, V> {
     /// Returns the next entry, or `None` after the last one.
-    pub fn next() -> Option<Entry<K, V>> {
+    pub fn next() -> Option<Pair<K, V>> {
         let n = self.map.keys.len();
         while self.slot < n {
             let s = self.slot;
             self.slot = self.slot + 1;
             if self.map.live[s] == 1 {
-                let e = new Entry(self.map.keys[s], self.map.vals[s]);
+                let e = new Pair(self.map.keys[s], self.map.vals[s]);
                 return Option::Some(e);
             }
         }
@@ -658,7 +658,7 @@ impl HashMapIter<K, V> {
 }
 
 impl IntoIterator for HashMap<K, V> {
-    type Item = Entry<K, V>;
+    type Item = Pair<K, V>;
     type IntoIter = HashMapIter<K, V>;
     pub fn into_iter(HashMap<K, V> m) -> HashMapIter<K, V> {
         return m.iter();
@@ -666,8 +666,8 @@ impl IntoIterator for HashMap<K, V> {
 }
 
 impl Iterator for HashMapIter<K, V> {
-    type Item = Entry<K, V>;
-    pub fn next(HashMapIter<K, V> it) -> Option<Entry<K, V>> {
+    type Item = Pair<K, V>;
+    pub fn next(HashMapIter<K, V> it) -> Option<Pair<K, V>> {
         return it.next();
     }
 }
