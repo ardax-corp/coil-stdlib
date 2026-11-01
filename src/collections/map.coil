@@ -427,6 +427,123 @@ impl HashMap<K: Eq + Hash, V> {
         return init;
     }
 
+    /// Returns the value stored under `k`, storing `v` there first when
+    /// `k` has no entry, with one lookup.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::map::{HashMap};
+    /// # use tests::assert;
+    /// let m: HashMap<string, int> = HashMap::new();
+    /// assert!(m.or_insert("a", 1) == 1);
+    /// assert!(m.or_insert("a", 2) == 1);
+    /// assert!(m.len() == 1);
+    /// ```
+    pub fn or_insert(K k, V v) -> V
+        ensures self.len == old(self.len) || self.len == old(self.len) + 1
+    {
+        let h = k.hash();
+        h = h ^ (h >> 32);
+        h = h ^ (h >> 16);
+        let found = self.probe(k, h);
+        if found >= 0 {
+            return self.vals[found];
+        }
+        self.add_new(found, k, h, v);
+        return v;
+    }
+
+    /// Returns the value stored under `k`, storing `make()` there first
+    /// when `k` has no entry. `make` runs only for a new key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::map::{HashMap};
+    /// # use tests::assert;
+    /// let m: HashMap<int, Vec<int>> = HashMap::new();
+    /// let v = m.or_insert_with(1, fn () => Vec::new());
+    /// assert!(v.len() == 0);
+    /// assert!(m.contains(1));
+    /// ```
+    pub fn or_insert_with(K k, () -> V make) -> V
+        ensures self.len == old(self.len) || self.len == old(self.len) + 1
+    {
+        let h = k.hash();
+        h = h ^ (h >> 32);
+        h = h ^ (h >> 16);
+        let found = self.probe(k, h);
+        if found >= 0 {
+            return self.vals[found];
+        }
+        let v = make();
+        self.add_new(found, k, h, v);
+        return v;
+    }
+
+    /// Replaces the value stored under `k` with `v` when `k` has an
+    /// entry; a missing key stays missing. Returns `true` when it had one.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::map::{HashMap};
+    /// # use tests::assert;
+    /// let m: HashMap<string, int> = HashMap::new();
+    /// m.insert("a", 1);
+    /// assert!(m.and_update("a", 5));
+    /// assert!(!m.and_update("b", 5));
+    /// assert!(m.get_or("a", 0) == 5);
+    /// assert!(!m.contains("b"));
+    /// ```
+    pub fn and_update(K k, V v) -> bool
+        ensures self.len == old(self.len)
+    {
+        let found = self.find(k);
+        if found >= 0 {
+            self.vals[found] = v;
+            return true;
+        }
+        return false;
+    }
+
+    /// Replaces the value `old` stored under `k` with `f(old)` when `k`
+    /// has an entry; a missing key stays missing. Returns `true` when it
+    /// had one.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::map::{HashMap};
+    /// # use tests::assert;
+    /// let m: HashMap<string, int> = HashMap::new();
+    /// m.insert("a", 1);
+    /// assert!(m.and_update_with("a", fn (int n) => n * 10));
+    /// assert!(!m.and_update_with("b", fn (int n) => n * 10));
+    /// assert!(m.get_or("a", 0) == 10);
+    /// ```
+    pub fn and_update_with(K k, V -> V f) -> bool
+        ensures self.len == old(self.len)
+    {
+        let found = self.find(k);
+        if found >= 0 {
+            self.vals[found] = f(self.vals[found]);
+            return true;
+        }
+        return false;
+    }
+
+    // Stores `v` under `k`, which `probe` did not find (`found` is its
+    // place as `-(place + 1)`), growing first when the index is half full.
+    fn add_new(int found, K k, int h, V v) {
+        if (self.keys.len() + 1) * 2 > self.cap {
+            self.grow();
+            found = self.probe(k, h);
+        }
+        self.add_at(-found - 1, k, h, v);
+    }
+
     /// Returns `true` when the map has an entry for `k`.
     ///
     /// # Examples
