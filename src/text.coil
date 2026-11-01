@@ -481,12 +481,69 @@ trait Pattern<P> {
     /// Returns `true` when a match ends at the end of `hay`.
     fn is_suffix_of(P pat, string hay) -> bool {}
 
+    /// Returns the pieces of `hay` between the matches of `pat`, as
+    /// [`Searchable::split`] gives them.
+    ///
+    /// The default goes through `find_in`; an instance overrides it when it
+    /// can split faster (a one-byte `string` scans for that byte).
+    fn split_of(P pat, string hay) -> Vec<string> {
+        return split_by_find(pat, hay);
+    }
+
     /// Returns the replacement text for the match `find_in` just returned.
     ///
     /// The default is `template` itself. A regex substitutes its captures
     /// (`$1`, `${name}`).
     fn expand(P pat, string template) -> string {
         return template;
+    }
+}
+
+// `Pattern::split_of` through `find_in`: the pieces of `s` between the
+// matches of `pat`.
+fn split_by_find<P: Pattern>(P pat, string s) -> Vec<string> {
+    let out: Vec<string> = Vec::new();
+    let piece = 0;
+    let from = 0;
+    while from <= s.len() {
+        let span = pat.find_in(s, from) ?? new Span(-1, -1);
+        if span.start < 0 {
+            break;
+        }
+        let start = span.start;
+        let end = span.end;
+        out.push(span_text(s, piece, start));
+        piece = end;
+        from = end;
+        if end == start {
+            from = next_char(s, end);
+        }
+    }
+    out.push(span_text(s, piece, s.len()));
+    return out;
+}
+
+// The pieces of `s` between the bytes `b`, for a one-byte (so ASCII)
+// separator: a scan for `b` and a slice per piece, with no span.
+fn split_byte(string s, byte b) -> Vec<string> {
+    let n = s.len();
+    let out: Vec<string> = Vec::new();
+    let piece = 0;
+    while true {
+        let i = piece;
+        while i < n && s[i] != b {
+            i = i + 1;
+        }
+        // A slice between ASCII bytes cannot split a character.
+        let text = match slice_bytes(s, piece, i) {
+            Result::Ok(x) => x,
+            Result::Err(_) => "",
+        };
+        out.push(text);
+        if i >= n {
+            return out;
+        }
+        piece = i + 1;
     }
 }
 
@@ -509,6 +566,13 @@ impl Pattern for string {
 
     pub fn expand(string pat, string template) -> string {
         return template;
+    }
+
+    pub fn split_of(string pat, string hay) -> Vec<string> {
+        if pat.len() == 1 {
+            return split_byte(hay, pat[0]);
+        }
+        return split_by_find(pat, hay);
     }
 }
 
@@ -600,26 +664,7 @@ trait Searchable<T: Show> {
     ///
     /// A match at either end gives an empty first or last piece.
     fn split<P: Pattern>(T hay, P pat) -> Vec<string> {
-        let s = hay.show();
-        let out: Vec<string> = Vec::new();
-        let piece = 0;
-        let from = 0;
-        while from <= s.len() {
-            let span = pat.find_in(s, from) ?? new Span(-1, -1);
-            if span.start < 0 {
-                break;
-            }
-            let start = span.start;
-            let end = span.end;
-            out.push(span_text(s, piece, start));
-            piece = end;
-            from = end;
-            if end == start {
-                from = next_char(s, end);
-            }
-        }
-        out.push(span_text(s, piece, s.len()));
-        return out;
+        return pat.split_of(hay.show());
     }
 
     /// Splits `hay` at the first match of `pat` into the parts before and after it.
