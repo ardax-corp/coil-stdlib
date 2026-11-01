@@ -1,7 +1,7 @@
 // Mutable BST over Ord+Eq keys, index-linked nodes.
 
 /// One key-value pair, as `TreeMap` iteration yields it.
-class Entry<K, V> {
+class Pair<K, V> {
     /// The key.
     pub key: K,
     /// The value stored under `key`.
@@ -105,7 +105,7 @@ impl TreeMap<K, V> {
 
     /// Returns an iterator over the entries in ascending key order.
     ///
-    /// `for e in m` does the same; each item is an `Entry` with `key` and `value`.
+    /// `for e in m` does the same; each item is a `Pair` with `key` and `value`.
     pub fn iter() -> TreeMapIter<K, V> {
         let stack: Vec<int> = Vec::new();
         return new TreeMapIter(self, stack, 0);
@@ -399,7 +399,7 @@ impl TreeMap<K: Ord + Eq, V> {
 
 impl TreeMapIter<K, V> {
     /// Returns the entry with the next larger key, or `None` after the last one.
-    pub fn next() -> Option<Entry<K, V>> {
+    pub fn next() -> Option<Pair<K, V>> {
         if self.phase == 0 {
             let cur = self.map.root;
             while cur >= 0 {
@@ -417,7 +417,7 @@ impl TreeMapIter<K, V> {
                     self.stack.push(cur);
                     cur = self.map.left[cur];
                 }
-                let e = new Entry(self.map.keys[node], self.map.vals[node]);
+                let e = new Pair(self.map.keys[node], self.map.vals[node]);
                 return Option::Some(e);
             },
         };
@@ -425,7 +425,7 @@ impl TreeMapIter<K, V> {
 }
 
 impl IntoIterator for TreeMap<K, V> {
-    type Item = Entry<K, V>;
+    type Item = Pair<K, V>;
     type IntoIter = TreeMapIter<K, V>;
     pub fn into_iter(TreeMap<K, V> m) -> TreeMapIter<K, V> {
         return m.iter();
@@ -433,8 +433,8 @@ impl IntoIterator for TreeMap<K, V> {
 }
 
 impl Iterator for TreeMapIter<K, V> {
-    type Item = Entry<K, V>;
-    pub fn next(TreeMapIter<K, V> it) -> Option<Entry<K, V>> {
+    type Item = Pair<K, V>;
+    pub fn next(TreeMapIter<K, V> it) -> Option<Pair<K, V>> {
         return it.next();
     }
 }
