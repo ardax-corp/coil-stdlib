@@ -23,7 +23,7 @@ passes the `--root` flags to `coil`. The compiler reads neither file.
 Without spool, use a sibling checkout and pass the roots yourself:
 
 ```bash
-coil --root ../coil-json/src --root ../coil-stdlib/src main.hy
+coil --root ../coil-json/src --root ../coil-stdlib/src main.coil
 ```
 
 ## Call

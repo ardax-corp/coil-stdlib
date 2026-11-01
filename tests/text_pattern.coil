@@ -46,8 +46,8 @@ test("string patterns") {
     assert!(!"foobar".contains("zz"));
     assert!("--verbose".starts_with("--"));
     assert!(!"verbose".starts_with("--"));
-    assert!("main.hy".ends_with(".hy"));
-    assert!(!"hy".ends_with("main.hy"));
+    assert!("main.coil".ends_with(".coil"));
+    assert!(!"hy".ends_with("main.coil"));
     let at = "a=b=c".find("=") ?? new Span(-1, -1);
     assert!(at.start == 1 && at.end == 2);
     assert!("abc".find("z").is_none());
