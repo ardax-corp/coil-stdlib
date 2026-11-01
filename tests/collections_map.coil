@@ -1,5 +1,6 @@
 use tests::assert;
 use collections::map::HashMap;
+use string::format;
 
 test("hashmap insert get update remove") {
     let m = HashMap::new();
@@ -76,4 +77,104 @@ test("hashmap keys values") {
     let vs = m.values();
     assert!(ks.len() == 2);
     assert!(vs.len() == 2);
+}
+
+test("hashmap upsert counts with one call per key") {
+    let counts: HashMap<string, int> = HashMap::new();
+    let words = ["to", "be", "or", "not", "to", "be", "to"];
+    for w in words {
+        counts.upsert(w, 1, fn (int n) => n + 1);
+    }
+    assert!(counts.len() == 4);
+    assert!(counts.get_or("to", 0) == 3);
+    assert!(counts.get_or("be", 0) == 2);
+    assert!(counts.get_or("not", 0) == 1);
+    assert!(counts.upsert("or", 0, fn (int n) => n * 10) == 10);
+    assert!(counts.upsert("new", 7, fn (int n) => n + 1) == 7);
+    assert!(counts.len() == 5);
+}
+
+test("hashmap many removes and reinserts keep every key findable") {
+    let m: HashMap<int, int> = HashMap::new();
+    let i = 0;
+    while i < 2000 {
+        m.insert(i, i * 2);
+        i = i + 1;
+    }
+    i = 0;
+    while i < 2000 {
+        if i % 3 != 0 {
+            assert!(m.remove(i));
+        }
+        i = i + 1;
+    }
+    assert!(m.len() == 667);
+    i = 0;
+    while i < 2000 {
+        assert!(m.contains(i) == (i % 3 == 0));
+        i = i + 1;
+    }
+    i = 0;
+    while i < 2000 {
+        if i % 3 == 1 {
+            m.insert(i, -i);
+        }
+        i = i + 1;
+    }
+    assert!(m.len() == 1334);
+    assert!(m.get_or(1, 0) == -1);
+    assert!(m.get_or(3, 0) == 6);
+    assert!(m.get_or(2, 0) == 0);
+}
+
+test("hashmap churn on a small map does not grow without bound") {
+    let m: HashMap<int, int> = HashMap::new();
+    let i = 0;
+    while i < 5000 {
+        m.insert(i, i);
+        assert!(m.remove(i));
+        i = i + 1;
+    }
+    assert!(m.is_empty());
+    assert!(m.capacity() <= 16);
+}
+
+test("hashmap keeps insertion order across growth and removal") {
+    let m: HashMap<string, int> = HashMap::new();
+    let i = 0;
+    while i < 100 {
+        m.insert(format("k%i", i), i);
+        i = i + 1;
+    }
+    m.remove("k0");
+    m.remove("k50");
+    m.insert("k0", 0);
+    let ks = m.keys();
+    assert!(ks.len() == 99);
+    assert!(ks[0] == "k1");
+    assert!(ks[48] == "k49");
+    assert!(ks[49] == "k51");
+    assert!(ks[98] == "k0");
+}
+
+test("hashmap float keys and colliding int keys") {
+    let f: HashMap<float, int> = HashMap::new();
+    let i = 0;
+    while i < 300 {
+        f.insert(i as float, i);
+        i = i + 1;
+    }
+    assert!(f.len() == 300);
+    assert!(f.get_or(299.0, -1) == 299);
+    assert!(f.get_or(0.5, -1) == -1);
+    let c: HashMap<int, int> = HashMap::new();
+    i = 0;
+    while i < 300 {
+        c.insert(i * 1024, i);
+        i = i + 1;
+    }
+    assert!(c.get_or(299 * 1024, -1) == 299);
+    assert!(c.get_or(1023, -1) == -1);
+    assert!(c.remove(1024));
+    assert!(c.get_or(2048, -1) == 2);
 }

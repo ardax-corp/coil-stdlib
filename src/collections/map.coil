@@ -1,4 +1,5 @@
-// HashMap — separate chaining over parallel Vecs (no Default on K/V).
+// HashMap — insertion-ordered entry slots plus an open-addressing index
+// (linear probing), as CPython's compact dict. No Default on K/V.
 
 /// One key-value pair, as `HashMap` iteration yields it.
 class Entry<K, V> {
@@ -39,16 +40,20 @@ class Entry<K, V> {
 /// ```
 class HashMap<K, V>
     invariant self.len >= 0 && self.len <= self.keys.len()
-    invariant self.cap >= 8 && self.heads.len() == self.cap
-    invariant self.vals.len() == self.keys.len() && self.next.len() == self.keys.len()
+    invariant self.cap >= 8 && self.index.len() == self.cap
+    invariant self.vals.len() == self.keys.len() && self.hashes.len() == self.keys.len()
     invariant self.live.len() == self.keys.len()
 {
-    heads: Vec<int>,
+    /// `slot + 1` of the entry whose probe sequence passes here, `0` for
+    /// empty, `-1` for a removed entry's place. `cap` long, a power of two.
+    index: Vec<int>,
     /// Key slots, including removed ones (see `live`). Prefer `keys()`.
     pub keys: Vec<K>,
     /// Value slots parallel to `keys`. Prefer `values()`.
     pub vals: Vec<V>,
-    next: Vec<int>,
+    /// Each slot's key hash, so a probe compares hashes before keys and a
+    /// grow never hashes again.
+    hashes: Vec<int>,
     /// `1` where the slot holds an entry, `0` where it was removed.
     pub live: Vec<int>,
     len: int,
@@ -83,17 +88,17 @@ impl HashMap<K, V> {
         if n < 8 {
             n = 8;
         }
-        let heads: Vec<int> = Vec::new();
+        let index: Vec<int> = Vec::with_capacity(n);
         let i = 0;
         while i < n {
-            heads.push(-1);
+            index.push(0);
             i = i + 1;
         }
         let keys: Vec<K> = Vec::new();
         let vals: Vec<V> = Vec::new();
-        let next: Vec<int> = Vec::new();
+        let hashes: Vec<int> = Vec::new();
         let live: Vec<int> = Vec::new();
-        return new HashMap(heads, keys, vals, next, live, 0, n);
+        return new HashMap(index, keys, vals, hashes, live, 0, n);
     }
 
     /// Creates an empty map.
@@ -157,15 +162,13 @@ impl HashMap<K, V> {
     {
         let i = 0;
         while i < self.cap {
-            self.heads[i] = -1;
+            self.index[i] = 0;
             i = i + 1;
         }
-        let n = self.live.len();
-        let j = 0;
-        while j < n {
-            self.live[j] = 0;
-            j = j + 1;
-        }
+        self.keys = Vec::new();
+        self.vals = Vec::new();
+        self.hashes = Vec::new();
+        self.live = Vec::new();
         self.len = 0;
     }
 
@@ -248,65 +251,111 @@ impl HashMap<K, V> {
 }
 
 impl HashMap<K: Eq + Hash, V> {
-    fn hash_of(K k) -> int {
-        return k.hash();
-    }
-
-    fn bucket(K k) -> int {
-        return self.hash_of(k) & (self.cap - 1);
-    }
-
-    fn find(K k) -> int {
-        let h = self.bucket(k);
-        let idx = self.heads[h];
-        while idx >= 0 {
-            if self.live[idx] == 1 {
-                if self.keys[idx] == k {
-                    return idx;
+    // The slot holding `k` (hash `h`), or `-(p + 1)` where `p` is the index
+    // position an insert of `k` takes: the first removed place passed, else
+    // the empty one that ended the probe.
+    fn probe(K k, int h) -> int {
+        let index = self.index;
+        let hashes = self.hashes;
+        let keys = self.keys;
+        let mask = self.cap - 1;
+        let i = h & mask;
+        let free = -1;
+        while true {
+            let e = index[i];
+            if e > 0 {
+                let s = e - 1;
+                if hashes[s] == h && keys[s] == k {
+                    return s;
                 }
+            } else if e == 0 {
+                if free < 0 {
+                    free = i;
+                }
+                return -(free + 1);
+            } else if free < 0 {
+                free = i;
             }
-            idx = self.next[idx];
+            i = (i + 1) & mask;
         }
-        return -1;
     }
 
-    fn grow() {
-        let new_cap = self.cap + self.cap;
-        if new_cap < 8 {
-            new_cap = 8;
+    // The slot holding `k`, or -1. The hash, with its high bits folded
+    // into the low ones the index uses (float hashes are bit patterns with
+    // zero low bits), is computed here and in `insert`, `upsert` and
+    // `remove` rather than in a helper: a call costs more than the probe.
+    fn find(K k) -> int {
+        let h = k.hash();
+        h = h ^ (h >> 32);
+        h = h ^ (h >> 16);
+        let index = self.index;
+        let mask = self.cap - 1;
+        let i = h & mask;
+        while true {
+            let e = index[i];
+            if e > 0 {
+                let s = e - 1;
+                if self.hashes[s] == h && self.keys[s] == k {
+                    return s;
+                }
+            } else if e == 0 {
+                return -1;
+            }
+            i = (i + 1) & mask;
         }
-        let heads: Vec<int> = Vec::new();
+    }
+
+    // Rebuilds the index over the live slots, dropping removed ones, at
+    // twice the size when the live entries alone fill half of it.
+    fn grow() {
+        let new_cap = self.cap;
+        while (self.len + 1) * 2 > new_cap {
+            new_cap = new_cap + new_cap;
+        }
+        let index: Vec<int> = Vec::with_capacity(new_cap);
         let i = 0;
         while i < new_cap {
-            heads.push(-1);
+            index.push(0);
             i = i + 1;
         }
-        let keys: Vec<K> = Vec::new();
-        let vals: Vec<V> = Vec::new();
-        let next: Vec<int> = Vec::new();
-        let live: Vec<int> = Vec::new();
+        let keys: Vec<K> = Vec::with_capacity(self.len);
+        let vals: Vec<V> = Vec::with_capacity(self.len);
+        let hashes: Vec<int> = Vec::with_capacity(self.len);
+        let live: Vec<int> = Vec::with_capacity(self.len);
+        let mask = new_cap - 1;
         let old_n = self.keys.len();
         let j = 0;
         while j < old_n {
             if self.live[j] == 1 {
-                let k = self.keys[j];
-                let v = self.vals[j];
-                let h = self.hash_of(k) & (new_cap - 1);
-                let slot = keys.len();
-                keys.push(k);
-                vals.push(v);
-                next.push(heads[h]);
+                let h = self.hashes[j];
+                let p = h & mask;
+                while index[p] != 0 {
+                    p = (p + 1) & mask;
+                }
+                keys.push(self.keys[j]);
+                vals.push(self.vals[j]);
+                hashes.push(h);
                 live.push(1);
-                heads[h] = slot;
+                index[p] = keys.len();
             }
             j = j + 1;
         }
-        self.heads = heads;
+        self.index = index;
         self.keys = keys;
         self.vals = vals;
-        self.next = next;
+        self.hashes = hashes;
         self.live = live;
         self.cap = new_cap;
+    }
+
+    // Appends a new entry for `k` at index position `p` (from `probe`).
+    fn add_at(int p, K k, int h, V v) {
+        self.keys.push(k);
+        self.vals.push(v);
+        self.hashes.push(h);
+        self.live.push(1);
+        self.index[p] = self.keys.len();
+        self.len = self.len + 1;
     }
 
     /// Stores `v` under `k`, replacing any value already there.
@@ -327,23 +376,55 @@ impl HashMap<K: Eq + Hash, V> {
         ensures !result || self.len == old(self.len) + 1
         ensures result || self.len == old(self.len)
     {
-        let found = self.find(k);
+        let h = k.hash();
+        h = h ^ (h >> 32);
+        h = h ^ (h >> 16);
+        let found = self.probe(k, h);
         if found >= 0 {
             self.vals[found] = v;
             return false;
         }
-        if (self.len + self.len) >= self.cap {
+        if (self.keys.len() + 1) * 2 > self.cap {
             self.grow();
+            found = self.probe(k, h);
         }
-        let h = self.bucket(k);
-        let slot = self.keys.len();
-        self.keys.push(k);
-        self.vals.push(v);
-        self.next.push(self.heads[h]);
-        self.live.push(1);
-        self.heads[h] = slot;
-        self.len = self.len + 1;
+        self.add_at(-found - 1, k, h, v);
         return true;
+    }
+
+    /// Stores `init` under `k` when it has no entry, else replaces its value
+    /// `old` with `f(old)`, with one lookup. Returns the value now stored.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::map::{HashMap};
+    /// # use tests::assert;
+    /// let counts: HashMap<string, int> = HashMap::new();
+    /// for w in ["a", "b", "a"] {
+    ///     counts.upsert(w, 1, fn (int n) => n + 1);
+    /// }
+    /// assert!(counts.get_or("a", 0) == 2);
+    /// assert!(counts.get_or("b", 0) == 1);
+    /// ```
+    pub fn upsert(K k, V init, V -> V f) -> V
+        ensures self.len == old(self.len) || self.len == old(self.len) + 1
+    {
+        let h = k.hash();
+        h = h ^ (h >> 32);
+        h = h ^ (h >> 16);
+        let found = self.probe(k, h);
+        if found >= 0 {
+            let v = f(self.vals[found]);
+            self.vals[found] = v;
+            return v;
+        }
+        if (self.keys.len() + 1) * 2 > self.cap {
+            self.grow();
+            found = self.probe(k, h);
+        }
+        self.add_at(-found - 1, k, h, init);
+        return init;
     }
 
     /// Returns `true` when the map has an entry for `k`.
@@ -375,9 +456,9 @@ impl HashMap<K: Eq + Hash, V> {
     /// assert!(m.get_or("b", 0) == 0);
     /// ```
     pub fn get_or(K k, V fallback) -> V {
-        let found = self.find(k);
-        if found >= 0 {
-            return self.vals[found];
+        let s = self.find(k);
+        if s >= 0 {
+            return self.vals[s];
         }
         return fallback;
     }
@@ -395,9 +476,9 @@ impl HashMap<K: Eq + Hash, V> {
     /// assert!(m.get("b").is_none());
     /// ```
     pub fn get(K k) -> Option<V> {
-        let found = self.find(k);
-        if found >= 0 {
-            return Some(self.vals[found]);
+        let s = self.find(k);
+        if s >= 0 {
+            return Some(self.vals[s]);
         }
         return None;
     }
@@ -421,24 +502,23 @@ impl HashMap<K: Eq + Hash, V> {
         ensures !result || self.len == old(self.len) - 1
         ensures result || self.len == old(self.len)
     {
-        let h = self.bucket(k);
-        let idx = self.heads[h];
-        let prev = -1;
-        while idx >= 0 {
-            if self.live[idx] == 1 {
-                if self.keys[idx] == k {
-                    if prev < 0 {
-                        self.heads[h] = self.next[idx];
-                    } else {
-                        self.next[prev] = self.next[idx];
-                    }
-                    self.live[idx] = 0;
+        let h = k.hash();
+        h = h ^ (h >> 32);
+        h = h ^ (h >> 16);
+        let mask = self.cap - 1;
+        let i = h & mask;
+        while self.index[i] != 0 {
+            let e = self.index[i];
+            if e > 0 {
+                let s = e - 1;
+                if self.hashes[s] == h && self.keys[s] == k {
+                    self.index[i] = -1;
+                    self.live[s] = 0;
                     self.len = self.len - 1;
                     return true;
                 }
             }
-            prev = idx;
-            idx = self.next[idx];
+            i = (i + 1) & mask;
         }
         return false;
     }
