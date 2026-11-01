@@ -19,6 +19,11 @@ class Pair<K, V> {
 /// `get` takes a fallback instead of returning an `Option`; use `contains` first
 /// when the fallback could be a real value.
 ///
+/// To read or change one key's value with one lookup, use `entry(k)`, a view
+/// whose `or_insert` and `and_update_with` write the map
+/// (`m.entry(w).and_update_with(fn (int n) => n + 1).or_insert(1)`), or the
+/// one-call forms `upsert`, `or_insert` and `and_update`.
+///
 /// # Examples
 ///
 /// ```

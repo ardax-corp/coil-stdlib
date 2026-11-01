@@ -2,7 +2,8 @@
 // `xs.map(f).filter(g)` reads left to right: `VecOps` for any element,
 // `VecEq` / `VecOrd` where the element is `Eq` / `Ord`, `VecSum` for
 // `Vec<int>` and `Vec<float>`. Every method returns a new vector or value
-// and leaves `xs` as it was.
+// and leaves `xs` as it was, except `VecSlots::slot`, a view of one element
+// that writes `xs` in place.
 
 /// Two-bucket result of `partition` (`matched` = pred true, `rest` = pred false).
 /// Named pair instead of `Vec<Vec<T>>` so callers do not index `[0]`/`[1]`.
