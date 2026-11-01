@@ -29,6 +29,15 @@ test("rng from_time") {
     assert!(z != 0 || z == 0);
 }
 
+test("rng from_entropy seeds differ between generators") {
+    let a = Rng::from_entropy();
+    let b = Rng::from_entropy();
+    // Two equal 64-bit seeds from the OS source: about 2^-64.
+    assert!(a.next_u64() != b.next_u64());
+    let n = a.range(0, 8);
+    assert!(n >= 0 && n < 8);
+}
+
 test("rng float spreads over 0..1 and next_u64 uses all 64 bits (#54)") {
     let r = Rng::seeded(42);
     let sum = 0.0;
