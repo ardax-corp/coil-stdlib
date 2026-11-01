@@ -68,6 +68,38 @@ test("split, split_once and replace") {
     assert!("abc".replace_all("z", "+") == "abc");
 }
 
+test("split on one byte agrees with split on a longer separator") {
+    assert!("".split(",").len() == 1 && "".split(",")[0] == "");
+    let only = ",".split(",");
+    assert!(only.len() == 2 && only[0] == "" && only[1] == "");
+    let runs = ",,a,,".split(",");
+    assert!(runs.len() == 5 && runs[2] == "a" && runs[4] == "");
+    assert!("abc".split(",").len() == 1 && "abc".split(",")[0] == "abc");
+    // Multi-byte characters on either side of the separator stay whole.
+    let u = "h\u{e9}llo w\u{f6}rld \u{1f600}".split(" ");
+    assert!(u.len() == 3 && u[0] == "h\u{e9}llo" && u[1] == "w\u{f6}rld" && u[2] == "\u{1f600}");
+    // Pieces longer than one 64-byte scan chunk, and many short ones.
+    let long = "";
+    let i = 0;
+    while i < 40 {
+        long = long + "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-_";
+        if i % 7 == 6 {
+            long = long + ";";
+        }
+        i = i + 1;
+    }
+    let one = long.split(";");
+    let two = long.replace_all(";", "<>").split("<>");
+    assert!(one.len() == 6 && one.len() == two.len());
+    let j = 0;
+    while j < one.len() {
+        assert!(one[j] == two[j]);
+        j = j + 1;
+    }
+    let words = "a b  c d ".split(" ");
+    assert!(words.len() == 6 && words[2] == "" && words[3] == "c" && words[5] == "");
+}
+
 test("empty matches step over whole characters") {
     let parts = "ab".split("");
     assert!(parts.len() == 4);
