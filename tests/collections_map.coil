@@ -46,23 +46,23 @@ test("hashmap clear then insert") {
     assert!(m.contains(1) == false);
 }
 
-test("hashmap capacity power of two") {
-    let m = HashMap::with_capacity(3);
-    assert!(m.capacity() == 8);
-    let n = HashMap::with_capacity(16);
-    assert!(n.capacity() == 16);
+test("hashmap capacity holds what was asked for") {
+    let m: HashMap<int, int> = HashMap::with_capacity(3);
+    assert!(m.capacity() >= 3);
+    let n: HashMap<int, int> = HashMap::with_capacity(100);
+    assert!(n.capacity() >= 100);
 }
 
 test("hashmap single grow preserves entries") {
     let m = HashMap::new();
-    assert!(m.capacity() == 8);
+    let before = m.capacity();
     let i = 0;
-    while i < 5 {
+    while i < before + 1 {
         assert!(m.insert(i, i + 100));
         i = i + 1;
     }
-    assert!(m.capacity() == 16);
-    assert!(m.len() == 5);
+    assert!(m.capacity() > before);
+    assert!(m.len() == before + 1);
     assert!(m.get_or(0, -1) == 100);
     assert!(m.get_or(4, -1) == 104);
     assert!(m.contains(3));
