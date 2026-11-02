@@ -45,10 +45,10 @@ test("hashmap and_update leaves a missing key missing") {
     assert!(m.len() == 1);
 }
 
-test("hashmap and_update_with then or_insert counts") {
+test("hashmap and_modify then or_insert counts") {
     let m: HashMap<string, int> = HashMap::new();
     for w in ["a", "b", "a", "c", "a"] {
-        if !m.and_update_with(w, fn (int n) => n + 1) {
+        if !m.and_modify(w, fn (int n) => n + 1) {
             m.insert(w, 1);
         }
     }
