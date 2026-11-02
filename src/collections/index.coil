@@ -174,13 +174,10 @@ impl KeyIndex<K: Eq + Hash> {
     /// `find` for a key whose hash `h` (`k.hash()`) the caller already has.
     pub fn find_hashed(K k, int h) -> int {
         let s = ki_probe(self.table, self.hashes, h, -1);
-        while s >= 0 {
-            if self.keys[s] == k {
-                return s;
-            }
+        while s >= 0 && self.keys[s] != k {
             s = ki_probe(self.table, self.hashes, h, s);
         }
-        return -1;
+        return s;
     }
 
     /// Returns the slot of `k`, adding it at the next slot when it is new.
