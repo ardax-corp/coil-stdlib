@@ -21,8 +21,8 @@ class Pair<K, V> {
 /// when the fallback could be a real value.
 ///
 /// To read or change one key's value with one lookup, use `entry(k)`, a view
-/// whose `or_insert` and `and_update_with` write the map
-/// (`m.entry(w).and_update_with(fn (int n) => n + 1).or_insert(1)`), or the
+/// whose `or_insert` and `and_modify` write the map
+/// (`m.entry(w).and_modify(fn (int n) => n + 1).or_insert(1)`), or the
 /// one-call forms `upsert`, `or_insert` and `and_update`.
 ///
 /// # Examples
@@ -67,7 +67,7 @@ class HashMap<K, V> {
 /// # use tests::assert;
 /// let counts: HashMap<string, int> = HashMap::new();
 /// for w in ["a", "b", "a"] {
-///     let _ = counts.entry(w).and_update_with(fn (int n) => n + 1).or_insert(1);
+///     let _ = counts.entry(w).and_modify(fn (int n) => n + 1).or_insert(1);
 /// }
 /// assert!(counts.get_or("a", 0) == 2);
 /// assert!(counts.get_or("b", 0) == 1);
@@ -377,11 +377,11 @@ impl HashMap<K: Eq + Hash, V> {
     /// # use tests::assert;
     /// let m: HashMap<string, int> = HashMap::new();
     /// m.insert("a", 1);
-    /// assert!(m.and_update_with("a", fn (int n) => n * 10));
-    /// assert!(!m.and_update_with("b", fn (int n) => n * 10));
+    /// assert!(m.and_modify("a", fn (int n) => n * 10));
+    /// assert!(!m.and_modify("b", fn (int n) => n * 10));
     /// assert!(m.get_or("a", 0) == 10);
     /// ```
-    pub fn and_update_with(K k, V -> V f) -> bool {
+    pub fn and_modify(K k, V -> V f) -> bool {
         let s = self.idx.find(k);
         if s >= 0 {
             self.vals[s] = f(self.vals[s]);
@@ -582,11 +582,11 @@ impl Entry<K: Eq + Hash, V> {
     /// # use tests::assert;
     /// let m: HashMap<string, int> = HashMap::new();
     /// for w in ["a", "b", "a"] {
-    ///     let _ = m.entry(w).and_update_with(fn (int n) => n + 1).or_insert(1);
+    ///     let _ = m.entry(w).and_modify(fn (int n) => n + 1).or_insert(1);
     /// }
     /// assert!(m.get_or("a", 0) == 2 && m.get_or("b", 0) == 1);
     /// ```
-    pub fn and_update_with(V -> V f) -> Entry<K, V> {
+    pub fn and_modify(V -> V f) -> Entry<K, V> {
         if self.slot >= 0 {
             self.map.vals[self.slot] = f(self.map.vals[self.slot]);
         }

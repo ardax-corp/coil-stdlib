@@ -14,7 +14,7 @@ test("entry or_insert stores only for a new key") {
 test("entry and_update then or_insert counts words") {
     let m: HashMap<string, int> = HashMap::new();
     for w in ["x", "y", "x", "z", "x", "y"] {
-        let _ = m.entry(w).and_update_with(fn (int n) => n + 1).or_insert(1);
+        let _ = m.entry(w).and_modify(fn (int n) => n + 1).or_insert(1);
     }
     assert!(m.get_or("x", 0) == 3);
     assert!(m.get_or("y", 0) == 2);
@@ -49,7 +49,7 @@ test("entry key, exists and get_or") {
 test("entry across growth") {
     let m: HashMap<int, int> = HashMap::new();
     for i in 0..2000 {
-        let _ = m.entry(i % 500).and_update_with(fn (int n) => n + 1).or_insert(1);
+        let _ = m.entry(i % 500).and_modify(fn (int n) => n + 1).or_insert(1);
     }
     assert!(m.len() == 500);
     assert!(m.get_or(499, 0) == 4);
