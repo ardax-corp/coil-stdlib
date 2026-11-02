@@ -73,6 +73,11 @@ impl KeyIndex<K> {
         return self.len == 0;
     }
 
+    /// Returns how many keys the index holds before it grows.
+    pub fn capacity() -> int {
+        return (self.table.len() - 1) / 2;
+    }
+
     /// Returns the number of slots, removed ones included: every slot
     /// number is below it.
     pub fn slots() -> int {
