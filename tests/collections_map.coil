@@ -79,18 +79,18 @@ test("hashmap keys values") {
     assert!(vs.len() == 2);
 }
 
-test("hashmap upsert counts with one call per key") {
+test("hashmap entry counts with one lookup per key") {
     let counts: HashMap<string, int> = HashMap::new();
     let words = ["to", "be", "or", "not", "to", "be", "to"];
     for w in words {
-        counts.upsert(w, 1, fn (int n) => n + 1);
+        let _ = counts.entry(w).and_modify(fn (int n) => n + 1).or_insert(1);
     }
     assert!(counts.len() == 4);
     assert!(counts.get_or("to", 0) == 3);
     assert!(counts.get_or("be", 0) == 2);
     assert!(counts.get_or("not", 0) == 1);
-    assert!(counts.upsert("or", 0, fn (int n) => n * 10) == 10);
-    assert!(counts.upsert("new", 7, fn (int n) => n + 1) == 7);
+    assert!(counts.entry("or").and_modify(fn (int n) => n * 10).or_insert(0) == 10);
+    assert!(counts.entry("new").and_modify(fn (int n) => n + 1).or_insert(7) == 7);
     assert!(counts.len() == 5);
 }
 

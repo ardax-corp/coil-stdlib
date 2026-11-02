@@ -23,7 +23,8 @@ class Pair<K, V> {
 /// To read or change one key's value with one lookup, use `entry(k)`, a view
 /// whose `or_insert` and `and_modify` write the map
 /// (`m.entry(w).and_modify(fn (int n) => n + 1).or_insert(1)`), or the
-/// one-call forms `upsert`, `or_insert` and `and_update`.
+/// one-call forms `or_insert`, `or_insert_with`, `and_update` and
+/// `and_modify`.
 ///
 /// # Examples
 ///
@@ -263,34 +264,6 @@ impl HashMap<K: Eq + Hash, V> {
         let _ = self.idx.push_hashed(k, h);
         self.vals.push(v);
         return true;
-    }
-
-    /// Stores `init` under `k` when it has no entry, else replaces its value
-    /// `old` with `f(old)`, with one lookup. Returns the value now stored.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use collections::map::{HashMap};
-    /// # use tests::assert;
-    /// let counts: HashMap<string, int> = HashMap::new();
-    /// for w in ["a", "b", "a"] {
-    ///     counts.upsert(w, 1, fn (int n) => n + 1);
-    /// }
-    /// assert!(counts.get_or("a", 0) == 2);
-    /// assert!(counts.get_or("b", 0) == 1);
-    /// ```
-    pub fn upsert(K k, V init, V -> V f) -> V {
-        let h = k.hash();
-        let s = self.idx.find_hashed(k, h);
-        if s >= 0 {
-            let v = f(self.vals[s]);
-            self.vals[s] = v;
-            return v;
-        }
-        let _ = self.idx.push_hashed(k, h);
-        self.vals.push(init);
-        return init;
     }
 
     /// Returns the value stored under `k`, storing `v` there first when
