@@ -2,7 +2,8 @@
 // `xs.map(f).filter(g)` reads left to right: `VecOps` for any element,
 // `VecEq` / `VecOrd` where the element is `Eq` / `Ord`, `VecSum` for
 // `Vec<int>` and `Vec<float>`. Every method returns a new vector or value
-// and leaves `xs` as it was.
+// and leaves `xs` as it was, except `VecSlots::slot`, a view of one element
+// that writes `xs` in place.
 
 /// Two-bucket result of `partition` (`matched` = pred true, `rest` = pred false).
 /// Named pair instead of `Vec<Vec<T>>` so callers do not index `[0]`/`[1]`.
@@ -499,5 +500,78 @@ impl VecSum for Vec<float> {
             i = i + 1;
         }
         return total;
+    }
+}
+
+/// One element's place in a `Vec`, from `VecSlots::slot`: a view that
+/// borrows the vector, so `set` and `update` write the vector itself.
+///
+/// A slot is a view: use it in the expression that makes it, or keep it in
+/// a local while nothing else uses the vector.
+///
+/// # Examples
+///
+/// ```
+/// use collections::vec::{VecSlots};
+/// # use tests::assert;
+/// let xs: Vec<int> = [1, 2, 3];
+/// let _ = xs.slot(1).update(fn (int x) => x * 10).update(fn (int x) => x + 1);
+/// assert!(xs[1] == 21);
+/// ```
+view class Slot<T> {
+    mut xs: Vec<T>,
+    i: int,
+}
+
+impl Slot<T> {
+    /// The index this slot is for.
+    pub fn index() -> int {
+        return self.i;
+    }
+
+    /// The element in the slot.
+    pub fn get() -> T {
+        return self.xs[self.i];
+    }
+
+    /// Stores `v` in the slot. Returns the slot, so more calls can follow.
+    pub fn set(T v) -> Slot<T> {
+        self.xs[self.i] = v;
+        return self;
+    }
+
+    /// Replaces the element `x` in the slot with `f(x)`. Returns the slot,
+    /// so more calls can follow.
+    pub fn update(T -> T f) -> Slot<T> {
+        self.xs[self.i] = f(self.xs[self.i]);
+        return self;
+    }
+}
+
+/// `slot(i)` on any `Vec<T>`: the place of element `i`, which panics when
+/// `i` is out of range as `xs[i]` does.
+///
+/// # Examples
+///
+/// ```
+/// use collections::vec::{VecSlots};
+/// # use tests::assert;
+/// let xs: Vec<int> = [1, 2, 3];
+/// assert!(xs.slot(2).set(30).get() == 30);
+/// assert!(xs[2] == 30);
+/// ```
+trait VecSlots<V> {
+    type Item;
+
+    /// The place of element `i`: a view whose `set` and `update` write `xs`.
+    fn slot(V xs, int i) -> Slot<Item> {}
+}
+
+impl VecSlots for Vec<T> {
+    type Item = T;
+
+    pub fn slot(Vec<T> xs, int i) -> Slot<T> {
+        let _ = xs[i];
+        return new Slot(mut xs, i);
     }
 }
