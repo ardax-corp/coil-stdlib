@@ -1,0 +1,173 @@
+use tests::assert;
+use text::Text;
+use collections::index::KeyIndex;
+use task::{scope, Scope, TaskError};
+
+// `==` ignores case, and the hash does too.
+class Word {
+    pub text: string,
+}
+
+impl Eq for Word {
+    pub fn eq(Word a, Word b) -> bool {
+        return a.text.to_lower() == b.text.to_lower();
+    }
+}
+
+impl Hash for Word {
+    pub fn hash(Word w) -> int {
+        return w.text.to_lower().hash();
+    }
+}
+
+// Every key hashes alike.
+#[derive(Eq)]
+class Clash {
+    pub n: int,
+}
+
+impl Hash for Clash {
+    pub fn hash(Clash c) -> int {
+        return 1;
+    }
+}
+
+#[derive(Eq, Hash)]
+enum Shape {
+    Dot,
+    Circle(int),
+    Rect(int, int),
+}
+
+test("slots follow insertion order") {
+    let ix: KeyIndex<string> = KeyIndex::new();
+    assert!(ix.insert("a") == 0);
+    assert!(ix.insert("b") == 1);
+    assert!(ix.insert("a") == 0);
+    assert!(ix.len() == 2 && ix.slots() == 2);
+    assert!(ix.find("b") == 1 && ix.find("c") == -1);
+    assert!(ix.key_at(0) == "a");
+    let ks = ix.keys();
+    assert!(ks.len() == 2 && ks[0] == "a" && ks[1] == "b");
+}
+
+test("int, tuple, enum and Option keys") {
+    let ints: KeyIndex<int> = KeyIndex::new();
+    let pairs: KeyIndex<(int, string)> = KeyIndex::new();
+    let shapes: KeyIndex<Shape> = KeyIndex::new();
+    let opts: KeyIndex<Option<int>> = KeyIndex::new();
+    let i = 0;
+    while i < 2000 {
+        assert!(ints.insert(i * 31) == i);
+        assert!(pairs.insert((i % 7, i.show())) == i);
+        i = i + 1;
+    }
+    assert!(ints.find(31 * 1999) == 1999 && ints.find(5) == -1);
+    assert!(pairs.find((3, "10")) == 10 && pairs.find((4, "10")) == -1);
+    assert!(shapes.insert(Shape::Dot) == 0);
+    assert!(shapes.insert(Shape::Circle(2)) == 1);
+    assert!(shapes.insert(Shape::Rect(1, 2)) == 2);
+    assert!(shapes.insert(Shape::Circle(2)) == 1);
+    assert!(shapes.find(Shape::Rect(2, 1)) == -1);
+    assert!(opts.insert(Option::None) == 0);
+    assert!(opts.insert(Option::Some(0)) == 1);
+    assert!(opts.find(Option::None) == 0);
+}
+
+test("a hand-written Eq decides between matching hashes") {
+    let ix: KeyIndex<Word> = KeyIndex::new();
+    assert!(ix.insert(new Word("Apple")) == 0);
+    assert!(ix.insert(new Word("APPLE")) == 0);
+    assert!(ix.find(new Word("apple")) == 0);
+    let c: KeyIndex<Clash> = KeyIndex::new();
+    let i = 0;
+    while i < 64 {
+        assert!(c.insert(new Clash(i)) == i);
+        i = i + 1;
+    }
+    assert!(c.find(new Clash(40)) == 40 && c.find(new Clash(64)) == -1);
+    assert!(c.remove(new Clash(10)) == 10);
+    assert!(c.find(new Clash(10)) == -1 && c.find(new Clash(11)) == 11);
+}
+
+test("removing keeps other slots; compact renumbers with the owner's Vecs") {
+    let ix: KeyIndex<string> = KeyIndex::new();
+    let lens: Vec<int> = Vec::new();
+    for w in ["one", "two", "three", "four", "five"] {
+        let _ = ix.insert(w);
+        lens.push(w.len());
+    }
+    assert!(ix.remove("two") == 1);
+    assert!(ix.remove("two") == -1);
+    assert!(!ix.remove_slot(1));
+    assert!(ix.remove_slot(3));
+    assert!(ix.len() == 3 && ix.slots() == 5);
+    assert!(!ix.is_live(1) && ix.is_live(2) && !ix.is_live(9));
+    assert!(ix.find("five") == 4);
+    ix.retain_live(lens);
+    ix.compact();
+    assert!(ix.slots() == 3 && ix.len() == 3);
+    assert!(ix.find("one") == 0 && ix.find("three") == 1 && ix.find("five") == 2);
+    assert!(lens.len() == 3 && lens[0] == 3 && lens[1] == 5 && lens[2] == 4);
+    assert!(ix.insert("two") == 3);
+}
+
+test("needs_compact after many removes") {
+    let ix: KeyIndex<int> = KeyIndex::new();
+    let i = 0;
+    while i < 100 {
+        let _ = ix.insert(i);
+        i = i + 1;
+    }
+    assert!(!ix.needs_compact());
+    i = 0;
+    while i < 60 {
+        let _ = ix.remove(i);
+        i = i + 1;
+    }
+    assert!(ix.needs_compact());
+    ix.compact();
+    assert!(!ix.needs_compact() && ix.slots() == 40 && ix.find(60) == 0);
+}
+
+test("clear starts slot numbers again") {
+    let ix: KeyIndex<string> = KeyIndex::with_capacity(100);
+    let _ = ix.insert("a");
+    let _ = ix.insert("b");
+    ix.clear();
+    assert!(ix.is_empty() && ix.slots() == 0 && ix.find("a") == -1);
+    assert!(ix.insert("b") == 0);
+}
+
+test("a copy is its own index") {
+    let a: KeyIndex<string> = KeyIndex::new();
+    let _ = a.insert("x");
+    let b = a;
+    let _ = b.insert("y");
+    assert!(b.find("y") == 1 && a.find("y") == -1 && a.len() == 1);
+}
+
+// Run `body` as a child task: its panic message, or "ok".
+fn outcome(unit -> int body) -> string {
+    let r = scope(fn (Scope s) use (body) {
+        let _ = s.spawn(body);
+        0
+    });
+    return match r {
+        Result::Ok(_) => "ok",
+        Result::Err(TaskError::Panicked(m)) => m,
+        Result::Err(_) => "other",
+    };
+}
+
+fn retain_short() -> int {
+    let ix: KeyIndex<string> = KeyIndex::new();
+    let _ = ix.insert("a");
+    let short: Vec<int> = Vec::new();
+    ix.retain_live(short);
+    return 0;
+}
+
+test("retain_live panics on a Vec of another length") {
+    assert!(outcome(retain_short) == "KeyIndex::retain_live: the Vec is not slots() long");
+}
