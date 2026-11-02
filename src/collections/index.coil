@@ -1,0 +1,228 @@
+// KeyIndex — keys to dense, insertion-ordered slot numbers, for any
+// `Hash + Eq` key. The probing runs in the VM (`key_index` natives); the
+// key's own `==` decides between keys whose hashes match, except for `int`
+// and `string` keys, which the VM compares itself in one `find` call.
+use key_index::{table as ki_table, probe as ki_probe, insert as ki_insert, remove as ki_remove, retain as ki_retain, compact as ki_compact, clear as ki_clear, find as ki_find, eq_mode as ki_eq_mode};
+
+/// Gives each distinct key a slot number: `0` for the first key added,
+/// then `1`, `2` and so on.
+///
+/// The index stores the keys and nothing else. To keep something with each
+/// key, hold it in your own `Vec` at the key's slot: `HashMap` keeps its
+/// values that way, an interner keeps nothing more than the index, and a
+/// group-by keeps a count or a `Vec` per slot.
+///
+/// Any key with `Hash` and `Eq` works. Keys whose hashes match are told
+/// apart by `==`, so a hand-written `Eq` decides as it does everywhere else;
+/// its `Hash` must give equal keys equal hashes.
+///
+/// Removing a key leaves a gap: the other keys keep their slots, and
+/// `slots()` still counts the gap until `compact` renumbers. When you keep
+/// values by slot, compact them with the index: call `retain_live` on each
+/// of your `Vec`s, then `compact`. `needs_compact` says when that is worth
+/// doing.
+///
+/// # Examples
+///
+/// ```
+/// use collections::index::{KeyIndex};
+/// # use tests::assert;
+/// let ix: KeyIndex<string> = KeyIndex::new();
+/// assert!(ix.insert("pear") == 0);
+/// assert!(ix.insert("fig") == 1);
+/// assert!(ix.insert("pear") == 0);
+/// assert!(ix.find("fig") == 1);
+/// assert!(ix.find("kiwi") == -1);
+/// assert!(ix.key_at(1) == "fig");
+/// ```
+class KeyIndex<K>
+    invariant self.len >= 0 && self.len <= self.keys.len()
+    invariant self.hashes.len() == self.keys.len() && self.live.len() == self.keys.len()
+{
+    /// Probe cells, then the count of used ones (the `key_index` layout).
+    table: Vec<int>,
+    /// Each slot's key hash.
+    hashes: Vec<int>,
+    /// `1` where the slot holds a key, `0` where it was removed.
+    live: Vec<int>,
+    /// Each slot's key, including removed ones.
+    keys: Vec<K>,
+    len: int,
+}
+
+impl KeyIndex<K> {
+    /// Creates an empty index.
+    pub static fn new() -> KeyIndex<K> {
+        return KeyIndex::with_capacity(0);
+    }
+
+    /// Creates an empty index with room for `n` keys before it grows.
+    pub static fn with_capacity(int n) -> KeyIndex<K> {
+        let keys: Vec<K> = Vec::with_capacity(n);
+        let hashes: Vec<int> = Vec::with_capacity(n);
+        let live: Vec<int> = Vec::with_capacity(n);
+        return new KeyIndex(ki_table(n), hashes, live, keys, 0);
+    }
+
+    /// Returns the number of keys.
+    pub fn len() -> int {
+        return self.len;
+    }
+
+    /// Returns `true` when the index has no keys.
+    pub fn is_empty() -> bool {
+        return self.len == 0;
+    }
+
+    /// Returns how many keys the index holds before it grows.
+    pub fn capacity() -> int {
+        return (self.table.len() - 1) / 2;
+    }
+
+    /// Returns the number of slots, removed ones included: every slot
+    /// number is below it.
+    pub fn slots() -> int {
+        return self.keys.len();
+    }
+
+    /// Returns `true` when `slot` holds a key (it was added and not removed).
+    pub fn is_live(int slot) -> bool {
+        return slot >= 0 && slot < self.live.len() && self.live[slot] == 1;
+    }
+
+    /// Returns the key in `slot`. A removed slot still returns its old key
+    /// until `compact`; check `is_live` first when that matters.
+    ///
+    /// Panics when `slot` is out of range.
+    pub fn key_at(int slot) -> K {
+        return self.keys[slot];
+    }
+
+    /// Returns the keys, in slot order, without the removed ones.
+    pub fn keys() -> Vec<K>
+        ensures result.len() == self.len
+    {
+        let out: Vec<K> = Vec::with_capacity(self.len);
+        let i = 0;
+        while i < self.keys.len() {
+            if self.live[i] == 1 {
+                out.push(self.keys[i]);
+            }
+            i = i + 1;
+        }
+        return out;
+    }
+
+    /// Returns `true` when removed slots outnumber the keys, so `compact`
+    /// would at least halve `slots()`.
+    pub fn needs_compact() -> bool {
+        let dead = self.keys.len() - self.len;
+        return dead > 8 && dead > self.len;
+    }
+
+    /// Drops the elements of `v` at removed slots, keeping the order of the
+    /// rest: the same renumbering `compact` applies to the index. Call it on
+    /// each `Vec` you keep by slot, just before `compact`.
+    ///
+    /// Panics when `v` is not `slots()` long.
+    pub fn retain_live<T>(Vec<T> v) {
+        if ki_retain(v, self.live) < 0 {
+            panic "KeyIndex::retain_live: the Vec is not slots() long";
+        }
+    }
+
+    /// Drops the removed slots and renumbers the keys from `0` in order.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use collections::index::{KeyIndex};
+    /// # use tests::assert;
+    /// let ix: KeyIndex<string> = KeyIndex::new();
+    /// let counts: Vec<int> = Vec::new();
+    /// for w in ["a", "b", "c"] {
+    ///     ix.insert(w);
+    ///     counts.push(w.len());
+    /// }
+    /// ix.remove("a");
+    /// ix.retain_live(counts);
+    /// ix.compact();
+    /// assert!(ix.find("b") == 0 && ix.slots() == 2 && counts.len() == 2);
+    /// ```
+    pub fn compact()
+        ensures self.keys.len() == self.len
+    {
+        let _ = ki_retain(self.keys, self.live);
+        let _ = ki_compact(self.table, self.hashes, self.live);
+    }
+
+    /// Removes every key. Slot numbers start from `0` again.
+    pub fn clear()
+        ensures self.len == 0
+    {
+        ki_clear(self.table, self.hashes, self.live);
+        self.keys.clear();
+        self.len = 0;
+    }
+}
+
+impl KeyIndex<K: Eq + Hash> {
+    /// Returns the slot of `k`, or `-1` when it is not in the index.
+    pub fn find(K k) -> int {
+        return self.find_hashed(k, k.hash());
+    }
+
+    /// `find` for a key whose hash `h` (`k.hash()`) the caller already has.
+    pub fn find_hashed(K k, int h) -> int {
+        let mode = ki_eq_mode(k);
+        if mode > 0 {
+            return ki_find(self.table, self.hashes, self.keys, h, k, mode);
+        }
+        let s = ki_probe(self.table, self.hashes, h, -1);
+        while s >= 0 && self.keys[s] != k {
+            s = ki_probe(self.table, self.hashes, h, s);
+        }
+        return s;
+    }
+
+    /// Returns the slot of `k`, adding it at the next slot when it is new.
+    /// A new key's slot is `slots() - 1` afterwards.
+    pub fn insert(K k) -> int {
+        let h = k.hash();
+        let s = self.find_hashed(k, h);
+        if s >= 0 {
+            return s;
+        }
+        return self.push_hashed(k, h);
+    }
+
+    /// Adds `k`, which `find_hashed(k, h)` did not find, at the next slot
+    /// and returns it. Adding a key that is already there makes a second
+    /// slot `find` may return instead of the first.
+    pub fn push_hashed(K k, int h) -> int {
+        self.keys.push(k);
+        self.len = self.len + 1;
+        return ki_insert(self.table, self.hashes, self.live, h);
+    }
+
+    /// Removes `k` and returns the slot it had, or `-1` when it was not in
+    /// the index.
+    pub fn remove(K k) -> int {
+        let s = self.find(k);
+        if s >= 0 && ki_remove(self.table, self.hashes, self.live, s) {
+            self.len = self.len - 1;
+            return s;
+        }
+        return -1;
+    }
+
+    /// Removes the key in `slot`. Returns `false` when the slot was already
+    /// removed or out of range.
+    pub fn remove_slot(int slot) -> bool {
+        if ki_remove(self.table, self.hashes, self.live, slot) {
+            self.len = self.len - 1;
+            return true;
+        }
+        return false;
+    }
+}
