@@ -1,7 +1,8 @@
 // KeyIndex — keys to dense, insertion-ordered slot numbers, for any
 // `Hash + Eq` key. The probing runs in the VM (`key_index` natives); the
-// key's own `==` decides between keys whose hashes match.
-use key_index::{table as ki_table, probe as ki_probe, insert as ki_insert, remove as ki_remove, retain as ki_retain, compact as ki_compact, clear as ki_clear};
+// key's own `==` decides between keys whose hashes match, except for `int`
+// and `string` keys, which the VM compares itself in one `find` call.
+use key_index::{table as ki_table, probe as ki_probe, insert as ki_insert, remove as ki_remove, retain as ki_retain, compact as ki_compact, clear as ki_clear, find as ki_find, eq_mode as ki_eq_mode};
 
 /// Gives each distinct key a slot number: `0` for the first key added,
 /// then `1`, `2` and so on.
@@ -173,6 +174,10 @@ impl KeyIndex<K: Eq + Hash> {
 
     /// `find` for a key whose hash `h` (`k.hash()`) the caller already has.
     pub fn find_hashed(K k, int h) -> int {
+        let mode = ki_eq_mode(k);
+        if mode > 0 {
+            return ki_find(self.table, self.hashes, self.keys, h, k, mode);
+        }
         let s = ki_probe(self.table, self.hashes, h, -1);
         while s >= 0 && self.keys[s] != k {
             s = ki_probe(self.table, self.hashes, h, s);
