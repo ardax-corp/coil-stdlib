@@ -2,7 +2,7 @@
 
 Userland `.coil` library for [Coil](https://github.com/ardax-corp/coil-lang).
 Language builtins and virtual modules stay in the
-[Coil references](https://github.com/ardax-corp/coil-website/tree/main/src/content/docs/references).
+[Coil API reference](https://github.com/ardax-corp/coil-website/tree/main/src/content/reference).
 
 | Page | Contents |
 |------|----------|

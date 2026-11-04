@@ -43,5 +43,5 @@ compiler reads no `coil.toml`).
 Clone it as a sibling (`../coil-stdlib`) or under `coil-lang/.deps/coil-stdlib`.
 Its workspace `coil.toml` lists those roots for spool; with plain `coil`, pass `--root ../coil-stdlib/src`.
 
-Manifest schema (read by spool, not by `coil`): [project config](https://github.com/ardax-corp/coil-website/blob/main/src/content/docs/references/project-config.md).
+Manifest schema (read by spool, not by `coil`): [project config](https://github.com/ardax-corp/coil-website/blob/main/src/content/docs/language/project-config.md).
 `spool` vs `coil package`: [spool README](https://github.com/ardax-corp/spool).

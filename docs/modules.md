@@ -75,4 +75,4 @@ package (`use json::{Json, JsonValue, JsonError};`). There is no in-tree
   call `set` / `update` on it.
 
 What the **compiler** does *not* provide as builtins:
-[not-builtins](https://github.com/ardax-corp/coil-website/blob/main/src/content/docs/references/not-builtins.md).
+[not-builtins](https://github.com/ardax-corp/coil-website/blob/main/src/content/docs/language/not-builtins.md).
