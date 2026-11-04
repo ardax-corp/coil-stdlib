@@ -1031,3 +1031,65 @@ impl Joined for Vec<string> {
         return out;
     }
 }
+
+/// Returns the code of the single character in `s` as a `byte`.
+///
+/// `s` must hold exactly one character whose Unicode code point is at most
+/// 255 (ASCII or Latin-1, so `ord("é")` is `233`). Otherwise the result is
+/// `Err` with a message: `"empty string"`, `"expected single character"` or
+/// `"character code out of byte range"`. The inverse is `char`. For the
+/// UTF-8 bytes of any string, use `string::to_bytes`.
+///
+/// # Examples
+///
+/// ```
+/// use text::ord;
+/// # use tests::assert;
+/// assert!((ord("A")? as int) == 65);
+/// assert!((ord("\u{e9}")? as int) == 233);
+/// let err = match ord("AB") {
+///     Result::Ok(_) => "",
+///     Result::Err(e) => e,
+/// };
+/// assert!(err == "expected single character");
+/// ```
+fn ord(string s) -> Result<byte, string> {
+    let n = s.len();
+    if n == 0 {
+        raise "empty string";
+    }
+    if next_char(s, 0) != n {
+        raise "expected single character";
+    }
+    let cp = decode_at(s, 0);
+    if cp > 255 {
+        raise "character code out of byte range";
+    }
+    return cp as byte;
+}
+
+/// Returns the one-character string whose code point is `b`.
+///
+/// Values `0..=127` give an ASCII character; `128..=255` give the Latin-1
+/// character with that code point (two bytes of UTF-8, so `char(233)` is
+/// `"é"`). Every `byte` has one, so the result is always `Ok`; it stays a
+/// `Result` so code written against the old prelude `char` still reads it
+/// with `?`. The inverse is `ord`. To decode UTF-8 bytes, use
+/// `string::from_bytes`.
+///
+/// # Examples
+///
+/// ```
+/// use text::char;
+/// # use tests::assert;
+/// assert!(char(66 as byte)? == "B");
+/// assert!(char(233 as byte)? == "\u{e9}");
+/// ```
+fn char(byte b) -> Result<string, string> {
+    let out: Vec<byte> = Vec::new();
+    encode_to(b as int, out);
+    return match from_bytes(out) {
+        Result::Ok(x) => x,
+        Result::Err(_) => panic "text: a Latin-1 code point is not UTF-8",
+    };
+}

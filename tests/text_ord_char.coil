@@ -1,0 +1,46 @@
+use tests::assert;
+use text::{ord, char};
+
+fn is_err(Result<byte, string> r) -> bool {
+    return match r {
+        Result::Ok(_) => false,
+        Result::Err(_) => true,
+    };
+}
+
+fn err_of(Result<byte, string> r) -> string {
+    return match r {
+        Result::Ok(_) => "",
+        Result::Err(e) => e,
+    };
+}
+
+test("ord gives the code of one ASCII or Latin-1 character") {
+    assert!((ord("A")? as int) == 65);
+    assert!((ord("\n")? as int) == 10);
+    assert!((ord("\u{e9}")? as int) == 233);
+    assert!((ord("\u{ff}")? as int) == 255);
+    assert!((ord("\u{80}")? as int) == 128);
+}
+
+test("ord rejects anything but one character up to 255") {
+    assert!(err_of(ord("")) == "empty string");
+    assert!(err_of(ord("ab")) == "expected single character");
+    assert!(err_of(ord("\u{e9}a")) == "expected single character");
+    assert!(err_of(ord("\u{65e5}")) == "character code out of byte range");
+    assert!(err_of(ord("\u{100}")) == "character code out of byte range");
+    assert!(is_err(ord("\u{65e5}\u{65e5}")));
+}
+
+test("char is the inverse of ord for every byte") {
+    assert!(char(97 as byte)? == "a");
+    assert!(char(233 as byte)? == "\u{e9}");
+    let nul = char(0 as byte)?;
+    assert!(nul.len() == 1);
+    let i = 0;
+    while i < 256 {
+        let s = char(i as byte)?;
+        assert!((ord(s)? as int) == i);
+        i = i + 1;
+    }
+}
