@@ -30,12 +30,9 @@ one cached checkout.
 roots = ["./src", "../coil-stdlib/src"]
 ```
 
-`random::Rng::from_time` seeds from [coil-time](https://github.com/ardax-corp/coil-time)
-timestamps as ints. `coil.toml` declares it as a git dependency
-(`https://github.com/ardax-corp/coil-time.git`), so spool fetches it along with
-stdlib. It is pure Coil: no `--allow-dload time` and no `[ffi]` search path.
-With plain `coil`, clone coil-time and pass `--root ../coil-time/src` (the
-compiler reads no `coil.toml`).
+stdlib has no package dependencies: `random::Rng::from_time` reads the
+compiler's builtin `clock` module, and `from_entropy` the builtin `entropy`
+module, so one `--root` (or the spool dependency) is all it needs.
 
 ## Language repo checkout
 

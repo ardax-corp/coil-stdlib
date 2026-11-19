@@ -1,7 +1,8 @@
 // Seeded PRNG (`Rng`). `from_entropy` seeds from the OS CSPRNG (builtin
-// `entropy`); `from_time` mixes coil-time timestamps as ints.
+// `entropy`); `from_time` mixes the host's wall and monotonic clocks
+// (builtin `clock`).
 use entropy::bytes as os_bytes;
-use time::{epoch, timestamp};
+use clock::{wall_nanos, mono_nanos};
 use arith::{Wrapping, INT_MAX};
 
 // `x` shifted right by `n` (1..63) with zeros shifted in; `>>` keeps the sign.
@@ -14,7 +15,6 @@ fn shr_logical(int x, int n) -> int {
 /// The same seed always gives the same sequence, which makes tests repeatable.
 /// It is not cryptographically secure: for keys, tokens and nonces use the
 /// builtin `entropy::bytes(n)`, which reads the OS CSPRNG on every call.
-/// `from_time` needs the coil-time package on the module roots.
 ///
 /// # Examples
 ///
@@ -66,22 +66,23 @@ impl Rng {
         return Rng::seeded(seed);
     }
 
-    /// Creates a generator seeded from the current wall-clock and monotonic time (via coil-time).
+    /// Creates a generator seeded from the host's wall clock and monotonic
+    /// clock (builtin `clock::wall_nanos` / `clock::mono_nanos`). Two
+    /// processes started in the same nanosecond can get the same sequence;
+    /// use `from_entropy` when that matters.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use random::{Rng};
+    /// # use tests::assert;
+    /// let r = Rng::from_time();
+    /// let roll = r.range(1, 7);
+    /// assert!(roll >= 1 && roll < 7);
+    /// ```
     pub static fn from_time() -> Rng {
-        let a = 0;
-        match epoch() {
-            Result::Ok(ts) => {
-                a = ts.nanos();
-            },
-            Result::Err(_) => {},
-        }
-        let b = 0;
-        match timestamp() {
-            Result::Ok(ts) => {
-                b = ts.nanos();
-            },
-            Result::Err(_) => {},
-        }
+        let a = wall_nanos();
+        let b = mono_nanos();
         return Rng::seeded(a ^ b ^ (b << 1));
     }
 

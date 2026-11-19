@@ -36,12 +36,9 @@ docs/                 # package documentation
 
 ## Develop
 
-Needs a Coil toolchain on `PATH` (or `COIL`). `random::Rng::from_time` uses
-[coil-time](https://github.com/ardax-corp/coil-time), a pure-Coil dependency
-declared in `coil.toml`. With spool, `spool install` fetches it and
-`spool test` passes its root. With plain `coil`, clone it next to this checkout:
+Needs a Coil toolchain on `PATH` (or `COIL`). stdlib has no package
+dependencies (`random::Rng::from_time` reads the builtin `clock` module):
 
 ```bash
-git clone https://github.com/ardax-corp/coil-time.git ../coil-time
-coil test --allow-read --allow-write --allow-net --root ../coil-time/src
+coil test --allow-read --allow-write --allow-net
 ```

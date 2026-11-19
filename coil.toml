@@ -4,6 +4,3 @@ version = "0.1.0"
 
 [module]
 roots = ["./src"]
-
-[dependencies]
-time = { git = "https://github.com/ardax-corp/coil-time.git", version = "latest" }
