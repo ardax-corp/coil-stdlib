@@ -36,25 +36,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Checkout coil-time
-        uses: actions/checkout@v4
-        with:
-          repository: ardax-corp/coil-time
-          path: .ci/coil-time
-          submodules: false
-
       # coil comes from the coil-lang `edge` release (a snapshot of its main,
       # rebuilt after every green coil-lang CI run) instead of a source build.
       - name: Install coil (edge)
         uses: ardax-corp/coil-lang/.github/actions/setup-coil@main
 
       - name: Doc examples (`///` code blocks in src)
-        run: coil test --doc-tests-only -A --root src --root .ci/coil-time/src src
+        run: coil test --doc-tests-only -A --root src src
 
       - name: Language harness (`coil test`)
         run: |
           set -euo pipefail
           coil test \
             --allow-read --allow-write --allow-net \
-            --root .ci/coil-time/src \
             2>&1 | tee /tmp/coil-test.log
