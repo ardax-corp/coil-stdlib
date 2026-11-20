@@ -141,3 +141,17 @@ test("rfind across 64-byte lanes: the last match, near misses skipped") {
     assert!("x".repeat(300).rfind("xy").is_none());
     assert!("ab".rfind("abc").is_none());
 }
+
+test("join leaves its parts as they were") {
+    let empty: Vec<string> = Vec::new();
+    assert!(empty.join(", ") == "");
+    let one: Vec<string> = ["solo"];
+    assert!(one.join(", ") == "solo");
+    let head = "a" + "bcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    let parts: Vec<string> = [head, "x", "y"];
+    let joined = parts.join("-");
+    assert!(joined == head + "-x-y");
+    assert!(parts[0] == head);
+    assert!(parts[0].len() == 62);
+    assert!(head + "!" == "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ!");
+}
