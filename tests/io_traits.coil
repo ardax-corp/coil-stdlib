@@ -1,0 +1,134 @@
+// The sync helpers and the buffered Reader and Writer take any `io::Read` /
+// `io::Write`: here an in-memory double that hands out a few bytes at a time
+// and reports `WouldBlock` every other call.
+use tests::assert;
+use io::IoError;
+use io::Read;
+use io::Write;
+use io::buffered::Reader;
+use io::buffered::Writer;
+use io::sync::write_all;
+use io::sync::read_exact;
+use io::sync::read_to_end;
+use io::sync::read_line;
+use string::{to_bytes, from_bytes};
+
+/// Reads `data` at most `chunk` bytes per call, blocking every other call.
+shared class Source {
+    pub data: Vec<byte>,
+    pub at: int,
+    pub chunk: int,
+    pub calls: int,
+    pub waits: int,
+}
+
+impl Read for Source {
+    fn read(Source s, Vec<byte> buf) -> Result<Option<int>, IoError> {
+        s.calls += 1;
+        if s.calls % 2 == 1 {
+            return Err(IoError::WouldBlock);
+        }
+        let start = s.at;
+        if start >= s.data.len() {
+            return Ok(None);
+        }
+        let n = 0;
+        while n < buf.len() && n < s.chunk && start + n < s.data.len() {
+            buf[n] = s.data[start + n];
+            n += 1;
+        }
+        s.at = start + n;
+        return Ok(Some(n));
+    }
+
+    fn wait_readable(Source s) -> Result<unit, IoError> {
+        s.waits += 1;
+        return Ok(());
+    }
+}
+
+/// Takes at most two bytes per write, blocking every other call.
+shared class Sink {
+    pub got: Vec<byte>,
+    pub calls: int,
+    pub waits: int,
+}
+
+impl Write for Sink {
+    fn write(Sink s, Vec<byte> buf) -> Result<int, IoError> {
+        s.calls += 1;
+        if s.calls % 2 == 1 {
+            return Err(IoError::WouldBlock);
+        }
+        let out = s.got;
+        let n = 0;
+        while n < buf.len() && n < 2 {
+            out.push(buf[n]);
+            n += 1;
+        }
+        s.got = out;
+        return Ok(n);
+    }
+
+    fn wait_writable(Sink s) -> Result<unit, IoError> {
+        s.waits += 1;
+        return Ok(());
+    }
+}
+
+fn source(string text, int chunk) -> Source {
+    return new Source(to_bytes(text), 0, chunk, 0, 0);
+}
+
+fn sink() -> Sink {
+    let empty: Vec<byte> = [];
+    return new Sink(empty, 0, 0);
+}
+
+fn text(Vec<byte> b) -> string {
+    return match from_bytes(b) {
+        Ok(s) => s,
+        Err(_) => "<bad utf-8>",
+    };
+}
+
+test("write_all waits and finishes on a partial writer") {
+    let s = sink();
+    assert!(write_all(s, to_bytes("hello"))? == 0);
+    assert!(text(s.got) == "hello");
+    assert!(s.waits > 0);
+}
+
+test("write_all takes a Write trait value") {
+    let s = sink();
+    let w: Write = s;
+    write_all(w, to_bytes("via value"))?;
+    assert!(text(s.got) == "via value");
+}
+
+test("read_exact, read_line and read_to_end on a slow reader") {
+    let r = source("abcdef\nrest", 2);
+    let buf = to_bytes("....");
+    assert!(read_exact(r, buf)? == Some(4));
+    assert!(text(buf) == "abcd");
+    assert!(read_line(r)? == Some("ef"));
+    assert!(text(read_to_end(r)?) == "rest");
+    assert!(read_line(r)? == None);
+    assert!(r.waits > 0);
+}
+
+test("buffered Reader over a user reader") {
+    let r = Reader::with_capacity(source("one\ntwo\nthree", 3), 4);
+    assert!(r.read_line()? == Some("one"));
+    assert!(r.read_line()? == Some("two"));
+    assert!(text(r.read_to_end()?) == "three");
+}
+
+test("buffered Writer over a user writer") {
+    let s = sink();
+    let w = Writer::with_capacity(s, 4);
+    w.write_str("buffered ")?;
+    w.write(to_bytes("bytes"))?;
+    w.flush()?;
+    assert!(text(s.got) == "buffered bytes");
+}

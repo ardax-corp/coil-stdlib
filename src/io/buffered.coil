@@ -1,11 +1,12 @@
-// Buffered, deadline-aware streams over L0 `io::read` / `write_from`.
+// Buffered, deadline-aware readers and writers over any `io::Read` /
+// `io::Write` (a `Stream`, a TLS stream, another `Reader`).
 //
 // `Reader` and `Writer` are the one place that waits: their private fill and
 // flush loops call `wait_readable` / `wait_writable`, so nothing above them
 // sees `WouldBlock`. Inside a task a wait lets other tasks run. A timeout set
 // with `set_timeout` applies to each wait, and costs nothing while data is
 // ready.
-use io::{read, write_from, wait_readable, wait_writable};
+use io::{Read, Write};
 use task::{timeout, TaskError};
 use string::{from_bytes as str_from_bytes, to_bytes as str_to_bytes};
 
@@ -24,31 +25,31 @@ fn __zeroes(int n) -> Vec<byte> {
     return v;
 }
 
-// Waits until `s` is readable (or writable), giving up after `ms` when it is above 0.
-fn __wait(Stream s, bool write, int ms) -> Result<unit, IoError> {
+// `wait` (a reader's or a writer's), giving up after `ms` when it is above 0.
+fn __wait(unit -> Result<unit, IoError> wait, int ms) -> Result<unit, IoError> {
     if ms <= 0 {
-        if write {
-            return wait_writable(s);
-        }
-        return wait_readable(s);
+        return wait();
     }
-    let waited = timeout(
-        ms,
-        fn () use (s, write) {
-            if write {
-                return wait_writable(s);
-            }
-            return wait_readable(s);
-        },
-    );
-    return match waited {
+    return match timeout(ms, wait) {
         Result::Ok(r) => r,
         Result::Err(TaskError::TimedOut) => Result::Err(IoError::TimedOut),
         Result::Err(_) => Result::Err(IoError::Other),
     };
 }
 
-/// A buffered reader over any `Stream`: lines, delimited frames, exact
+fn __wait_readable(Read r, int ms) -> Result<unit, IoError> {
+    return __wait(fn () use (r) {
+        return r.wait_readable();
+    }, ms);
+}
+
+fn __wait_writable(Write w, int ms) -> Result<unit, IoError> {
+    return __wait(fn () use (w) {
+        return w.wait_writable();
+    }, ms);
+}
+
+/// A buffered reader over any `Read` (a `Stream`, a TLS stream): lines, delimited frames, exact
 /// counts, and the leftover bytes for a protocol switch.
 ///
 /// It asks the stream for up to 8 KiB at a time, so reading a line costs one
@@ -74,7 +75,7 @@ fn __wait(Stream s, bool write, int ms) -> Result<unit, IoError> {
 /// assert!(r.read_line() == Result::Ok(Option::None));
 /// ```
 shared class Reader {
-    pub __stream: Stream,
+    pub __stream: Read,
     // Buffered bytes are `__buf[__start..]`.
     pub __buf: Vec<byte>,
     pub __start: int,
@@ -85,12 +86,12 @@ shared class Reader {
 
 impl Reader {
     /// A reader over `s` that asks for 8 KiB at a time.
-    pub static fn new(Stream s) -> Reader {
+    pub static fn new(Read s) -> Reader {
         return Reader::with_capacity(s, __default_capacity());
     }
 
     /// A reader over `s` that asks for up to `n` bytes at a time (at least 1).
-    pub static fn with_capacity(Stream s, int n) -> Reader {
+    pub static fn with_capacity(Read s, int n) -> Reader {
         let buf: Vec<byte> = Vec::new();
         let size = n;
         if size < 1 {
@@ -107,7 +108,7 @@ impl Reader {
     }
 
     /// The stream being read.
-    pub fn stream() -> Stream {
+    pub fn stream() -> Read {
         return self.__stream;
     }
 
@@ -288,7 +289,7 @@ impl Reader {
             self.__start = 0;
         }
         while true {
-            match read(self.__stream, self.__scratch) {
+            match self.__stream.read(self.__scratch) {
                 Result::Ok(Option::None) => {
                     self.__eof = true;
                     return false;
@@ -302,10 +303,10 @@ impl Reader {
                         }
                         return true;
                     }
-                    __wait(self.__stream, false, self.__timeout_ms)?;
+                    __wait_readable(self.__stream, self.__timeout_ms)?;
                 },
                 Result::Err(IoError::WouldBlock) => {
-                    __wait(self.__stream, false, self.__timeout_ms)?;
+                    __wait_readable(self.__stream, self.__timeout_ms)?;
                 },
                 Result::Err(e) => {
                     raise e;
@@ -315,7 +316,7 @@ impl Reader {
     }
 }
 
-/// A buffered writer over any `Stream`: small writes collect in memory and
+/// A buffered writer over any `Write` (a `Stream`, a TLS stream): small writes collect in memory and
 /// go out in one call once 8 KiB are held, or on `flush`.
 ///
 /// Call `flush` before closing the stream or waiting for a reply: bytes
@@ -340,7 +341,7 @@ impl Reader {
 /// assert!(read_text("/tmp/coil_stdlib_writer_doc.txt") == Result::Ok("hello world"));
 /// ```
 shared class Writer {
-    pub __stream: Stream,
+    pub __stream: Write,
     pub __buf: Vec<byte>,
     pub __capacity: int,
     pub __timeout_ms: int,
@@ -348,12 +349,12 @@ shared class Writer {
 
 impl Writer {
     /// A writer over `s` that holds up to 8 KiB before it writes.
-    pub static fn new(Stream s) -> Writer {
+    pub static fn new(Write s) -> Writer {
         return Writer::with_capacity(s, __default_capacity());
     }
 
     /// A writer over `s` that holds up to `n` bytes before it writes.
-    pub static fn with_capacity(Stream s, int n) -> Writer {
+    pub static fn with_capacity(Write s, int n) -> Writer {
         let buf: Vec<byte> = Vec::new();
         return new Writer(s, buf, n, 0);
     }
@@ -365,7 +366,7 @@ impl Writer {
     }
 
     /// The stream being written.
-    pub fn stream() -> Stream {
+    pub fn stream() -> Write {
         return self.__stream;
     }
 
@@ -408,11 +409,11 @@ impl Writer {
         let offset = 0;
         let total = self.__buf.len();
         while offset < total {
-            match write_from(self.__stream, self.__buf, offset) {
+            match self.__stream.write_from(self.__buf, offset) {
                 Result::Ok(n) => {
                     if n == 0 {
                         self.__keep_from(offset);
-                        __wait(self.__stream, true, self.__timeout_ms)?;
+                        __wait_writable(self.__stream, self.__timeout_ms)?;
                         offset = 0;
                         total = self.__buf.len();
                     }
@@ -420,7 +421,7 @@ impl Writer {
                 },
                 Result::Err(IoError::WouldBlock) => {
                     self.__keep_from(offset);
-                    __wait(self.__stream, true, self.__timeout_ms)?;
+                    __wait_writable(self.__stream, self.__timeout_ms)?;
                     offset = 0;
                     total = self.__buf.len();
                 },
