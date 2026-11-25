@@ -1,36 +1,113 @@
 // Collection helpers (userland): sort, reverse, range materialize.
 
-// Merge `buf[lo..mid)` and `buf[mid..hi)` via `tmp` scratch (stable).
-fn merge_range<T: Ord>(Vec<T> buf, Vec<T> tmp, int lo, int mid, int hi) -> int {
-    let i = lo;
+// Both sorts are a stable bottom-up merge sort: insertion-sort runs of
+// `SORT_RUN` elements, then merge runs of doubling width between two buffers
+// (each pass writes the other one, so no merge copies its input first). Two
+// runs already in order are copied without comparing their elements.
+
+fn sort_run() -> int {
+    return 24;
+}
+
+// Insertion-sort `buf[lo..hi)` (stable: an element moves left only past
+// greater ones).
+fn insertion_range<T: Ord>(Vec<T> buf, int lo, int hi) -> int {
+    let i = lo + 1;
     while i < hi {
-        tmp[i] = buf[i];
+        let x = buf[i];
+        let j = i;
+        while j > lo && x < buf[j - 1] {
+            buf[j] = buf[j - 1];
+            j = j - 1;
+        }
+        buf[j] = x;
         i = i + 1;
+    }
+    return 0;
+}
+
+// Merge sorted `src[lo..mid)` and `src[mid..hi)` into `dst[lo..hi)`
+// (stable). With no second run, or two runs already in order, a copy.
+fn merge_into<T: Ord>(Vec<T> src, Vec<T> dst, int lo, int mid, int hi) -> int {
+    let k = lo;
+    if mid >= hi || !(src[mid] < src[mid - 1]) {
+        while k < hi {
+            dst[k] = src[k];
+            k = k + 1;
+        }
+        return 0;
     }
     let a = lo;
     let b = mid;
-    let k = lo;
-    while a < mid {
-        if b < hi {
-            if tmp[b] < tmp[a] {
-                buf[k] = tmp[b];
-                b = b + 1;
-            } else {
-                buf[k] = tmp[a];
-                a = a + 1;
-            }
-            k = k + 1;
+    while a < mid && b < hi {
+        if src[b] < src[a] {
+            dst[k] = src[b];
+            b = b + 1;
         } else {
-            break;
+            dst[k] = src[a];
+            a = a + 1;
         }
+        k = k + 1;
     }
     while a < mid {
-        buf[k] = tmp[a];
+        dst[k] = src[a];
         a = a + 1;
         k = k + 1;
     }
     while b < hi {
-        buf[k] = tmp[b];
+        dst[k] = src[b];
+        b = b + 1;
+        k = k + 1;
+    }
+    return 0;
+}
+
+// [`insertion_range`] comparing `key` of each element.
+fn insertion_range_by<T, K: Ord>(Vec<T> buf, int lo, int hi, T -> K key) -> int {
+    let i = lo + 1;
+    while i < hi {
+        let x = buf[i];
+        let kx = key(x);
+        let j = i;
+        while j > lo && kx < key(buf[j - 1]) {
+            buf[j] = buf[j - 1];
+            j = j - 1;
+        }
+        buf[j] = x;
+        i = i + 1;
+    }
+    return 0;
+}
+
+// [`merge_into`] comparing `key` of each element.
+fn merge_into_by<T, K: Ord>(Vec<T> src, Vec<T> dst, int lo, int mid, int hi, T -> K key) -> int {
+    let k = lo;
+    if mid >= hi || !(key(src[mid]) < key(src[mid - 1])) {
+        while k < hi {
+            dst[k] = src[k];
+            k = k + 1;
+        }
+        return 0;
+    }
+    let a = lo;
+    let b = mid;
+    while a < mid && b < hi {
+        if key(src[b]) < key(src[a]) {
+            dst[k] = src[b];
+            b = b + 1;
+        } else {
+            dst[k] = src[a];
+            a = a + 1;
+        }
+        k = k + 1;
+    }
+    while a < mid {
+        dst[k] = src[a];
+        a = a + 1;
+        k = k + 1;
+    }
+    while b < hi {
+        dst[k] = src[b];
         b = b + 1;
         k = k + 1;
     }
@@ -69,66 +146,42 @@ fn sort<T: Ord>(Vec<T> arr) -> Vec<T>
     ensures result.len() == arr.len()
 {
     let n = arr.len();
-    let out: Vec<T> = Vec::new();
-    let tmp: Vec<T> = Vec::new();
-    let copy_i = 0;
-    while copy_i < n {
-        out.push(arr[copy_i]);
-        tmp.push(arr[copy_i]);
-        copy_i = copy_i + 1;
+    let a: Vec<T> = Vec::with_capacity(n);
+    let b: Vec<T> = Vec::with_capacity(n);
+    let i = 0;
+    while i < n {
+        a.push(arr[i]);
+        b.push(arr[i]);
+        i = i + 1;
     }
-    let width = 1;
+    let run = sort_run();
+    let lo = 0;
+    while lo < n {
+        let hi = min_int(lo + run, n);
+        insertion_range(a, lo, hi);
+        lo = hi;
+    }
+    let in_a = true;
+    let width = run;
     while width < n {
         let pos = 0;
         while pos < n {
-            let lo = pos;
             let mid = min_int(pos + width, n);
             let hi = min_int(pos + width + width, n);
-            if mid < hi {
-                merge_range(out, tmp, lo, mid, hi);
+            if in_a {
+                merge_into(a, b, pos, mid, hi);
+            } else {
+                merge_into(b, a, pos, mid, hi);
             }
-            pos = pos + width + width;
+            pos = hi;
         }
+        in_a = !in_a;
         width = width + width;
     }
-    return out;
-}
-
-// Stable mergesort by `key` (`K: Ord`). Input unchanged; equal keys keep order.
-fn merge_range_by<T, K: Ord>(Vec<T> buf, Vec<T> tmp, int lo, int mid, int hi, T -> K key) -> int {
-    let i = lo;
-    while i < hi {
-        tmp[i] = buf[i];
-        i = i + 1;
+    if in_a {
+        return a;
     }
-    let a = lo;
-    let b = mid;
-    let k = lo;
-    while a < mid {
-        if b < hi {
-            if key(tmp[b]) < key(tmp[a]) {
-                buf[k] = tmp[b];
-                b = b + 1;
-            } else {
-                buf[k] = tmp[a];
-                a = a + 1;
-            }
-            k = k + 1;
-        } else {
-            break;
-        }
-    }
-    while a < mid {
-        buf[k] = tmp[a];
-        a = a + 1;
-        k = k + 1;
-    }
-    while b < hi {
-        buf[k] = tmp[b];
-        b = b + 1;
-        k = k + 1;
-    }
-    return 0;
+    return b;
 }
 
 /// Returns a copy of `arr` sorted by the value `key` gives each element, in ascending order.
@@ -148,29 +201,42 @@ fn merge_range_by<T, K: Ord>(Vec<T> buf, Vec<T> tmp, int lo, int mid, int hi, T 
 /// ```
 fn sort_by<T, K: Ord>(Vec<T> arr, T -> K key) -> Vec<T> {
     let n = arr.len();
-    let out: Vec<T> = Vec::new();
-    let tmp: Vec<T> = Vec::new();
-    let copy_i = 0;
-    while copy_i < n {
-        out.push(arr[copy_i]);
-        tmp.push(arr[copy_i]);
-        copy_i = copy_i + 1;
+    let a: Vec<T> = Vec::with_capacity(n);
+    let b: Vec<T> = Vec::with_capacity(n);
+    let i = 0;
+    while i < n {
+        a.push(arr[i]);
+        b.push(arr[i]);
+        i = i + 1;
     }
-    let width = 1;
+    let run = sort_run();
+    let lo = 0;
+    while lo < n {
+        let hi = min_int(lo + run, n);
+        insertion_range_by(a, lo, hi, key);
+        lo = hi;
+    }
+    let in_a = true;
+    let width = run;
     while width < n {
         let pos = 0;
         while pos < n {
-            let lo = pos;
             let mid = min_int(pos + width, n);
             let hi = min_int(pos + width + width, n);
-            if mid < hi {
-                merge_range_by(out, tmp, lo, mid, hi, key);
+            if in_a {
+                merge_into_by(a, b, pos, mid, hi, key);
+            } else {
+                merge_into_by(b, a, pos, mid, hi, key);
             }
-            pos = pos + width + width;
+            pos = hi;
         }
+        in_a = !in_a;
         width = width + width;
     }
-    return out;
+    if in_a {
+        return a;
+    }
+    return b;
 }
 
 /// Returns a copy of `arr` in reverse order.
