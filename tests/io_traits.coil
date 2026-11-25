@@ -55,7 +55,7 @@ shared class Sink {
 }
 
 impl Write for Sink {
-    fn write(Sink s, Vec<byte> buf) -> Result<int, IoError> {
+    fn write(Sink s, readonly Vec<byte> buf) -> Result<int, IoError> {
         s.calls += 1;
         if s.calls % 2 == 1 {
             return Err(IoError::WouldBlock);
