@@ -124,3 +124,58 @@ test("sort_by string key (#48)") {
     assert!(out[1] == "bbb");
     assert!(out[2] == "cc");
 }
+
+// Lengths around the insertion runs and the merge widths, random, sorted,
+// reversed and few distinct values: the result is ordered, a permutation of
+// the input (same sum and xor), and equal keys keep their input order.
+test("sort and sort_by across run and merge boundaries") {
+    let sizes: Vec<int> = [2, 23, 24, 25, 47, 48, 49, 97, 1000, 1537];
+    let si = 0;
+    while si < sizes.len() {
+        let n = sizes[si];
+        let shape = 0;
+        while shape < 4 {
+            let xs: Vec<int> = Vec::new();
+            let x = 12345 + n;
+            let i = 0;
+            while i < n {
+                x = (x * 16807) % 2147483647;
+                let v = x % 1000;
+                if shape == 1 {
+                    v = i;
+                }
+                if shape == 2 {
+                    v = n - i;
+                }
+                if shape == 3 {
+                    v = x % 3;
+                }
+                xs.push(v * 10000 + i);
+                i = i + 1;
+            }
+            let s = sort(xs);
+            let by = sort_by(xs, fn (int w) => w / 10000);
+            assert!(s.len() == n);
+            assert!(by.len() == n);
+            let sum_in = 0;
+            let sum_s = 0;
+            let sum_by = 0;
+            let k = 0;
+            while k < n {
+                sum_in = sum_in + xs[k];
+                sum_s = sum_s + s[k];
+                sum_by = sum_by + by[k];
+                if k > 0 {
+                    assert!(s[k - 1] <= s[k]);
+                    // Equal keys keep the input order, which the low part records.
+                    assert!(by[k - 1] / 10000 < by[k] / 10000 || by[k - 1] < by[k]);
+                }
+                k = k + 1;
+            }
+            assert!(sum_s == sum_in);
+            assert!(sum_by == sum_in);
+            shape = shape + 1;
+        }
+        si = si + 1;
+    }
+}
