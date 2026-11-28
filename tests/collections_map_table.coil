@@ -1,0 +1,153 @@
+// `HashMap` on the native map table: growth, remove and reinsert,
+// tombstone churn and the renumbering compaction, insertion order,
+// copy-on-write separation, keys and values of several words, and string
+// keys equal in contents but other objects.
+use tests::assert;
+use collections::map::HashMap;
+use text::Text;
+
+// Every key hashes alike, so lookups walk the candidates with `==`.
+#[derive(Eq)]
+class Clash {
+    pub name: string,
+}
+
+impl Hash for Clash {
+    pub fn hash(Clash c) -> int {
+        return 7;
+    }
+}
+
+fn key_order(HashMap<string, int> m) -> string {
+    let out = "";
+    for p in m {
+        out = out + p.key + ",";
+    }
+    return out;
+}
+
+test("int keys through growth") {
+    let m: HashMap<int, int> = HashMap::new();
+    let i = 0;
+    while i < 20000 {
+        assert!(m.insert(i * 7919, i));
+        i = i + 1;
+    }
+    i = 0;
+    while i < 20000 {
+        assert!(!m.insert(i * 7919, i + 1));
+        i = i + 1;
+    }
+    assert!(m.len() == 20000);
+    assert!(m.get_or(7919 * 123, -1) == 124 && m.get_or(1, -1) == -1);
+    assert!(m.insert(-1, 5) && m.get_or(-1, 0) == 5 && m.get(0) == Some(1));
+}
+
+test("string keys equal in contents but other objects") {
+    let m: HashMap<string, int> = HashMap::new();
+    let i = 0;
+    while i < 2000 {
+        assert!(m.insert("k" + i.show(), i));
+        i = i + 1;
+    }
+    i = 0;
+    while i < 2000 {
+        let k = ("K" + i.show()).to_lower();
+        assert!(m.contains(k) && m.get_or(k, -1) == i);
+        assert!(!m.insert(k, i * 2));
+        i = i + 1;
+    }
+    assert!(m.len() == 2000 && m.get_or("k1999", 0) == 3998);
+    assert!(m.or_insert("k5", 0) == 10 && m.or_insert("new", 3) == 3);
+    assert!(m.len() == 2001);
+}
+
+test("remove and reinsert keeps insertion order") {
+    let m: HashMap<string, int> = HashMap::new();
+    for w in ["a", "b", "c", "d"] {
+        let _ = m.insert(w, w.len());
+    }
+    assert!(m.remove("b") && !m.remove("b"));
+    assert!(key_order(m) == "a,c,d,");
+    assert!(m.insert("b", 2));
+    assert!(key_order(m) == "a,c,d,b,");
+    assert!(m.len() == 4 && m.get_or("b", 0) == 2);
+}
+
+test("tombstone churn compacts and keeps finding") {
+    let m: HashMap<int, int> = HashMap::new();
+    let round = 0;
+    while round < 30 {
+        let i = 0;
+        while i < 200 {
+            let _ = m.insert(round * 1000 + i, i);
+            i = i + 1;
+        }
+        i = 0;
+        while i < 200 {
+            if i % 4 != 0 {
+                assert!(m.remove(round * 1000 + i));
+            }
+            i = i + 1;
+        }
+        assert!(m.get_or(round * 1000 + 8, -1) == 8);
+        assert!(m.get_or(round * 1000 + 9, -1) == -1);
+        round = round + 1;
+    }
+    assert!(m.len() == 30 * 50);
+    let prev = -1;
+    for p in m {
+        assert!(p.key > prev);
+        prev = p.key;
+    }
+    assert!(m.get_or(29 * 1000 + 196, -1) == 196);
+}
+
+test("a copied map is its own") {
+    let a: HashMap<string, int> = HashMap::new();
+    let _ = a.insert("x", 1);
+    let b = a;
+    let _ = b.insert("y", 2);
+    let _ = b.insert("x", 5);
+    assert!(b.get_or("x", 0) == 5 && b.contains("y"));
+    assert!(a.get_or("x", 0) == 1 && !a.contains("y") && a.len() == 1);
+    assert!(a.remove("x") && b.get_or("x", 0) == 5 && b.len() == 2);
+}
+
+test("keys of several words and keys told apart by ==") {
+    let t: HashMap<(int, string), int> = HashMap::new();
+    let c: HashMap<Clash, int> = HashMap::new();
+    let i = 0;
+    while i < 300 {
+        let _ = t.insert((i, "x"), i);
+        let _ = c.insert(new Clash("c" + i.show()), i);
+        i = i + 1;
+    }
+    assert!(t.get_or((10, "x"), -1) == 10 && t.get_or((10, "y"), -1) == -1);
+    assert!(c.get_or(new Clash("c37"), -1) == 37 && !c.contains(new Clash("no")));
+    assert!(c.remove(new Clash("c3")) && !c.contains(new Clash("c3")));
+    assert!(c.insert(new Clash("c3"), 99) && c.get_or(new Clash("c3"), 0) == 99);
+}
+
+test("values of one, two and three words") {
+    let o: HashMap<int, Option<int>> = HashMap::new();
+    let t: HashMap<string, (int, int, int)> = HashMap::new();
+    let i = 0;
+    while i < 1000 {
+        let _ = o.insert(
+            i,
+            if i % 2 == 0 {
+                Some(i)
+            } else {
+                None
+            },
+        );
+        let _ = t.insert("t" + i.show(), (i, i * 2, i * 3));
+        i = i + 1;
+    }
+    assert!(o.get_or(10, None) == Some(10) && o.get_or(11, Some(0)) == None);
+    let (a, b, c) = t.get_or("t77", (0, 0, 0));
+    assert!(a == 77 && b == 154 && c == 231);
+    let _ = o.insert(10, None);
+    assert!(o.get_or(10, Some(1)) == None);
+}
