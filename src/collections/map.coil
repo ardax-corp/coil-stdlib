@@ -1,6 +1,7 @@
-// HashMap — a KeyIndex of the keys plus each slot's value, in insertion
-// order as CPython's compact dict. No Default on K/V.
-use collections::index::KeyIndex;
+// HashMap — a `key_index` map table over each slot's key and value, in
+// insertion order as CPython's compact dict. Native code probes the table
+// in place. No Default on K/V.
+use key_index::{eq_mode as ki_eq_mode, map_table, map_find, map_upsert, map_probe, map_add, map_live, map_len, map_remove, map_compact, map_clear};
 
 /// One key-value pair, as `HashMap` iteration yields it.
 class Pair<K, V> {
@@ -46,9 +47,13 @@ class Pair<K, V> {
 /// assert!(total == 78);
 /// ```
 class HashMap<K, V> {
-    /// Keys to slots, in insertion order. Prefer the map's methods.
-    pub idx: KeyIndex<K>,
-    /// Each slot's value, removed slots included until the index compacts.
+    /// The map table: keys' hashes to slots, then each slot's cell (the
+    /// `key_index` `map_*` layout). Prefer the map's methods.
+    pub ix: Vec<int>,
+    /// Each slot's key, in insertion order, removed slots included until
+    /// the map compacts. Prefer `keys()`.
+    pub keys: Vec<K>,
+    /// Each slot's value, removed slots included until the map compacts.
     /// Prefer `values()`.
     pub vals: Vec<V>,
 }
@@ -99,8 +104,9 @@ impl HashMap<K, V> {
     /// assert!(m.capacity() >= 100);
     /// ```
     pub static fn with_capacity(int cap) -> HashMap<K, V> {
+        let keys: Vec<K> = Vec::with_capacity(cap);
         let vals: Vec<V> = Vec::with_capacity(cap);
-        return new HashMap(KeyIndex::with_capacity(cap), vals);
+        return new HashMap(map_table(cap), keys, vals);
     }
 
     /// Creates an empty map.
@@ -131,17 +137,17 @@ impl HashMap<K, V> {
     /// assert!(m.len() == 1);
     /// ```
     pub fn len() -> int {
-        return self.idx.len();
+        return map_len(self.ix);
     }
 
     /// Returns `true` when the map has no entries.
     pub fn is_empty() -> bool {
-        return self.idx.is_empty();
+        return map_len(self.ix) == 0;
     }
 
     /// Returns how many entries the map holds before it grows.
     pub fn capacity() -> int {
-        return self.idx.capacity();
+        return (self.ix[0] + 1) / 2;
     }
 
     /// Removes every entry, keeping the capacity.
@@ -158,9 +164,10 @@ impl HashMap<K, V> {
     /// assert!(!m.contains(1));
     /// ```
     pub fn clear()
-        ensures self.len() == 0
+        ensures self.keys.len() == 0 && self.vals.len() == 0
     {
-        self.idx.clear();
+        map_clear(self.ix);
+        self.keys.clear();
         self.vals.clear();
     }
 
@@ -179,9 +186,17 @@ impl HashMap<K, V> {
     /// assert!(ks[0] == "x");
     /// ```
     pub fn keys() -> Vec<K>
-        ensures result.len() == self.len()
+        ensures result.len() <= self.keys.len()
     {
-        return self.idx.keys();
+        let out: Vec<K> = Vec::with_capacity(map_len(self.ix));
+        let i = 0;
+        while i < self.keys.len() {
+            if map_live(self.ix, i) {
+                out.push(self.keys[i]);
+            }
+            i = i + 1;
+        }
+        return out;
     }
 
     /// Returns the values, in the insertion order of their keys.
@@ -198,12 +213,12 @@ impl HashMap<K, V> {
     /// assert!(vs[0] + vs[1] == 3);
     /// ```
     pub fn values() -> Vec<V>
-        ensures result.len() == self.len()
+        ensures result.len() <= self.keys.len()
     {
-        let out: Vec<V> = Vec::with_capacity(self.idx.len());
+        let out: Vec<V> = Vec::with_capacity(map_len(self.ix));
         let i = 0;
         while i < self.vals.len() {
-            if self.idx.is_live(i) {
+            if map_live(self.ix, i) {
                 out.push(self.vals[i]);
             }
             i = i + 1;
@@ -237,7 +252,28 @@ impl HashMap<K, V> {
 impl HashMap<K: Eq + Hash, V> {
     // The slot holding `k`, or -1.
     fn find(K k) -> int {
-        return self.idx.find(k);
+        return self.find_hashed(k, k.hash());
+    }
+
+    // The slot holding `k`, whose hash is `h`, or -1: one probe for `int`
+    // and `string` keys, the candidates and `==` for any other.
+    fn find_hashed(K k, int h) -> int {
+        let mode = ki_eq_mode(k);
+        if mode > 0 {
+            return map_find(self.ix, self.keys, h, k, mode);
+        }
+        let s = map_probe(self.ix, h, -1);
+        while s >= 0 && self.keys[s] != k {
+            s = map_probe(self.ix, h, s);
+        }
+        return s;
+    }
+
+    // Adds `k` (hash `h`), which `find_hashed` did not find, with value `v`.
+    fn push_hashed(K k, int h, V v) {
+        let _ = map_add(self.ix, h);
+        self.keys.push(k);
+        self.vals.push(v);
     }
 
     /// Stores `v` under `k`, replacing any value already there.
@@ -256,13 +292,24 @@ impl HashMap<K: Eq + Hash, V> {
     /// ```
     pub fn insert(K k, V v) -> bool {
         let h = k.hash();
-        let s = self.idx.find_hashed(k, h);
+        let mode = ki_eq_mode(k);
+        if mode > 0 {
+            // One probe: the slot, or a new one registered for `k`.
+            let r = map_upsert(self.ix, self.keys, h, k, mode);
+            if r >= 0 {
+                self.vals[r] = v;
+                return false;
+            }
+            self.keys.push(k);
+            self.vals.push(v);
+            return true;
+        }
+        let s = self.find_hashed(k, h);
         if s >= 0 {
             self.vals[s] = v;
             return false;
         }
-        let _ = self.idx.push_hashed(k, h);
-        self.vals.push(v);
+        self.push_hashed(k, h, v);
         return true;
     }
 
@@ -281,12 +328,21 @@ impl HashMap<K: Eq + Hash, V> {
     /// ```
     pub fn or_insert(K k, V v) -> V {
         let h = k.hash();
-        let s = self.idx.find_hashed(k, h);
+        let mode = ki_eq_mode(k);
+        if mode > 0 {
+            let r = map_upsert(self.ix, self.keys, h, k, mode);
+            if r >= 0 {
+                return self.vals[r];
+            }
+            self.keys.push(k);
+            self.vals.push(v);
+            return v;
+        }
+        let s = self.find_hashed(k, h);
         if s >= 0 {
             return self.vals[s];
         }
-        let _ = self.idx.push_hashed(k, h);
-        self.vals.push(v);
+        self.push_hashed(k, h, v);
         return v;
     }
 
@@ -305,13 +361,12 @@ impl HashMap<K: Eq + Hash, V> {
     /// ```
     pub fn or_insert_with(K k, () -> V make) -> V {
         let h = k.hash();
-        let s = self.idx.find_hashed(k, h);
+        let s = self.find_hashed(k, h);
         if s >= 0 {
             return self.vals[s];
         }
         let v = make();
-        let _ = self.idx.push_hashed(k, h);
-        self.vals.push(v);
+        self.push_hashed(k, h, v);
         return v;
     }
 
@@ -331,7 +386,7 @@ impl HashMap<K: Eq + Hash, V> {
     /// assert!(!m.contains("b"));
     /// ```
     pub fn and_update(K k, V v) -> bool {
-        let s = self.idx.find(k);
+        let s = self.find(k);
         if s >= 0 {
             self.vals[s] = v;
             return true;
@@ -355,7 +410,7 @@ impl HashMap<K: Eq + Hash, V> {
     /// assert!(m.get_or("a", 0) == 10);
     /// ```
     pub fn and_modify(K k, V -> V f) -> bool {
-        let s = self.idx.find(k);
+        let s = self.find(k);
         if s >= 0 {
             self.vals[s] = f(self.vals[s]);
             return true;
@@ -393,7 +448,7 @@ impl HashMap<K: Eq + Hash, V> {
     /// assert!(!m.contains(8));
     /// ```
     pub fn contains(K k) -> bool {
-        return self.idx.find(k) >= 0;
+        return self.find(k) >= 0;
     }
 
     /// Returns the value stored under `k`, or `fallback` when there is none.
@@ -409,7 +464,7 @@ impl HashMap<K: Eq + Hash, V> {
     /// assert!(m.get_or("b", 0) == 0);
     /// ```
     pub fn get_or(K k, V fallback) -> V {
-        let s = self.idx.find(k);
+        let s = self.find(k);
         if s >= 0 {
             return self.vals[s];
         }
@@ -429,7 +484,7 @@ impl HashMap<K: Eq + Hash, V> {
     /// assert!(m.get("b").is_none());
     /// ```
     pub fn get(K k) -> Option<V> {
-        let s = self.idx.find(k);
+        let s = self.find(k);
         if s >= 0 {
             return Some(self.vals[s]);
         }
@@ -452,12 +507,27 @@ impl HashMap<K: Eq + Hash, V> {
     /// assert!(m.is_empty());
     /// ```
     pub fn remove(K k) -> bool {
-        if self.idx.remove(k) < 0 {
+        let s = self.find(k);
+        if s < 0 || !map_remove(self.ix, s) {
             return false;
         }
-        if self.idx.needs_compact() {
-            self.idx.retain_live(self.vals);
-            self.idx.compact();
+        // Once removed slots outnumber the entries, drop them and renumber.
+        let n = map_len(self.ix);
+        let dead = self.keys.len() - n;
+        if dead > 8 && dead > n {
+            let keys: Vec<K> = Vec::with_capacity(n);
+            let vals: Vec<V> = Vec::with_capacity(n);
+            let i = 0;
+            while i < self.keys.len() {
+                if map_live(self.ix, i) {
+                    keys.push(self.keys[i]);
+                    vals.push(self.vals[i]);
+                }
+                i = i + 1;
+            }
+            self.keys = keys;
+            self.vals = vals;
+            let _ = map_compact(self.ix);
         }
         return true;
     }
@@ -574,8 +644,8 @@ impl HashMapIter<K, V> {
         while self.slot < n {
             let s = self.slot;
             self.slot = self.slot + 1;
-            if self.map.idx.is_live(s) {
-                return Option::Some(new Pair(self.map.idx.key_at(s), self.map.vals[s]));
+            if map_live(self.map.ix, s) {
+                return Option::Some(new Pair(self.map.keys[s], self.map.vals[s]));
             }
         }
         return Option::None;
