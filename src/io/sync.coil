@@ -1,6 +1,8 @@
-// Blocking IO adapters over L0 + `wait_readable` / `wait_writable` (userland; not host natives).
-use io::read;
-use io::write_from;
+// Blocking IO adapters over `io::Read` / `io::Write`, which carry their own
+// `wait_readable` / `wait_writable` (userland; not host natives). They take
+// any reader or writer: a `Stream`, a TLS stream, a test double.
+use io::Read;
+use io::Write;
 use io::wait_readable;
 use io::wait_writable;
 use io::stdout;
@@ -11,9 +13,9 @@ use io::net::udp::send_to;
 use io::fs::copy as fs_copy;
 use string::{from_bytes as str_from_bytes, to_bytes as str_to_bytes};
 
-/// Writes all of `buf` to `s`, waiting whenever the stream is not ready.
+/// Writes all of `buf` to `w`, waiting whenever it is not ready.
 ///
-/// `io::write` may write only part of a buffer; this keeps going until every
+/// `write` may write only part of a buffer; this keeps going until every
 /// byte is out, then returns `Ok(0)`. Inside a task, the waits let other
 /// tasks run.
 /// # Examples
@@ -26,21 +28,21 @@ use string::{from_bytes as str_from_bytes, to_bytes as str_to_bytes};
 /// let written = write_all(stdout(), to_bytes("hi\n"));
 /// assert!(written.is_ok());
 /// ```
-fn write_all(Stream s, Vec<byte> buf) -> Result<int, IoError> {
+fn write_all<W: Write>(W w, Vec<byte> buf) -> Result<int, IoError> {
     let offset = 0;
     let total = buf.len();
     while offset < total {
-        match write_from(s, buf, offset) {
+        match w.write_from(buf, offset) {
             Result::Ok(n) => {
                 if n == 0 {
-                    wait_writable(s)?;
+                    w.wait_writable()?;
                 }
                 if n != 0 {
                     offset = offset + n;
                 }
             },
             Result::Err(IoError::WouldBlock) => {
-                wait_writable(s)?;
+                w.wait_writable()?;
             },
             Result::Err(e) => {
                 raise e;
@@ -50,11 +52,11 @@ fn write_all(Stream s, Vec<byte> buf) -> Result<int, IoError> {
     return 0;
 }
 
-/// Fills all of `buf` from `s`, waiting whenever no data is ready.
+/// Fills all of `buf` from `r`, waiting whenever no data is ready.
 ///
 /// Returns `Some(n)`: `n` is `buf.len()` once `buf` is full, or fewer when the
-/// stream ends part way. Returns `None` when the stream ends before any byte.
-fn read_exact(Stream s, Vec<byte> buf) -> Result<Option<int>, IoError> {
+/// input ends part way. Returns `None` when it ends before any byte.
+fn read_exact<R: Read>(R r, Vec<byte> buf) -> Result<Option<int>, IoError> {
     let need = buf.len();
     let filled = 0;
     while filled < need {
@@ -66,7 +68,7 @@ fn read_exact(Stream s, Vec<byte> buf) -> Result<Option<int>, IoError> {
             scratch.push(0);
             i = i + 1;
         }
-        match read(s, scratch) {
+        match r.read(scratch) {
             Result::Ok(Option::None) => {
                 if filled == 0 {
                     return Option::None;
@@ -75,7 +77,7 @@ fn read_exact(Stream s, Vec<byte> buf) -> Result<Option<int>, IoError> {
             },
             Result::Ok(Option::Some(n)) => {
                 if n == 0 {
-                    wait_readable(s)?;
+                    r.wait_readable()?;
                 }
                 if n != 0 {
                     let j = 0;
@@ -87,7 +89,7 @@ fn read_exact(Stream s, Vec<byte> buf) -> Result<Option<int>, IoError> {
                 }
             },
             Result::Err(IoError::WouldBlock) => {
-                wait_readable(s)?;
+                r.wait_readable()?;
             },
             Result::Err(e) => {
                 raise e;
@@ -97,8 +99,8 @@ fn read_exact(Stream s, Vec<byte> buf) -> Result<Option<int>, IoError> {
     return Option::Some(filled);
 }
 
-/// Reads from `s` until it ends and returns everything read.
-fn read_to_end(Stream s) -> Result<Vec<byte>, IoError> {
+/// Reads from `r` until it ends and returns everything read.
+fn read_to_end<R: Read>(R r) -> Result<Vec<byte>, IoError> {
     let acc: Vec<byte> = Vec::new();
     let chunk_size = 4096;
     let scratch: Vec<byte> = Vec::new();
@@ -109,13 +111,13 @@ fn read_to_end(Stream s) -> Result<Vec<byte>, IoError> {
     }
     let done = false;
     while !done {
-        match read(s, scratch) {
+        match r.read(scratch) {
             Result::Ok(Option::None) => {
                 done = true;
             },
             Result::Ok(Option::Some(n)) => {
                 if n == 0 {
-                    wait_readable(s)?;
+                    r.wait_readable()?;
                 }
                 if n != 0 {
                     let j = 0;
@@ -126,7 +128,7 @@ fn read_to_end(Stream s) -> Result<Vec<byte>, IoError> {
                 }
             },
             Result::Err(IoError::WouldBlock) => {
-                wait_readable(s)?;
+                r.wait_readable()?;
             },
             Result::Err(e) => {
                 raise e;
@@ -278,9 +280,9 @@ fn line_text(Vec<byte> b) -> Result<string, IoError> {
     };
 }
 
-/// Reads one line from `s`, without its line ending (LF or CRLF).
+/// Reads one line from `r`, without its line ending (LF or CRLF).
 ///
-/// Returns `None` at the end of the stream. A last line without a newline is
+/// Returns `None` at the end of the input. A last line without a newline is
 /// still returned.
 ///
 /// # Examples
@@ -295,7 +297,7 @@ fn line_text(Vec<byte> b) -> Result<string, IoError> {
 ///     }
 /// }
 /// ```
-fn read_line(Stream s) -> Result<Option<string>, IoError> {
+fn read_line<R: Read>(R r) -> Result<Option<string>, IoError> {
     let acc: Vec<byte> = Vec::new();
     // One-byte reads: a larger scratch would consume past LF without pushback.
     let scratch: Vec<byte> = Vec::new();
@@ -305,13 +307,13 @@ fn read_line(Stream s) -> Result<Option<string>, IoError> {
     let lf: byte = "\n";
     let cr: byte = "\r";
     while !done {
-        match read(s, scratch) {
+        match r.read(scratch) {
             Result::Ok(Option::None) => {
                 done = true;
             },
             Result::Ok(Option::Some(n)) => {
                 if n == 0 {
-                    wait_readable(s)?;
+                    r.wait_readable()?;
                 }
                 if n != 0 {
                     saw = true;
@@ -325,7 +327,7 @@ fn read_line(Stream s) -> Result<Option<string>, IoError> {
                 }
             },
             Result::Err(IoError::WouldBlock) => {
-                wait_readable(s)?;
+                r.wait_readable()?;
             },
             Result::Err(e) => {
                 raise e;

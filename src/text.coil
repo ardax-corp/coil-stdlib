@@ -1019,13 +1019,14 @@ impl Joined for Vec<string> {
         ensures parts.len() > 0 || result == ""
         ensures parts.len() != 1 || result == parts[0]
     {
-        let out = "";
-        let i = 0;
+        if parts.len() == 0 {
+            return "";
+        }
+        // One concat per part: `out + sep + part` appends both at once.
+        let out = parts[0];
+        let i = 1;
         while i < parts.len() {
-            if i > 0 {
-                out = out + sep;
-            }
-            out = out + parts[i];
+            out = out + sep + parts[i];
             i = i + 1;
         }
         return out;
