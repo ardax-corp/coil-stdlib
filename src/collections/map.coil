@@ -1,7 +1,7 @@
 // HashMap — a `key_index` map table over each slot's key and value, in
 // insertion order as CPython's compact dict. Native code probes the table
 // in place. No Default on K/V.
-use key_index::{eq_mode as ki_eq_mode, map_table, map_find, map_upsert, map_probe, map_add, map_live, map_len, map_remove, map_compact, map_clear};
+use key_index::{eq_mode as ki_eq_mode, word_mode as ki_word_mode, map_table, map_find, map_put, map_probe, map_add, map_live, map_len, map_remove, map_compact, map_clear};
 
 /// One key-value pair, as `HashMap` iteration yields it.
 class Pair<K, V> {
@@ -47,6 +47,9 @@ class Pair<K, V> {
 /// assert!(total == 78);
 /// ```
 class HashMap<K, V> {
+    // `key_index::map_put` takes the map itself and reads fields 0, 1 and 2 as
+    // the table, the keys and the values: keep these three first, in this order.
+
     /// The map table: keys' hashes to slots, then each slot's cell (the
     /// `key_index` `map_*` layout). Prefer the map's methods.
     pub ix: Vec<int>,
@@ -293,16 +296,11 @@ impl HashMap<K: Eq + Hash, V> {
     pub fn insert(K k, V v) -> bool {
         let h = k.hash();
         let mode = ki_eq_mode(k);
-        if mode > 0 {
-            // One probe: the slot, or a new one registered for `k`.
-            let r = map_upsert(self.ix, self.keys, h, k, mode);
-            if r >= 0 {
-                self.vals[r] = v;
-                return false;
-            }
-            self.keys.push(k);
-            self.vals.push(v);
-            return true;
+        let vmode = ki_word_mode(v);
+        if mode > 0 && vmode > 0 {
+            // One call on the whole map: the key found and its value
+            // replaced, or the key and value added.
+            return map_put(self, h, k, v, mode, vmode, 1) < 0;
         }
         let s = self.find_hashed(k, h);
         if s >= 0 {
@@ -329,13 +327,12 @@ impl HashMap<K: Eq + Hash, V> {
     pub fn or_insert(K k, V v) -> V {
         let h = k.hash();
         let mode = ki_eq_mode(k);
-        if mode > 0 {
-            let r = map_upsert(self.ix, self.keys, h, k, mode);
+        let vmode = ki_word_mode(v);
+        if mode > 0 && vmode > 0 {
+            let r = map_put(self, h, k, v, mode, vmode, 0);
             if r >= 0 {
                 return self.vals[r];
             }
-            self.keys.push(k);
-            self.vals.push(v);
             return v;
         }
         let s = self.find_hashed(k, h);
